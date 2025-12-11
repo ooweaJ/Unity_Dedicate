@@ -6,6 +6,8 @@ public class PlayerDataManager : MonoBehaviour
 
     public int userId;
     public string username;
+    public int level;
+    public int gold;
 
     public List<Character> characters = new List<Character>();
 
@@ -31,4 +33,5 @@ public class Character
     public int level;
     public int hp;
     public int atk;
+
 }
