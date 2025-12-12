@@ -1,4 +1,4 @@
-using TMPro;
+ï»¿using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Newtonsoft.Json.Linq;
@@ -9,37 +9,37 @@ public class LobbyManager : MonoBehaviour
     public TextMeshProUGUI levelText;
     public TextMeshProUGUI goldText;
 
-    // °¡Ã­ ÆĞ³Î(UI ÆĞ³Î)À» ¾À¿¡¼­ ºñÈ°¼ºÈ­ »óÅÂ·Î µÎ°í ¿©±â¿¡ ¿¬°áÇÏ¸é µÊ
-    public GameObject gachaPanel; // Optional: °¡Ã­ UI ÆĞ³Î ÇÒ´ç
-    public TextMeshProUGUI lobbyStatusText; // Optional: »óÅÂ ¹®±¸ Ç¥½Ã
+    // ê°€ì±  íŒ¨ë„(UI íŒ¨ë„)ì„ ì”¬ì—ì„œ ë¹„í™œì„±í™” ìƒíƒœë¡œ ë‘ê³  ì—¬ê¸°ì— ì—°ê²°í•˜ë©´ ë¨
+    public GameObject gachaPanel; // Optional: ê°€ì±  UI íŒ¨ë„ í• ë‹¹
+    public TextMeshProUGUI lobbyStatusText; // Optional: ìƒíƒœ ë¬¸êµ¬ í‘œì‹œ
 
     private async void Start()
     {
-        // ·Î±×ÀÎ Á÷ÈÄ¶ó¸é PlayerDataManager¿¡ °ªÀÌ ÀÌ¹Ì µé¾îÀÖÀ½.
-        // ÇÏÁö¸¸ ¼­¹öÀÇ ÃÖ½Å Á¤º¸¸¦ ´Ù½Ã ¹Ş´Â °ÍÀÌ ´õ ¾ÈÀüÇÔ(µ¿±âÈ­).
+        // ë¡œê·¸ì¸ ì§í›„ë¼ë©´ PlayerDataManagerì— ê°’ì´ ì´ë¯¸ ë“¤ì–´ìˆìŒ.
+        // í•˜ì§€ë§Œ ì„œë²„ì˜ ìµœì‹  ì •ë³´ë¥¼ ë‹¤ì‹œ ë°›ëŠ” ê²ƒì´ ë” ì•ˆì „í•¨(ë™ê¸°í™”).
         await RefreshUserInfoFromServer();
     }
 
-    // ¼­¹ö¿¡¼­ ÃÖ½Å À¯Àú Á¤º¸ ºÒ·¯¿À±â
+    // ì„œë²„ì—ì„œ ìµœì‹  ìœ ì € ì •ë³´ ë¶ˆëŸ¬ì˜¤ê¸°
     public async System.Threading.Tasks.Task RefreshUserInfoFromServer()
     {
         int userId = PlayerDataManager.Instance.userId;
         if (userId <= 0)
         {
-            Debug.LogWarning("LobbyManager: À¯È¿ÇÏÁö ¾ÊÀº userId");
+            Debug.LogWarning("LobbyManager: ìœ íš¨í•˜ì§€ ì•Šì€ userId");
             return;
         }
 
         try
         {
-            // »óÅÂ Ç¥½Ã
-            if (lobbyStatusText != null) lobbyStatusText.text = "À¯Àú Á¤º¸ ºÒ·¯¿À´Â Áß...";
+            // ìƒíƒœ í‘œì‹œ
+            if (lobbyStatusText != null) lobbyStatusText.text = "ìœ ì € ì •ë³´ ë¶ˆëŸ¬ì˜¤ëŠ” ì¤‘...";
 
             string res = await BackendManager.GetUserInfo(userId);
             JObject json = JObject.Parse(res);
 
-            // ¼­¹ö°¡ °´Ã¼¸¦ ¹Ù·Î ¹İÈ¯ÇÏ¸é json["id"] µîÀ¸·Î ÀĞ°í,
-            // ¸¸¾à ¹è¿­/´Ù¸¥ ·¡ÇÎÀÌ ÀÖ´Ù¸é ÆÄ½Ì ¹æ½Ä Á¶Á¤ ÇÊ¿ä.
+            // ì„œë²„ê°€ ê°ì²´ë¥¼ ë°”ë¡œ ë°˜í™˜í•˜ë©´ json["id"] ë“±ìœ¼ë¡œ ì½ê³ ,
+            // ë§Œì•½ ë°°ì—´/ë‹¤ë¥¸ ë˜í•‘ì´ ìˆë‹¤ë©´ íŒŒì‹± ë°©ì‹ ì¡°ì • í•„ìš”.
             PlayerDataManager.Instance.username = (string)json["username"];
             PlayerDataManager.Instance.level = (int)json["level"];
             PlayerDataManager.Instance.gold = (int)json["gold"];
@@ -51,7 +51,7 @@ public class LobbyManager : MonoBehaviour
         catch (System.Exception ex)
         {
             Debug.LogError("RefreshUserInfoFromServer error: " + ex.Message);
-            if (lobbyStatusText != null) lobbyStatusText.text = "À¯Àú Á¤º¸ ºÒ·¯¿À±â ½ÇÆĞ";
+            if (lobbyStatusText != null) lobbyStatusText.text = "ìœ ì € ì •ë³´ ë¶ˆëŸ¬ì˜¤ê¸° ì‹¤íŒ¨";
         }
     }
 
@@ -62,7 +62,7 @@ public class LobbyManager : MonoBehaviour
         goldText.text = PlayerDataManager.Instance.gold.ToString();
     }
 
-    // ¹öÆ° ÀÌº¥Æ®µé
+    // ë²„íŠ¼ ì´ë²¤íŠ¸ë“¤
     public void OnOpenGacha()
     {
         if (gachaPanel != null)
@@ -76,7 +76,7 @@ public class LobbyManager : MonoBehaviour
 
     public void OnLogout()
     {
-        // °£´Ü ·Î±×¾Æ¿ô Ã³¸®: µ¥ÀÌÅÍ ÃÊ±âÈ­ ÈÄ ·Î±×ÀÎ ¾À ÀÌµ¿
+        // ê°„ë‹¨ ë¡œê·¸ì•„ì›ƒ ì²˜ë¦¬: ë°ì´í„° ì´ˆê¸°í™” í›„ ë¡œê·¸ì¸ ì”¬ ì´ë™
         PlayerDataManager.Instance.userId = 0;
         PlayerDataManager.Instance.username = "";
         PlayerDataManager.Instance.level = 0;
@@ -90,21 +90,23 @@ public class LobbyManager : MonoBehaviour
         int userId = PlayerDataManager.Instance.userId;
 
         string res = await BackendManager.DrawGacha(userId);
-        Debug.Log("Gacha Response: " + res);
+        Debug.Log("Gacha Response Raw: " + res);
 
         JObject json = JObject.Parse(res);
 
         if (json["success"].ToObject<bool>())
         {
-            string itemName = json["item"]["name"].ToString();
+            // ì„œë²„ì—ì„œ characterIdë§Œ ë„˜ì–´ì˜´
+            int characterId = json["characterId"].ToObject<int>();
 
-            // °ñµå Â÷°¨ UI °»½Å
+            Debug.Log($"â­ íšë“ ìºë¦­í„° ID: {characterId}");
+
+            // ê³¨ë“œ ì°¨ê° UI ë°˜ì˜
             PlayerDataManager.Instance.gold -= 10;
             goldText.text = PlayerDataManager.Instance.gold.ToString();
 
-            // °á°ú UI Ç¥½Ã (¿¹: ÆË¾÷)
             if (lobbyStatusText != null)
-                lobbyStatusText.text = $"»Ì±â ¼º°ø! È¹µæ: {itemName}";
+                lobbyStatusText.text = $"ë½‘ê¸° ì„±ê³µ! ID: {characterId}";
         }
         else
         {
@@ -112,5 +114,6 @@ public class LobbyManager : MonoBehaviour
                 lobbyStatusText.text = json["message"].ToString();
         }
     }
+
 
 }
