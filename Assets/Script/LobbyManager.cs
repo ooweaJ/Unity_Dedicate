@@ -96,17 +96,30 @@ public class LobbyManager : MonoBehaviour
 
         if (json["success"].ToObject<bool>())
         {
-            // 서버에서 characterId만 넘어옴
             int characterId = json["characterId"].ToObject<int>();
-
             Debug.Log($"⭐ 획득 캐릭터 ID: {characterId}");
 
-            // 골드 차감 UI 반영
+            // 🎯 1) ScriptableObject DB에서 캐릭터 데이터 가져오기
+            CharacterData data = MasterDataManager.Instance.characterDB.GetById(characterId);
+
+            if (data != null)
+            {
+                Debug.Log($"🎉 획득 캐릭터 이름: {data.name}");
+                Debug.Log($"등급: {data.rarity}");
+                Debug.Log($"기본 공격력: {data.baseAtk}");
+                Debug.Log($"기본 체력: {data.baseHp}");
+            }
+            else
+            {
+                Debug.LogError($"❌ CharacterDatabase에서 ID {characterId} 를 찾지 못함");
+            }
+
+            // 골드 UI 업데이트
             PlayerDataManager.Instance.gold -= 10;
             goldText.text = PlayerDataManager.Instance.gold.ToString();
 
             if (lobbyStatusText != null)
-                lobbyStatusText.text = $"뽑기 성공! ID: {characterId}";
+                lobbyStatusText.text = $"뽑기 성공! 캐릭터: {data.name}";
         }
         else
         {
@@ -114,6 +127,5 @@ public class LobbyManager : MonoBehaviour
                 lobbyStatusText.text = json["message"].ToString();
         }
     }
-
 
 }
