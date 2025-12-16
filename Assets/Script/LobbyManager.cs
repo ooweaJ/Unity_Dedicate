@@ -11,7 +11,6 @@ public class LobbyManager : MonoBehaviour
 
     // 가챠 패널(UI 패널)을 씬에서 비활성화 상태로 두고 여기에 연결하면 됨
     public GameObject gachaPanel; // Optional: 가챠 UI 패널 할당
-    public TextMeshProUGUI lobbyStatusText; // Optional: 상태 문구 표시
 
     private async void Start()
     {
@@ -32,9 +31,6 @@ public class LobbyManager : MonoBehaviour
 
         try
         {
-            // 상태 표시
-            if (lobbyStatusText != null) lobbyStatusText.text = "유저 정보 불러오는 중...";
-
             string res = await BackendManager.GetUserInfo(userId);
             JObject json = JObject.Parse(res);
 
@@ -46,13 +42,12 @@ public class LobbyManager : MonoBehaviour
 
             UpdateUI();
 
-            if (lobbyStatusText != null) lobbyStatusText.text = "";
         }
         catch (System.Exception ex)
         {
             Debug.LogError("RefreshUserInfoFromServer error: " + ex.Message);
-            if (lobbyStatusText != null) lobbyStatusText.text = "유저 정보 불러오기 실패";
         }
+
     }
 
     private void UpdateUI()
@@ -81,7 +76,6 @@ public class LobbyManager : MonoBehaviour
         PlayerDataManager.Instance.username = "";
         PlayerDataManager.Instance.level = 0;
         PlayerDataManager.Instance.gold = 0;
-        PlayerDataManager.Instance.characters.Clear();
         SceneManager.LoadScene("LoginScene");
     }
 
@@ -118,14 +112,17 @@ public class LobbyManager : MonoBehaviour
             PlayerDataManager.Instance.gold -= 10;
             goldText.text = PlayerDataManager.Instance.gold.ToString();
 
-            if (lobbyStatusText != null)
-                lobbyStatusText.text = $"뽑기 성공! 캐릭터: {data.name}";
+            var newChar = new PlayerCharacterData
+            {
+                characterId = characterId,
+                level = 1,
+                exp = 0,
+                upgrade = 0
+            };
+
+            PlayerDataManager.Instance.inventory.AddOrUpdate(newChar);
         }
-        else
-        {
-            if (lobbyStatusText != null)
-                lobbyStatusText.text = json["message"].ToString();
-        }
+
     }
 
 }

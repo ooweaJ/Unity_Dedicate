@@ -1,15 +1,15 @@
-using System.Collections.Generic;
 using UnityEngine;
+
 public class PlayerDataManager : MonoBehaviour
 {
     public static PlayerDataManager Instance;
 
     public int userId;
     public string username;
-    public int level;
     public int gold;
+    public int level;
 
-    public List<Character> characters = new List<Character>();
+    public PlayerInventory inventory = new PlayerInventory();
 
     private void Awake()
     {
@@ -23,15 +23,4 @@ public class PlayerDataManager : MonoBehaviour
             Destroy(gameObject);
         }
     }
-}
-
-[System.Serializable]
-public class Character
-{
-    public int id;
-    public string name;
-    public int level;
-    public int hp;
-    public int atk;
-
 }
