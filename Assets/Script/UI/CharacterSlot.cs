@@ -9,10 +9,9 @@ public class CharacterSlot : MonoBehaviour
 
     private UserCharacter userCharacter;
 
-    // 🔹 테스트용
-    public void SetDummy(int index)
+    public void Set(PlayerCharacterData pc, CharacterData data)
     {
-        levelText.text = $"Lv.{index}";
-        icon.color = Random.ColorHSV(); // 잘 보이게
+        icon.sprite = data.icon;
+        levelText.text = $"Lv.{pc.level}";
     }
 }

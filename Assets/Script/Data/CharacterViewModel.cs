@@ -14,7 +14,7 @@ public class CharacterViewModel
     public int Level => playerData.level;
 
     public int FinalAtk =>
-        baseData.baseAtk + playerData.level * 5 + playerData.upgrade * 10;
+        baseData.baseAtk + playerData.level * 5 + playerData.enhance * 10;
 
     public int FinalHp =>
         baseData.baseHp + playerData.level * 20;

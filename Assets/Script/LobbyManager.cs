@@ -117,7 +117,7 @@ public class LobbyManager : MonoBehaviour
                 characterId = characterId,
                 level = 1,
                 exp = 0,
-                upgrade = 0
+                enhance = 0
             };
 
             PlayerDataManager.Instance.inventory.AddOrUpdate(newChar);

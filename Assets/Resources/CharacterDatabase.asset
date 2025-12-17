@@ -18,18 +18,22 @@ MonoBehaviour:
     rarity: 1
     baseAtk: 50
     baseHp: 200
+    icon: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
   - id: 2
     name: "\uB9C8\uBC95\uC0AC"
     rarity: 2
     baseAtk: 80
     baseHp: 120
+    icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
   - id: 3
     name: "\uAD81\uC218"
     rarity: 1
     baseAtk: 60
     baseHp: 150
+    icon: {fileID: 10901, guid: 0000000000000000f000000000000000, type: 0}
   - id: 4
     name: "\uD314\uB77C\uB518"
     rarity: 3
     baseAtk: 90
     baseHp: 250
+    icon: {fileID: 10915, guid: 0000000000000000f000000000000000, type: 0}

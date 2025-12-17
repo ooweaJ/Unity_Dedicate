@@ -45,4 +45,10 @@ public static class BackendManager
         var res = await client.PostAsync(baseUrl + $"/gacha/draw/{userId}", null);
         return await res.Content.ReadAsStringAsync();
     }
+
+    public static async Task<string> GetUserCharacters(int userId)
+    {
+        var res = await client.GetAsync(baseUrl + $"/users/{userId}/characters");
+        return await res.Content.ReadAsStringAsync();
+    }
 }

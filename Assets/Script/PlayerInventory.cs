@@ -10,12 +10,14 @@ public class PlayerInventory
         characters[data.characterId] = data;
     }
 
+    public bool HasCharacter(int characterId)
+    {
+        return characters.ContainsKey(characterId);
+    }
+
     public PlayerCharacterData Get(int characterId)
     {
-        if (characters.TryGetValue(characterId, out var data))
-            return data;
-
-        return null;
+        return characters.TryGetValue(characterId, out var c) ? c : null;
     }
 
     public IEnumerable<PlayerCharacterData> GetAll()

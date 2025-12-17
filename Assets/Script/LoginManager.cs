@@ -30,12 +30,44 @@ public class LoginManager : MonoBehaviour
 
             resultText.text = "로그인 성공! 로비로 이동 중...";
 
-            // 바로 로비로 이동
-            SceneManager.LoadScene("MainLobbyScene");
+            await InitAfterLogin(PlayerDataManager.Instance.userId);
         }
         else
         {
             resultText.text = "로그인 실패!";
+        }
+    }
+
+    public async Task InitAfterLogin(int userId)
+    {
+        // 1 유저 기본 정보
+        //await LoadUserInfo(userId);
+
+        // 2 유저 캐릭터 인벤토리
+        await LoadUserCharacters(userId);
+
+        // 3 로비 이동
+        SceneManager.LoadScene("MainLobbyScene");
+    }
+
+    async Task LoadUserCharacters(int userId)
+    {
+        string res = await BackendManager.GetUserCharacters(userId);
+        JObject json = JObject.Parse(res);
+
+        JArray arr = (JArray)json["characters"];
+
+        foreach (var j in arr)
+        {
+            PlayerCharacterData pc = new PlayerCharacterData
+            {
+                characterId = (int)j["characterId"],
+                level = (int)j["level"],
+                exp = (int)j["exp"],
+                enhance = (int)j["enhance"]
+            };
+
+            PlayerDataManager.Instance.inventory.AddOrUpdate(pc);
         }
     }
 }
