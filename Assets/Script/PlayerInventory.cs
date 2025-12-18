@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 public class PlayerInventory
@@ -5,6 +6,7 @@ public class PlayerInventory
     private Dictionary<int, PlayerCharacterData> characters
         = new Dictionary<int, PlayerCharacterData>();
 
+    public event Action OnChanged;
     public void AddOrUpdate(PlayerCharacterData data)
     {
         characters[data.characterId] = data;

@@ -38,6 +38,7 @@ public class LoginManager : MonoBehaviour
         }
     }
 
+
     public async Task InitAfterLogin(int userId)
     {
         // 1 유저 기본 정보
@@ -48,6 +49,11 @@ public class LoginManager : MonoBehaviour
 
         // 3 로비 이동
         SceneManager.LoadScene("MainLobbyScene");
+    }
+
+    async Task LoadUserInfo(int userId)
+    {
+
     }
 
     async Task LoadUserCharacters(int userId)

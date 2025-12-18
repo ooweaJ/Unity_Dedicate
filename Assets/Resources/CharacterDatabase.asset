@@ -18,22 +18,22 @@ MonoBehaviour:
     rarity: 1
     baseAtk: 50
     baseHp: 200
-    icon: {fileID: 10907, guid: 0000000000000000f000000000000000, type: 0}
+    icon: {fileID: 21300000, guid: 400c43f49f2347e48b2c94072fd57f83, type: 3}
   - id: 2
     name: "\uB9C8\uBC95\uC0AC"
     rarity: 2
     baseAtk: 80
     baseHp: 120
-    icon: {fileID: 10913, guid: 0000000000000000f000000000000000, type: 0}
+    icon: {fileID: 21300000, guid: 76525bd2f9785fe49b713878dd8585c4, type: 3}
   - id: 3
     name: "\uAD81\uC218"
     rarity: 1
     baseAtk: 60
     baseHp: 150
-    icon: {fileID: 10901, guid: 0000000000000000f000000000000000, type: 0}
+    icon: {fileID: 21300000, guid: b744c5c2ac453d84fac46bcb8877581c, type: 3}
   - id: 4
     name: "\uD314\uB77C\uB518"
     rarity: 3
     baseAtk: 90
     baseHp: 250
-    icon: {fileID: 10915, guid: 0000000000000000f000000000000000, type: 0}
+    icon: {fileID: 21300000, guid: 16191458cfcd15341bc6bc9e6ec2a95e, type: 3}
