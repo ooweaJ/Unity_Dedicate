@@ -5,55 +5,46 @@ using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
-public class LoginManager : MonoBehaviour
+public class LoginController : MonoBehaviour
 {
-    public TMP_InputField usernameField;
-    public TMP_InputField passwordField;
-    public TextMeshProUGUI resultText;
+    [SerializeField] private LoginUI loginUI;
 
-    public async void OnLoginButton()
+    private void Awake()
     {
-        string username = usernameField.text;
-        string password = passwordField.text;
+        loginUI.OnLoginButtonClicked += HandleLogin;
+    }
 
+    private void OnDestroy()
+    {
+        loginUI.OnLoginButtonClicked -= HandleLogin;
+    }
+    public async void HandleLogin(string username, string password)
+    {
         string res = await BackendManager.Login(username, password);
-        
+
         JObject json = JObject.Parse(res);
+
 
         if (json["message"].ToString() == "Login success")
         {
-            // 유저 정보 저장
-            PlayerDataManager.Instance.userId = (int)json["user"]["id"];
-            PlayerDataManager.Instance.username = (string)json["user"]["username"];
-            PlayerDataManager.Instance.level = (int)json["user"]["level"];
-            PlayerDataManager.Instance.gold = (int)json["user"]["gold"];
+            PlayerDataManager.Instance.ApplyUserData(json["user"]);
 
-            resultText.text = "로그인 성공! 로비로 이동 중...";
+            //loginUI.ShowMessage("로그인 성공! 로비로 이동 중...");
 
-            await InitAfterLogin(PlayerDataManager.Instance.userId);
+            await InitAfterLogin(PlayerDataManager.Instance.GetUserId());
         }
         else
         {
-            resultText.text = "로그인 실패!";
+            //loginUI.ShowMessage("로그인 실패!");
         }
     }
 
-
     public async Task InitAfterLogin(int userId)
     {
-        // 1 유저 기본 정보
-        //await LoadUserInfo(userId);
-
-        // 2 유저 캐릭터 인벤토리
         await LoadUserCharacters(userId);
 
         // 3 로비 이동
         SceneManager.LoadScene("MainLobbyScene");
-    }
-
-    async Task LoadUserInfo(int userId)
-    {
-
     }
 
     async Task LoadUserCharacters(int userId)
@@ -73,7 +64,7 @@ public class LoginManager : MonoBehaviour
                 enhance = (int)j["enhance"]
             };
 
-            PlayerDataManager.Instance.inventory.AddOrUpdate(pc);
+            PlayerDataManager.Instance.CharacterAddOrUpdate(pc);
         }
     }
 }

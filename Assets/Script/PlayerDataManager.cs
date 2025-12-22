@@ -1,15 +1,11 @@
+using Newtonsoft.Json.Linq;
 using UnityEngine;
 
 public class PlayerDataManager : MonoBehaviour
 {
     public static PlayerDataManager Instance;
 
-    public int userId;
-    public string username;
-    public int gold;
-    public int level;
-
-    public PlayerInventory inventory = new PlayerInventory();
+    private PlayerData Data = new PlayerData();
 
     private void Awake()
     {
@@ -23,4 +19,24 @@ public class PlayerDataManager : MonoBehaviour
             Destroy(gameObject);
         }
     }
+
+    public void ApplyUserData(JToken data)
+    {
+        Data.Apply(data);
+    }
+    public void ClearData()
+    {
+        Data.Clear();
+    }
+
+    public void CharacterAddOrUpdate(PlayerCharacterData data)
+    {
+        Data.inventory.AddOrUpdate(data);
+    }
+
+    public int GetUserId() => Data.userId;
+    public string GetUsername() => Data.username;
+    public int GetLevel() => Data.level;
+    public int GetGold() => Data.gold;
+    public PlayerInventory GetPlayerInventory() => Data.inventory;
 }
