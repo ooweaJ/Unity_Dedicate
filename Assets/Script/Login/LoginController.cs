@@ -43,8 +43,10 @@ public class LoginController : MonoBehaviour
     {
         await LoadUserCharacters(userId);
 
+
         // 3 로비 이동
-        SceneManager.LoadScene("MainLobbyScene");
+        //SceneManager.LoadScene("MainLobbyScene");
+        CustomNetworkManager.Instance.StartClient(); // 미러가 onlinescene으로 이동시켜준다.
     }
 
     async Task LoadUserCharacters(int userId)

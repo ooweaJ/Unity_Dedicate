@@ -1,7 +1,8 @@
-﻿using TMPro;
+﻿using Mirror;
+using Newtonsoft.Json.Linq;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
-using Newtonsoft.Json.Linq;
 
 public class LobbyController : MonoBehaviour
 {
@@ -13,6 +14,7 @@ public class LobbyController : MonoBehaviour
     {
         playerInfoUI.OnLogoutButtonClicked += HandleLogout;
         lobbyUI.OnInventoryButtonClicked += HandleOnInventory;
+        lobbyUI.OnMatchButtonClicked += HandleOnMatch;
     }
 
     private void OnDestroy()
@@ -39,6 +41,12 @@ public class LobbyController : MonoBehaviour
     {
         // 플레이어 데이터 초기화
         PlayerDataManager.Instance.ClearData();
+
+        if (NetworkClient.isConnected)
+        {
+            NetworkManager.singleton.StopClient();
+        }
+
         // 씬 이동
         SceneManager.LoadScene("LoginScene");
     }
@@ -74,6 +82,17 @@ public class LobbyController : MonoBehaviour
         //    PlayerDataManager.Instance.inventory.AddOrUpdate(newChar);
         //}
 
+    }
+
+    void HandleOnMatch()
+    {
+        if (LobbyNetworkPlayer.Local == null)
+        {
+            Debug.LogError("Local Network Player not found");
+            return;
+        }
+
+        LobbyNetworkPlayer.Local.CmdRequestMatch();
     }
 
 }
