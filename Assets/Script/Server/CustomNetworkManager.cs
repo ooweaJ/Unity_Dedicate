@@ -8,6 +8,8 @@ public class CustomNetworkManager : NetworkManager
 
     private List<NetworkConnectionToClient> matchQueue = new();
 
+    public Dictionary<int, NetworkConnectionToClient> userConnMap = new Dictionary<int, NetworkConnectionToClient>();
+
     public override void Awake()
     {
         base.Awake();
@@ -28,8 +30,20 @@ public class CustomNetworkManager : NetworkManager
     public override void OnServerAddPlayer(NetworkConnectionToClient conn)
     {
         base.OnServerAddPlayer(conn);
-        Debug.Log("Player joined server");
+
+        Debug.Log($"[SERVER] Player joined server. connId={conn.connectionId}");
+
+        var player = conn.identity.GetComponent<LobbyNetworkPlayer>();
+        if (player != null)
+        {
+            Debug.Log($"[SERVER] Player object ready: userId={player.userId}, nickname={player.nickname}, level={player.level}");
+        }
+        else
+        {
+            Debug.LogWarning("[SERVER] Player object not found yet!");
+        }
     }
+
 
     // 클라이언트 → 서버 매칭 요청
     [Server]
