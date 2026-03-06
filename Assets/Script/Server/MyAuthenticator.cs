@@ -12,7 +12,7 @@ public class MyAuthenticator : NetworkAuthenticator
 
     public void Awake()
     {
-        // ¼­¹ö ½ÃÀÛ ½Ã ÇÑ ¹ø¸¸ µî·Ï
+        // ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
         if (Application.isBatchMode)
         {
             NetworkServer.RegisterHandler<AuthRequestMessage>(OnAuthRequestMessage);
@@ -23,15 +23,15 @@ public class MyAuthenticator : NetworkAuthenticator
     {
         Debug.Log($"[SERVER] AuthRequest received: {msg.nickname}");
         conn.authenticationData = msg;
-        ServerAccept(conn); // ÇÃ·¹ÀÌ¾î ½ºÆù Çã¿ë
+        ServerAccept(conn); // ï¿½Ã·ï¿½ï¿½Ì¾ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
     }
 
 
 
-    // Å¬¶óÀÌ¾ðÆ®¿¡¼­ È£ÃâµÊ
+    // Å¬ï¿½ï¿½ï¿½Ì¾ï¿½Æ®ï¿½ï¿½ï¿½ï¿½ È£ï¿½ï¿½ï¿½
     public override void OnClientAuthenticate()
     {
-        // ·Î±×ÀÎ Á÷ÈÄ ¿©±â¼­ ¸Þ½ÃÁö º¸³»¸é µÊ
+        // ï¿½Î±ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½â¼­ ï¿½Þ½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½
         int userId = PlayerDataManager.Instance.GetUserId();
         string nickname = PlayerDataManager.Instance.GetUsername();
         int level = PlayerDataManager.Instance.GetLevel();
@@ -43,6 +43,6 @@ public class MyAuthenticator : NetworkAuthenticator
             level = level
         };
 
-        NetworkClient.Send(msg); // ¼­¹ö·Î Àü¼Û
+        NetworkClient.Send(msg); // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½
     }
 }

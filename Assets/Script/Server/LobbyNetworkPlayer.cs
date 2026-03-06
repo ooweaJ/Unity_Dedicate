@@ -10,7 +10,7 @@ public class LobbyNetworkPlayer : NetworkBehaviour
     [SyncVar] public string nickname;
     [SyncVar] public int level;
 
-    // UI¿¡¼­ ¾²±â À§ÇÑ ÀÌº¥Æ®
+    // UIï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ ï¿½Ìºï¿½Æ®
     public static event Action<LobbyNetworkPlayer> OnPlayerReady;
 
     public override void OnStartLocalPlayer()
@@ -22,7 +22,7 @@ public class LobbyNetworkPlayer : NetworkBehaviour
 
         string myNickname = PlayerDataManager.Instance.GetUsername();
 
-        // ¼­¹ö¿¡ ³» ´Ð³×ÀÓ µî·Ï
+        // ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ ï¿½Ð³ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½
         CmdSetPlayerInfo();
     }
 

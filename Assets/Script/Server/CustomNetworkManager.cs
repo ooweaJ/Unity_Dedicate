@@ -44,8 +44,6 @@ public class CustomNetworkManager : NetworkManager
         }
     }
 
-
-    // 클라이언트 → 서버 매칭 요청
     [Server]
     public void RequestMatch(NetworkConnectionToClient conn)
     {
