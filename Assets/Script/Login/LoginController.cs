@@ -29,24 +29,18 @@ public class LoginController : MonoBehaviour
         {
             PlayerDataManager.Instance.ApplyUserData(json["user"]);
 
-            //loginUI.ShowMessage("로그인 성공! 로비로 이동 중...");
-
             await InitAfterLogin(PlayerDataManager.Instance.GetUserId());
         }
         else
         {
-            //loginUI.ShowMessage("로그인 실패!");
+
         }
     }
 
     public async Task InitAfterLogin(int userId)
     {
         await LoadUserCharacters(userId);
-
-
-        // 3 로비 이동
-        //SceneManager.LoadScene("MainLobbyScene");
-        CustomNetworkManager.Instance.StartClient(); // 미러가 onlinescene으로 이동시켜준다.
+        CustomNetworkManager.Instance.StartClient();
     }
 
     async Task LoadUserCharacters(int userId)

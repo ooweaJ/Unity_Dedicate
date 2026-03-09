@@ -10,39 +10,57 @@ public class MyAuthenticator : NetworkAuthenticator
         public int level;
     }
 
-    public void Awake()
+    public struct AuthResponseMessage : NetworkMessage
     {
-        // ���� ���� �� �� ���� ���
-        if (Application.isBatchMode)
+        public bool success;
+    }
+    public override void OnStartServer()
+    {
+        NetworkServer.RegisterHandler<AuthRequestMessage>(OnAuthRequestMessage, false);
+    }
+
+    // --- 클라이언트 측 로직 ---
+    public override void OnStartClient()
+    {
+        // 클라이언트도 서버의 응답을 기다릴 준비를 합니다.
+        NetworkClient.RegisterHandler<AuthResponseMessage>(OnAuthResponseMessage, false);
+    }
+    private void OnAuthResponseMessage(AuthResponseMessage msg)
+    {
+        if (msg.success)
         {
-            NetworkServer.RegisterHandler<AuthRequestMessage>(OnAuthRequestMessage);
+            Debug.Log("[CLIENT] Auth Success! Calling ClientAccept.");
+            // 여기서 ClientAccept를 호출해야 NetworkManager가 OnServerAddPlayer를 실행합니다.
+            ClientAccept();
         }
+    }
+    public override void OnServerAuthenticate(NetworkConnectionToClient conn)
+    {
+        Debug.Log("[SERVER] Waiting for auth message...");
     }
 
     private void OnAuthRequestMessage(NetworkConnectionToClient conn, AuthRequestMessage msg)
     {
         Debug.Log($"[SERVER] AuthRequest received: {msg.nickname}");
+
         conn.authenticationData = msg;
-        ServerAccept(conn); // �÷��̾� ���� ���
+
+        ServerAccept(conn);
+
+        conn.Send(new AuthResponseMessage { success = true });
     }
 
-
-
-    // Ŭ���̾�Ʈ���� ȣ���
     public override void OnClientAuthenticate()
     {
-        // �α��� ���� ���⼭ �޽��� ������ ��
-        int userId = PlayerDataManager.Instance.GetUserId();
-        string nickname = PlayerDataManager.Instance.GetUsername();
-        int level = PlayerDataManager.Instance.GetLevel();
-
         AuthRequestMessage msg = new AuthRequestMessage
         {
-            userId = userId,
-            nickname = nickname,
-            level = level
+            userId = PlayerDataManager.Instance.GetUserId(),
+            nickname = PlayerDataManager.Instance.GetUsername(),
+            level = PlayerDataManager.Instance.GetLevel()
         };
 
-        NetworkClient.Send(msg); // ������ ����
+        Debug.Log("[CLIENT] Sending AuthRequest");
+
+        NetworkClient.Send(msg);
     }
 }

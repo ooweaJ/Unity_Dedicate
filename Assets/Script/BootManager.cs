@@ -10,7 +10,7 @@ public class BootManager : MonoBehaviour
 
     private void Start()
     {
-        // PlayerDataManager, NetworkManager ¸ðµÎ ÀÌ¹Ì ÀÌ ¿ÀºêÁ§Æ®¿¡ ºÙ¾îÀÖ´Ù = °´Ã¼ Á¸Àç º¸ÀåµÊ
+        // PlayerDataManager, NetworkManager ï¿½ï¿½ï¿½ ï¿½Ì¹ï¿½ ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½ï¿½Æ®ï¿½ï¿½ ï¿½Ù¾ï¿½ï¿½Ö´ï¿½ = ï¿½ï¿½Ã¼ ï¿½ï¿½ï¿½ï¿½ ï¿½ï¿½ï¿½ï¿½ï¿½
 
         SceneManager.LoadScene("LoginScene");
     }

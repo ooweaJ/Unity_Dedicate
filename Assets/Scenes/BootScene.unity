@@ -164,6 +164,17 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::MasterDataManager
   characterDB: {fileID: 11400000, guid: 7d045f7df16ca9b428a5480af670c349, type: 2}
+--- !u!114 &730525515 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: -7386563089807117620, guid: 29e56c76039d8fd428186b19c7c7e9bd, type: 3}
+  m_PrefabInstance: {fileID: 991067648}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b01864c87b9511c4f9d33af4f810a6aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MyAuthenticator
 --- !u!1 &898067803 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 892505237771381930, guid: 7a42950f1f271314f8e376187e72d05e, type: 3}
@@ -194,6 +205,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: -7386563089807117620, guid: 29e56c76039d8fd428186b19c7c7e9bd, type: 3}
+      propertyPath: OnClientAuthenticated.m_PersistentCalls.m_Calls.Array.size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -7386563089807117620, guid: 29e56c76039d8fd428186b19c7c7e9bd, type: 3}
+      propertyPath: OnServerAuthenticated.m_PersistentCalls.m_Calls.Array.size
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -7386563089807117620, guid: 29e56c76039d8fd428186b19c7c7e9bd, type: 3}
+      propertyPath: OnClientAuthenticated.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: -7386563089807117620, guid: 29e56c76039d8fd428186b19c7c7e9bd, type: 3}
+      propertyPath: OnServerAuthenticated.m_PersistentCalls.m_Calls.Array.data[0].m_CallState
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 1065266646053282542, guid: 29e56c76039d8fd428186b19c7c7e9bd, type: 3}
       propertyPath: m_LocalPosition.x
       value: 1280
@@ -234,6 +261,10 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 4696425980970704610, guid: 29e56c76039d8fd428186b19c7c7e9bd, type: 3}
+      propertyPath: authenticator
+      value: 
+      objectReference: {fileID: 730525515}
     - target: {fileID: 5749545405782818182, guid: 29e56c76039d8fd428186b19c7c7e9bd, type: 3}
       propertyPath: m_Name
       value: NetworkManager

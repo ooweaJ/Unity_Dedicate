@@ -6,7 +6,7 @@ using UnityEngine;
 public static class BackendManager
 {
     private static readonly HttpClient client = new HttpClient();
-    private static string baseUrl = "http://192.168.90.94:3000";
+    private static string baseUrl = "http://15.165.47.216:3000";
 
     // POST /users/login
     public static async Task<string> Login(string username, string password)
