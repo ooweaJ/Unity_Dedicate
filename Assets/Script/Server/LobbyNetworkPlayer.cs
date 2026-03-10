@@ -4,7 +4,13 @@ using System;
 
 public class LobbyNetworkPlayer : NetworkBehaviour
 {
-    public static LobbyNetworkPlayer Local;
+    public static LobbyNetworkPlayer Local
+    {
+        get
+        {
+            return NetworkClient.localPlayer.GetComponent<LobbyNetworkPlayer>();
+        }
+    }
 
     [SyncVar] public int userId;
     [SyncVar] public string nickname;
@@ -18,12 +24,8 @@ public class LobbyNetworkPlayer : NetworkBehaviour
         base.OnStartLocalPlayer();
 
         Debug.Log("Local Network Player Ready");
-        Local = this;
 
         string myNickname = PlayerDataManager.Instance.GetUsername();
-
-        // ������ �� �г��� ���
-        CmdSetPlayerInfo();
     }
 
     [Command]
@@ -32,11 +34,18 @@ public class LobbyNetworkPlayer : NetworkBehaviour
         CustomNetworkManager.Instance.RequestMatch(connectionToClient);
     }
 
-    [Command]
     public void CmdSetPlayerInfo()
     {
         userId = PlayerDataManager.Instance.GetUserId();
         nickname = PlayerDataManager.Instance.GetUsername();
         level = PlayerDataManager.Instance.GetLevel();
+    }
+
+    [Server]
+    public void SetInfo(MyAuthenticator.AuthRequestMessage authData)
+    {
+        userId = authData.userId;
+        nickname = authData.nickname;
+        level = authData.level;
     }
 }

@@ -36,6 +36,9 @@ public class CustomNetworkManager : NetworkManager
         var player = conn.identity.GetComponent<LobbyNetworkPlayer>();
         if (player != null)
         {
+            var authData = (MyAuthenticator.AuthRequestMessage)conn.authenticationData;
+
+            player.SetInfo(authData);
             Debug.Log($"[SERVER] Player object ready: userId={player.userId}, nickname={player.nickname}, level={player.level}");
         }
         else
@@ -54,7 +57,7 @@ public class CustomNetworkManager : NetworkManager
             Debug.Log("[MATCH] already queued");
             return;
         }
-
+        
         matchQueue.Add(conn);
         Debug.Log($"[MATCH] queue count = {matchQueue.Count}");
 
