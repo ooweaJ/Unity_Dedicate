@@ -4,24 +4,32 @@ public class BattleController : MonoBehaviour
 {
     [SerializeField] private BattleUI battleUI;
 
-    private string enemyName;
-
     void OnEnable()
     {
-        LobbyNetworkPlayer.OnPlayerReady += HandlePlayer;
+        BattleNetworkPlayer.OnPlayerJoined += HandlePlayerJoined;
     }
 
     void OnDisable()
     {
-        LobbyNetworkPlayer.OnPlayerReady -= HandlePlayer;
+        BattleNetworkPlayer.OnPlayerJoined -= HandlePlayerJoined;
     }
 
-    void HandlePlayer(LobbyNetworkPlayer player)
+    void HandlePlayerJoined(BattleNetworkPlayer player)
     {
-        if (!player.isLocalPlayer)
+        if (player.isLocalPlayer)
         {
-            enemyName = player.nickname;
-            battleUI.UpdateUI(enemyName);
+            battleUI.SetMyInfo(player.nickname);
+
+            // 나보다 먼저 들어온 상대방 체크
+            foreach (var p in BattleNetworkPlayer.players)
+            {
+                if (!p.isLocalPlayer)
+                    battleUI.SetEnemyInfo(p.nickname);
+            }
+        }
+        else
+        {
+            battleUI.SetEnemyInfo(player.nickname);
         }
     }
 }

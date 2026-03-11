@@ -6,12 +6,15 @@ using UnityEngine.SceneManagement;
 
 public class LobbyController : MonoBehaviour
 {
+    public static LobbyController Instance;
+
     [SerializeField] private LobbyUI lobbyUI;
     [SerializeField] private PlayerInfoUI playerInfoUI;
     [SerializeField] private InventoryUI inventoryUI;
 
     private void Awake()
     {
+        Instance = this;
         playerInfoUI.OnLogoutButtonClicked += HandleLogout;
         lobbyUI.OnInventoryButtonClicked += HandleOnInventory;
         lobbyUI.OnMatchButtonClicked += HandleOnMatch;
@@ -62,26 +65,6 @@ public class LobbyController : MonoBehaviour
         Debug.Log("Gacha Response Raw: " + res);
 
         JObject json = JObject.Parse(res);
-
-        //if (json["success"].ToObject<bool>())
-        //{
-        //    int characterId = json["characterId"].ToObject<int>();
-
-        //    // 골드 UI 업데이트
-        //    PlayerDataManager.Instance.gold -= 100;
-        //    goldText.text = PlayerDataManager.Instance.gold.ToString();
-
-        //    var newChar = new PlayerCharacterData
-        //    {
-        //        characterId = characterId,
-        //        level = 1,
-        //        exp = 0,
-        //        enhance = 0
-        //    };
-
-        //    PlayerDataManager.Instance.inventory.AddOrUpdate(newChar);
-        //}
-
     }
 
     void HandleOnMatch()
@@ -94,5 +77,4 @@ public class LobbyController : MonoBehaviour
 
         LobbyNetworkPlayer.Local.CmdRequestMatch();
     }
-
 }

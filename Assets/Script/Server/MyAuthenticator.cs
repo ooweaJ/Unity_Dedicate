@@ -32,6 +32,11 @@ public class MyAuthenticator : NetworkAuthenticator
             Debug.Log("[CLIENT] Auth Success! Calling ClientAccept.");
             // 여기서 ClientAccept를 호출해야 NetworkManager가 OnServerAddPlayer를 실행합니다.
             ClientAccept();
+
+            if (!NetworkClient.ready)
+                NetworkClient.Ready();
+
+            NetworkClient.AddPlayer();
         }
     }
     public override void OnServerAuthenticate(NetworkConnectionToClient conn)

@@ -3,22 +3,16 @@ using UnityEngine;
 
 public class BattleUI : MonoBehaviour
 {
-    public TextMeshProUGUI enemyusernameText;
+    [SerializeField] private TextMeshProUGUI myNicknameText;
+    [SerializeField] private TextMeshProUGUI enemyNicknameText;
 
-    public void UpdateUI(string username)
+    public void SetMyInfo(string nickname)
     {
-        enemyusernameText.text = username;
+        myNicknameText.text = "자신 = " + nickname;
     }
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public void SetEnemyInfo(string nickname)
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        enemyNicknameText.text = "상대 = " + nickname;
     }
 }
