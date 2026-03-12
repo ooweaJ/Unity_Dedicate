@@ -50,4 +50,11 @@ public class BattleNetworkPlayer : NetworkBehaviour
         nickname = authData.nickname;
         level = authData.level;
     }
+
+    [TargetRpc]
+    public void TargetReturnToLobby(NetworkConnectionToClient conn)
+    {
+        Debug.Log("[CLIENT] 로비 복귀 명령 받음");
+        CustomNetworkManager.Instance.ReturnToLobby();
+    }
 }

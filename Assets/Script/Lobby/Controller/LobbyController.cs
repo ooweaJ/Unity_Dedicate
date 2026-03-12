@@ -40,7 +40,7 @@ public class LobbyController : MonoBehaviour
             );
     }
 
-    private void HandleLogout()
+    public void HandleLogout()
     {
         // 플레이어 데이터 초기화
         PlayerDataManager.Instance.ClearData();

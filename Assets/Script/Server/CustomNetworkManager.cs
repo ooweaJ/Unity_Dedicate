@@ -1,6 +1,9 @@
 using Mirror;
-using UnityEngine;
+using System.Collections;
 using System.Collections.Generic;
+using System.Threading.Tasks;
+using UnityEngine;
+using Newtonsoft.Json.Linq;
 
 public class CustomNetworkManager : NetworkManager
 {
@@ -12,8 +15,6 @@ public class CustomNetworkManager : NetworkManager
     public GameObject lobbyPlayerPrefab;
     public GameObject battlePlayerPrefab;
 
-    private Queue<ushort> availablePorts = new Queue<ushort>(new ushort[] { 7778, 7779, 7780 });
-    private HashSet<ushort> inUsePorts = new HashSet<ushort>();
     private List<LobbyNetworkPlayer> matchQueue = new();
 
     public override void Awake()
@@ -46,7 +47,6 @@ public class CustomNetworkManager : NetworkManager
                     Debug.Log($"[SERVER] Port set to {port}");
                 }
             }
-
             if (args[i] == "-serverType" && i + 1 < args.Length)
             {
                 serverType = args[i + 1];
@@ -89,6 +89,12 @@ public class CustomNetworkManager : NetworkManager
             {
                 battlePlayer.SetInfo(authData);
                 Debug.Log($"[BATTLE] Player joined: {authData.nickname}");
+
+                if (numPlayers >= 2)
+                {
+                    Debug.Log("[BATTLE] 2명 모두 접속! 타이머 시작");
+                    StartCoroutine(BattleTimer());
+                }
             }
         }
     }
@@ -106,21 +112,8 @@ public class CustomNetworkManager : NetworkManager
     }
 
     [Server]
-    void StartMatch()
+    async void StartMatch()
     {
-        // 사용 가능한 포트 가져오기
-        if (availablePorts.Count == 0)
-        {
-            Debug.LogWarning("[MATCH] No available battle servers!");
-            // TODO: 클라이언트에게 대기 알림
-            return;
-        }
-
-        ushort port = availablePorts.Dequeue();
-        inUsePorts.Add(port);
-        Debug.Log($"[MATCH] Match found! Assigning port {port}");
-
-        // 매칭된 2명 추출
         var matched = new List<LobbyNetworkPlayer>
         {
             matchQueue[0],
@@ -128,38 +121,36 @@ public class CustomNetworkManager : NetworkManager
         };
         matchQueue.RemoveRange(0, 2);
 
-        // 2명에게만 배틀서버로 이동 명령
-        foreach (var player in matched)
+        string res = await BackendManager.AcquirePort();
+        JObject json = JObject.Parse(res);
+
+        if (json["success"].ToObject<bool>())
         {
-            player.TargetMoveToServer(player.connectionToClient, "127.0.0.1", port);
+            int port = json["port"].ToObject<int>();
+            Debug.Log($"[MATCH] Port acquired: {port}");
+            foreach (var player in matched)
+                player.TargetMoveToServer(player.connectionToClient, "127.0.0.1", (ushort)port);
+        }
+        else
+        {
+            Debug.LogWarning("[MATCH] No available servers!");
+            // TODO: 클라이언트에게 대기 알림
         }
     }
 
-    [Server]
-    public void ReleasePort(ushort port)
-    {
-        if (inUsePorts.Remove(port))
-        {
-            availablePorts.Enqueue(port);
-            Debug.Log($"[SERVER] Port {port} released");
-        }
-    }
     public override void OnClientDisconnect()
     {
         if (isMovingToBattle)
         {
-            Debug.Log($"두번체크");
             isMovingToBattle = false;
-            return; // 배틀서버 이동중이면 기본동작 무시
-            
+            return;
         }
-        base.OnClientDisconnect(); // 일반 disconnect면 오프라인씬 이동
+        LobbyController.Instance.HandleLogout();
     }
 
     public override void OnStopClient()
     {
         if (isMovingToBattle) return;
-
         base.OnStopClient();
     }
 
@@ -169,7 +160,7 @@ public class CustomNetworkManager : NetworkManager
         StartCoroutine(ConnectWithDelay(ip, port, 2f));
     }
 
-    private System.Collections.IEnumerator ConnectWithDelay(string ip, ushort port, float delay)
+    private IEnumerator ConnectWithDelay(string ip, ushort port, float delay)
     {
         StopClient();
         Debug.Log($"[CLIENT] Waiting {delay}s for battle server...");
@@ -180,5 +171,40 @@ public class CustomNetworkManager : NetworkManager
         networkAddress = ip;
         StartClient();
         Debug.Log($"[CLIENT] Connecting to {ip}:{port}");
+    }
+
+    [Server]
+    public IEnumerator BattleTimer()
+    {
+        Debug.Log("[BATTLE] 10초 후 종료");
+        yield return new WaitForSeconds(10f);
+        EndBattle();
+    }
+
+    [Server]
+    void EndBattle()
+    {
+        foreach (var conn in NetworkServer.connections.Values)
+        {
+            var player = conn.identity?.GetComponent<BattleNetworkPlayer>();
+            if (player != null)
+                player.TargetReturnToLobby(conn);
+        }
+        ShutdownBattleServer();
+    }
+
+    async void ShutdownBattleServer()
+    {
+        await Task.Delay(3000);
+        int port = GetComponent<kcp2k.KcpTransport>().port;
+        await BackendManager.ReleasePort(port);
+        Debug.Log($"[BATTLE] Port {port} released, waiting for next match");
+    }
+
+    public void ReturnToLobby()
+    {
+        Debug.Log("[CLIENT] 로비 복귀 시작");
+        isMovingToBattle = true;
+        StartCoroutine(ConnectWithDelay("127.0.0.1", 7777, 1f));
     }
 }

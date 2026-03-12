@@ -6,7 +6,7 @@ using UnityEngine;
 public static class BackendManager
 {
     private static readonly HttpClient client = new HttpClient();
-    private static string baseUrl = "http://15.165.47.216:3000";
+    private static string baseUrl = "http://3.36.43.148:3000";
 
     // POST /users/login
     public static async Task<string> Login(string username, string password)
@@ -49,6 +49,22 @@ public static class BackendManager
     public static async Task<string> GetUserCharacters(int userId)
     {
         var res = await client.GetAsync(baseUrl + $"/users/{userId}/characters");
+        return await res.Content.ReadAsStringAsync();
+    }
+
+    // POST /match/acquire
+    public static async Task<string> AcquirePort()
+    {
+        HttpResponseMessage res = await client.PostAsync(baseUrl + "/match/acquire", null);
+        return await res.Content.ReadAsStringAsync();
+    }
+
+    // POST /match/release
+    public static async Task<string> ReleasePort(int port)
+    {
+        var json = $"{{\"port\":{port}}}";
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        HttpResponseMessage res = await client.PostAsync(baseUrl + "/match/release", content);
         return await res.Content.ReadAsStringAsync();
     }
 }
