@@ -10,9 +10,18 @@ public class LoadingSceneManager : MonoBehaviour
 
     [SerializeField] private Image progressBarFill;
     [SerializeField] private TextMeshProUGUI percentText;
+    [SerializeField] private TextMeshProUGUI tipText;
+
+    private string[] tips = {
+        "던전에서 스킬 타이밍이 승패를 결정합니다!",
+        "상대방의 패턴을 파악하세요!",
+        "캐릭터마다 고유한 스킬이 있습니다!",
+        "매칭 후 빠르게 포지션을 잡으세요!"
+    };
 
     void Start()
     {
+        tipText.text = tips[Random.Range(0, tips.Length)];
         StartCoroutine(LoadScene());
     }
 
@@ -28,26 +37,21 @@ public class LoadingSceneManager : MonoBehaviour
         while (!op.isDone)
         {
             yield return null;
+            timer += Time.deltaTime;
 
-            // 90%까지는 실제 진행도
             if (op.progress < 0.9f)
             {
-                timer += Time.deltaTime;
                 progressBarFill.fillAmount = Mathf.Lerp(progressBarFill.fillAmount, op.progress, timer);
-                percentText.text = $"{(int)(progressBarFill.fillAmount * 100)}%";
             }
-            // 90% 이후엔 100%까지 부드럽게
             else
             {
-                timer += Time.deltaTime;
                 progressBarFill.fillAmount = Mathf.Lerp(progressBarFill.fillAmount, 1f, timer);
-                percentText.text = $"{(int)(progressBarFill.fillAmount * 100)}%";
 
                 if (progressBarFill.fillAmount >= 0.99f)
-                {
                     op.allowSceneActivation = true;
-                }
             }
+
+            percentText.text = $"{(int)(progressBarFill.fillAmount * 100)}%";
         }
     }
 }
