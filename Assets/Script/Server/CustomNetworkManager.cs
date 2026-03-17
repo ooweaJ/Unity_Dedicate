@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
 using Newtonsoft.Json.Linq;
+using System;
 
 public class CustomNetworkManager : NetworkManager
 {
@@ -11,17 +12,21 @@ public class CustomNetworkManager : NetworkManager
     public string serverType = "lobby";
     public bool isMovingToBattle = false;
 
+    public event Action OnClientConnected;
+
     [Header("Player Prefabs")]
     public GameObject lobbyPlayerPrefab;
     public GameObject battlePlayerPrefab;
 
     private List<LobbyNetworkPlayer> matchQueue = new();
+    public bool blockSceneActivation = false;
 
     public override void Awake()
     {
         base.Awake();
         Instance = this;
     }
+
 
     public override void Start()
     {
@@ -157,20 +162,13 @@ public class CustomNetworkManager : NetworkManager
     public void StartBattleConnect(string ip, ushort port)
     {
         isMovingToBattle = true;
-        StartCoroutine(ConnectWithDelay(ip, port, 2f));
-    }
-
-    private IEnumerator ConnectWithDelay(string ip, ushort port, float delay)
-    {
         StopClient();
-        Debug.Log($"[CLIENT] Waiting {delay}s for battle server...");
-        yield return new WaitForSeconds(delay);
-
-        var transport = GetComponent<kcp2k.KcpTransport>();
-        transport.port = port;
-        networkAddress = ip;
-        StartClient();
-        Debug.Log($"[CLIENT] Connecting to {ip}:{port}");
+        SceneFlowManager.Instance.Load(new LoadRequest
+        {
+            sceneName = "BattleScene",
+            serverAddress = "127.0.0.1",
+            port = 7778
+        });
     }
 
     [Server]
@@ -205,6 +203,19 @@ public class CustomNetworkManager : NetworkManager
     {
         Debug.Log("[CLIENT] 로비 복귀 시작");
         isMovingToBattle = true;
-        StartCoroutine(ConnectWithDelay("127.0.0.1", 7777, 1f));
+        StopClient();
+        SceneFlowManager.Instance.Load(new LoadRequest
+        {
+            sceneName = "MainLobbyScene",
+            serverAddress = "127.0.0.1",
+            port = 7777
+        });
+    }
+
+    public override void OnClientConnect()
+    {
+        base.OnClientConnect();
+
+        OnClientConnected?.Invoke();
     }
 }

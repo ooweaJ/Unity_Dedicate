@@ -41,6 +41,10 @@ public class LoginController : MonoBehaviour
     {
         await LoadUserCharacters(userId);
         CustomNetworkManager.Instance.StartClient();
+        SceneFlowManager.Instance.Load(new LoadRequest
+        {
+            sceneName = "MainLobbyScene"
+        });
     }
 
     async Task LoadUserCharacters(int userId)
