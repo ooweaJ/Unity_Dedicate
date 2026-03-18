@@ -75,6 +75,9 @@ public class CustomNetworkManager : NetworkManager
             : lobbyPlayerPrefab;
 
         GameObject player = Instantiate(prefab);
+
+        if (SpawnManager.Instance != null)
+            player.transform.position = SpawnManager.Instance.GetNextSpawnPosition();
         NetworkServer.AddPlayerForConnection(conn, player);
 
         var authData = (MyAuthenticator.AuthRequestMessage)conn.authenticationData;
@@ -174,8 +177,8 @@ public class CustomNetworkManager : NetworkManager
     [Server]
     public IEnumerator BattleTimer()
     {
-        Debug.Log("[BATTLE] 10초 후 종료");
-        yield return new WaitForSeconds(10f);
+        Debug.Log("[BATTLE] 60초 후 종료");
+        yield return new WaitForSeconds(60f);
         EndBattle();
     }
 

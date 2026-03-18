@@ -228,6 +228,10 @@ PrefabInstance:
       propertyPath: offlineScene
       value: 
       objectReference: {fileID: 0}
+    - target: {fileID: 4696425980970704610, guid: 29e56c76039d8fd428186b19c7c7e9bd, type: 3}
+      propertyPath: battlePlayerPrefab
+      value: 
+      objectReference: {fileID: 6988632536861101562, guid: 93b829961db78824aab2037475ec3df9, type: 3}
     - target: {fileID: 5749545405782818182, guid: 29e56c76039d8fd428186b19c7c7e9bd, type: 3}
       propertyPath: m_Name
       value: NetworkManager

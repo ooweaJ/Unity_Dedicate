@@ -65,7 +65,7 @@ MonoBehaviour:
   playerSpawnMethod: 0
   spawnPrefabs:
   - {fileID: 7999482444916302808, guid: a519d4ae8c17ec84888daa6119bc6ca7, type: 3}
-  - {fileID: 6673441386096090869, guid: 107d8381ea823614f9b52bd6b58ddcce, type: 3}
+  - {fileID: 6988632536861101562, guid: 93b829961db78824aab2037475ec3df9, type: 3}
   exceptionsDisconnect: 1
   snapshotSettings:
     bufferTimeMultiplier: 2
@@ -84,7 +84,8 @@ MonoBehaviour:
   serverType: lobby
   isMovingToBattle: 0
   lobbyPlayerPrefab: {fileID: 7999482444916302808, guid: a519d4ae8c17ec84888daa6119bc6ca7, type: 3}
-  battlePlayerPrefab: {fileID: 6673441386096090869, guid: 107d8381ea823614f9b52bd6b58ddcce, type: 3}
+  battlePlayerPrefab: {fileID: 6988632536861101562, guid: 93b829961db78824aab2037475ec3df9, type: 3}
+  blockSceneActivation: 0
 --- !u!114 &5700574643968675312
 MonoBehaviour:
   m_ObjectHideFlags: 0
