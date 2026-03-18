@@ -1,10 +1,11 @@
 using Mirror;
+using Newtonsoft.Json.Linq;
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
-using Newtonsoft.Json.Linq;
-using System;
+using UnityEngine.SceneManagement;
 
 public class CustomNetworkManager : NetworkManager
 {
@@ -150,7 +151,6 @@ public class CustomNetworkManager : NetworkManager
             isMovingToBattle = false;
             return;
         }
-        LobbyController.Instance.HandleLogout();
     }
 
     public override void OnStopClient()

@@ -29,89 +29,66 @@ public class LoadingSceneManager : MonoBehaviour
 
         if (!string.IsNullOrEmpty(req.serverAddress))
             StartCoroutine(LoadWithServer(req));
-        else
-            StartCoroutine(LoadScene(req.sceneName));
     }
 
-    IEnumerator LoadScene(string sceneName)
+    IEnumerator LoadWithServer(LoadRequest req)
     {
         yield return null;
-
-        AsyncOperation op = SceneManager.LoadSceneAsync(sceneName);
-        op.allowSceneActivation = false;
-
+        float minDuration = 1.0f;
+        float startFill = 0.0f;
+        // 0 → 30% 1초 동안 (최소 로딩 연출)
         float timer = 0f;
-
-        while (!op.isDone)
+        while (timer < 1f)
         {
             yield return null;
             timer += Time.deltaTime;
-
-            float target = op.progress < 0.9f ? op.progress : 1f;
-            loadingUI.ProgressBarFill.fillAmount = Mathf.Lerp(loadingUI.ProgressBarFill.fillAmount, target, timer);
+            loadingUI.ProgressBarFill.fillAmount = Mathf.Lerp(startFill, 0.3f, timer);
             loadingUI.PercentText.text = $"{(int)(loadingUI.ProgressBarFill.fillAmount * 100)}%";
-
-            if (loadingUI.ProgressBarFill.fillAmount >= 0.99f)
-                op.allowSceneActivation = true;
         }
-    }
-    IEnumerator LoadWithServer(LoadRequest req)
-    {
-        // -------------------------
-        // 1. 0 ~ 50% (연출)
-        // -------------------------
-        while (loadingUI.ProgressBarFill.fillAmount < 0.5f)
+
+        // 30 → 80% 씬 로드와 함께
+        AsyncOperation op = SceneManager.LoadSceneAsync(req.sceneName);
+        op.allowSceneActivation = false;
+
+        timer = 0f;
+        startFill = 0.3f;
+        while (op.progress < 0.9f || timer < minDuration )
         {
             yield return null;
-            loadingUI.ProgressBarFill.fillAmount =
-                Mathf.MoveTowards(loadingUI.ProgressBarFill.fillAmount, 0.5f, Time.deltaTime * 0.3f);
-            loadingUI.PercentText.text =
-                $"{(int)(loadingUI.ProgressBarFill.fillAmount * 100)}%";
+            timer += Time.deltaTime;
+            float progress = Mathf.InverseLerp(0f, 0.9f, op.progress);
+            loadingUI.ProgressBarFill.fillAmount = Mathf.Lerp(startFill, 0.6f, progress);
+            loadingUI.PercentText.text = $"{(int)(loadingUI.ProgressBarFill.fillAmount * 100)}%";
         }
-        // -------------------------
-        // 2. 서버 연결
-        // -------------------------
-        bool isConnected = false;
-        CustomNetworkManager.Instance.OnClientConnected += () =>
-        {
-            isConnected = true;
-        };
+
+        // 서버 연결
         var transport = CustomNetworkManager.Instance.GetComponent<kcp2k.KcpTransport>();
         transport.port = (ushort)req.port;
         CustomNetworkManager.Instance.networkAddress = req.serverAddress;
         CustomNetworkManager.Instance.StartClient();
-        // 50%에서 대기
-        while (!isConnected)
-            yield return null;
-        // -------------------------
-        // 3. 씬 로딩 시작
-        // -------------------------
-        AsyncOperation op = SceneManager.LoadSceneAsync(req.sceneName);
-        op.allowSceneActivation = false;
-        // -------------------------
-        // 4. 50 ~ 90% (진짜 로딩)
-        // -------------------------
-        while (op.progress < 0.9f)
+
+        startFill = 0.6f;
+        timer = 0f;
+        while (!Mirror.NetworkClient.isConnected || timer < minDuration)
         {
             yield return null;
-            float target = 0.5f + op.progress * 0.4f;
-            loadingUI.ProgressBarFill.fillAmount =
-                Mathf.MoveTowards(loadingUI.ProgressBarFill.fillAmount, target, Time.deltaTime);
-            loadingUI.PercentText.text =
-                $"{(int)(loadingUI.ProgressBarFill.fillAmount * 100)}%";
+            timer += Time.deltaTime;
+            loadingUI.ProgressBarFill.fillAmount = Mathf.Lerp(startFill, 0.9f, timer);
+            loadingUI.PercentText.text = $"{(int)(loadingUI.ProgressBarFill.fillAmount * 100)}%";
         }
-        // -------------------------
-        // 5. 90 ~ 100%
-        // -------------------------
-        while (loadingUI.ProgressBarFill.fillAmount < 1f)
+
+        timer = 0f;
+        while (timer < 1.0f)
         {
             yield return null;
-            loadingUI.ProgressBarFill.fillAmount =
-                Mathf.MoveTowards(loadingUI.ProgressBarFill.fillAmount, 1f, Time.deltaTime * 0.7f);
-            loadingUI.PercentText.text =
-                $"{(int)(loadingUI.ProgressBarFill.fillAmount * 100)}%";
+            timer += Time.deltaTime;
+            loadingUI.ProgressBarFill.fillAmount = Mathf.Lerp(0.9f, 1.0f, timer);
+            loadingUI.PercentText.text = $"{(int)(loadingUI.ProgressBarFill.fillAmount * 100)}%";
         }
-        yield return new WaitForSeconds(0.3f);
+
+        NetworkClient.Ready();
+        NetworkClient.AddPlayer();
         op.allowSceneActivation = true;
+        yield return op;
     }
 }

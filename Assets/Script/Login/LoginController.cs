@@ -40,10 +40,11 @@ public class LoginController : MonoBehaviour
     public async Task InitAfterLogin(int userId)
     {
         await LoadUserCharacters(userId);
-        CustomNetworkManager.Instance.StartClient();
         SceneFlowManager.Instance.Load(new LoadRequest
         {
-            sceneName = "MainLobbyScene"
+            sceneName = "MainLobbyScene",
+            serverAddress = "127.0.0.1",
+            port = 7777
         });
     }
 

@@ -18,6 +18,17 @@ public class MyAuthenticator : NetworkAuthenticator
     {
         NetworkServer.RegisterHandler<AuthRequestMessage>(OnAuthRequestMessage, false);
     }
+    private void OnAuthRequestMessage(NetworkConnectionToClient conn, AuthRequestMessage msg)
+    {
+        Debug.Log($"[SERVER] AuthRequest received: {msg.nickname}");
+
+        conn.authenticationData = msg;
+
+        ServerAccept(conn);
+
+        conn.Send(new AuthResponseMessage { success = true });
+    }
+
 
     // --- 클라이언트 측 로직 ---
     public override void OnStartClient()
@@ -30,30 +41,15 @@ public class MyAuthenticator : NetworkAuthenticator
         if (msg.success)
         {
             Debug.Log("[CLIENT] Auth Success! Calling ClientAccept.");
-            // 여기서 ClientAccept를 호출해야 NetworkManager가 OnServerAddPlayer를 실행합니다.
             ClientAccept();
-
-            if (!NetworkClient.ready)
-                NetworkClient.Ready();
-
-            NetworkClient.AddPlayer();
         }
     }
+
     public override void OnServerAuthenticate(NetworkConnectionToClient conn)
     {
         Debug.Log("[SERVER] Waiting for auth message...");
     }
 
-    private void OnAuthRequestMessage(NetworkConnectionToClient conn, AuthRequestMessage msg)
-    {
-        Debug.Log($"[SERVER] AuthRequest received: {msg.nickname}");
-
-        conn.authenticationData = msg;
-
-        ServerAccept(conn);
-
-        conn.Send(new AuthResponseMessage { success = true });
-    }
 
     public override void OnClientAuthenticate()
     {
