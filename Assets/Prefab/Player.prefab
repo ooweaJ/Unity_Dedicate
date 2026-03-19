@@ -15,6 +15,9 @@ GameObject:
   - component: {fileID: 3752145964401798687}
   - component: {fileID: -2042424806070895686}
   - component: {fileID: 7273594528658541974}
+  - component: {fileID: -3607457319390031283}
+  - component: {fileID: -9053835182726575813}
+  - component: {fileID: 3391796000827028956}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -105,8 +108,14 @@ MonoBehaviour:
   syncInterval: 0
   moveSpeed: 5
   rotateSpeed: 720
-  animator: {fileID: 553251352257387548}
+  jumpForce: 6
+  gravity: -20
   localMode: 0
+  groundCheck: {fileID: 3661469894731330457}
+  groundCheckRadius: 0.2
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 1
 --- !u!114 &3752145964401798687
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -176,6 +185,64 @@ MonoBehaviour:
   rotationSensitivity: 0.01
   positionPrecision: 0.01
   scalePrecision: 0.01
+--- !u!114 &-3607457319390031283
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6988632536861101562}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9881130c609c8a944b6d22bbf22003c0, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerAnimationController
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+--- !u!114 &-9053835182726575813
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6988632536861101562}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 22ff98cbc08232440a404d346c3ff10b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerCombat
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  attackDamage: 20
+  attackRange: 2.5
+  attackCooldown: 0.8
+  skillDamage: 60
+  skillRange: 5
+  skillCooldown: 6
+  attackFxPrefab: {fileID: 0}
+  skillFxPrefab: {fileID: 0}
+  enemyLayer:
+    serializedVersion: 2
+    m_Bits: 0
+--- !u!114 &3391796000827028956
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6988632536861101562}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4e9e4b8ccd247e47a8b9aea0236cc6f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerStats
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  maxHp: 100
+  hpBarUI: {fileID: 0}
 --- !u!1001 &553251352250067324
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -346,10 +413,5 @@ PrefabInstance:
 --- !u!4 &553251352249676474 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 400326, guid: 8f0565f23a2b58541a475bd3c1393052, type: 3}
-  m_PrefabInstance: {fileID: 553251352250067324}
-  m_PrefabAsset: {fileID: 0}
---- !u!95 &553251352257387548 stripped
-Animator:
-  m_CorrespondingSourceObject: {fileID: 9500000, guid: 8f0565f23a2b58541a475bd3c1393052, type: 3}
   m_PrefabInstance: {fileID: 553251352250067324}
   m_PrefabAsset: {fileID: 0}
