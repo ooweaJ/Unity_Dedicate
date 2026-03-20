@@ -1,35 +1,91 @@
 using Mirror;
 using UnityEngine;
-using UnityEngine.UI;
 
-public class PlayerStats : NetworkBehaviour
+/// <summary>
+/// HP 관리 + IDamageable 구현
+/// maxHp는 CharacterStats.FinalMaxHp 참조 — 강화 시 자동 반영
+/// </summary>
+public class PlayerStats : NetworkBehaviour, IDamageable
 {
-    [SerializeField] private float maxHp = 100f;
-    [SerializeField] private Slider hpBarUI;
-
     [SyncVar(hook = nameof(OnHpChanged))]
     private float currentHp;
 
-    public override void OnStartServer() => currentHp = maxHp;
+    private CharacterStats charStats;
+    private PlayerHPBar    hpBar;
 
-    [Server]
-    public void TakeDamage(float damage)
+    // IDamageable
+    public bool IsDead => currentHp <= 0f;
+
+    private void Awake()
     {
-        if (currentHp <= 0f) return;
-        currentHp = Mathf.Max(0f, currentHp - damage);
-        if (currentHp <= 0f) RpcOnDeath();
+        charStats = GetComponent<CharacterStats>();
+        hpBar     = GetComponentInChildren<PlayerHPBar>();
     }
 
+    public override void OnStartServer()
+    {
+        // 서버 시작 시 CharacterStats 기반으로 초기 HP 설정
+        currentHp = charStats != null ? charStats.FinalMaxHp : 100f;
+
+        // 강화 시 MaxHP가 올라가면 현재 HP도 비율 유지
+        if (charStats != null)
+            charStats.OnUpgraded += OnCharacterUpgraded;
+    }
+
+    public override void OnStopServer()
+    {
+        if (charStats != null)
+            charStats.OnUpgraded -= OnCharacterUpgraded;
+    }
+
+    // ─── IDamageable 구현 ────────────────────────────────────────────────
+    [Server]
+    public void TakeDamage(float damage, GameObject attacker)
+    {
+        if (IsDead) return;
+
+        // 방어력 적용 (CharacterStats.FinalDefense)
+        float defense      = charStats != null ? charStats.FinalDefense : 0f;
+        float actualDamage = Mathf.Max(1f, damage - defense);
+
+        currentHp = Mathf.Max(0f, currentHp - actualDamage);
+
+        Debug.Log($"[STATS] {gameObject.name} 피격 | " +
+                  $"입력={damage:F1} 방어={defense:F1} 실데미지={actualDamage:F1} " +
+                  $"HP={currentHp:F1}/{GetMaxHp():F1}");
+
+        if (IsDead)
+            RpcOnDeath();
+    }
+
+    // ─── 강화 시 HP 비율 유지 ─────────────────────────────────────────────
+    [Server]
+    private void OnCharacterUpgraded(int _)
+    {
+        float ratio   = currentHp / GetMaxHp();   // 강화 전 HP 비율 저장
+        currentHp     = GetMaxHp() * ratio;        // 새 MaxHp에 비율 적용
+    }
+
+    private float GetMaxHp() =>
+        charStats != null ? charStats.FinalMaxHp : 100f;
+
+    // ─── SyncVar Hook : HP바 UI 갱신 ────────────────────────────────────
     private void OnHpChanged(float _, float newHp)
     {
-        if (hpBarUI != null)
-            hpBarUI.value = newHp / maxHp;
+        hpBar?.UpdateHP(newHp, GetMaxHp());
+    }
+
+    // ─── 부활 / 리스폰 (서버 전용) ───────────────────────────────────────
+    [Server]
+    public void Respawn()
+    {
+        currentHp = GetMaxHp();
     }
 
     [ClientRpc]
     private void RpcOnDeath()
     {
-        Debug.Log($"{gameObject.name} 사망");
-        // 사망 처리
+        Debug.Log($"[STATS] {gameObject.name} 사망");
+        // 사망 연출, UI 처리 등 추가
     }
 }

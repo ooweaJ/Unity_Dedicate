@@ -72,8 +72,6 @@ public class PlayerAnimationController : NetworkBehaviour
         animator.SetBool(ParamJump, jump);
         animator.SetBool(ParamRest, rest);
 
-        Debug.Log($"Jump 상태: {jump}");
-
         // 서버 연결됐을 때만 Command 전송
         if (isLocalPlayer)
             CmdSetMovementParams(speed, direction, jumpHeight, gravityControl, jump, rest);

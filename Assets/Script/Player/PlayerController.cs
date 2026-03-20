@@ -110,7 +110,7 @@ public class PlayerController : NetworkBehaviour
     // ─── FixedUpdate : 물리 처리 (언리얼 TickComponent 물리 파트) ────────
     private void FixedUpdate()
     {
-        if (!IsControllable()) return;
+        if (!isLocalPlayer) return;
         Move();
         SyncAnimationParams();
     }
