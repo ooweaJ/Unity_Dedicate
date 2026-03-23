@@ -7,12 +7,14 @@ public class PlayerDataManager : MonoBehaviour
 
     private PlayerData Data = new PlayerData();
 
+    // 로비에서 선택한 캐릭터 — 배틀 서버 Auth 시 전달
+    private CharacterType selectedCharacter = CharacterType.Swordsman;
+
     private void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
-            //DontDestroyOnLoad(gameObject);
         }
         else
         {
@@ -24,6 +26,7 @@ public class PlayerDataManager : MonoBehaviour
     {
         Data.Apply(data);
     }
+
     public void ClearData()
     {
         Data.Clear();
@@ -34,9 +37,19 @@ public class PlayerDataManager : MonoBehaviour
         Data.inventory.AddOrUpdate(data);
     }
 
-    public int GetUserId() => Data.userId;
-    public string GetUsername() => Data.username;
-    public int GetLevel() => Data.level;
-    public int GetGold() => Data.gold;
+    // ─── 캐릭터 선택 ──────────────────────────────────────────────────
+    public void SelectCharacter(CharacterType type)
+    {
+        selectedCharacter = type;
+        Debug.Log($"[PLAYER DATA] 캐릭터 선택: {type}");
+    }
+
+    public CharacterType GetSelectedCharacter() => selectedCharacter;
+
+    // ─── 기본 정보 ────────────────────────────────────────────────────
+    public int    GetUserId()    => Data.userId;
+    public string GetUsername()  => Data.username;
+    public int    GetLevel()     => Data.level;
+    public int    GetGold()      => Data.gold;
     public PlayerInventory GetPlayerInventory() => Data.inventory;
 }

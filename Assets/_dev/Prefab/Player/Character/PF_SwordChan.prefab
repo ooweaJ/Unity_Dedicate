@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 7523340991892757459}
-  - component: {fileID: 3859228008854069208}
+  - component: {fileID: 6241273295975036698}
   m_Layer: 0
   m_Name: PF_SwordChan
   m_TagString: Untagged
@@ -33,7 +33,7 @@ Transform:
   - {fileID: 3431046883305373164}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &3859228008854069208
+--- !u!114 &6241273295975036698
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -42,14 +42,10 @@ MonoBehaviour:
   m_GameObject: {fileID: 3491019777765594031}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 5aade13b18902d14a88c2eb6cf51c19d, type: 3}
+  m_Script: {fileID: 11500000, guid: 14448bf7245fc15498cc6712a48bf095, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::CharacterInitializer
-  syncDirection: 0
-  syncMode: 0
-  syncInterval: 0
-  characterData: {fileID: 11400000, guid: ffca518b63651b9409d52fd4ddf0a42e, type: 2}
-  weaponRoot: {fileID: 0}
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterDefinition
+  data: {fileID: 11400000, guid: ffca518b63651b9409d52fd4ddf0a42e, type: 2}
 --- !u!1001 &3561738423833980483
 PrefabInstance:
   m_ObjectHideFlags: 0

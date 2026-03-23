@@ -11,13 +11,17 @@ public class CustomNetworkManager : NetworkManager
 {
     public static CustomNetworkManager Instance;
     public string serverType = "lobby";
-    public bool isMovingToBattle = false;
+    public bool   isMovingToBattle = false;
 
     public event Action OnClientConnected;
 
     [Header("Player Prefabs")]
     public GameObject lobbyPlayerPrefab;
     public GameObject battlePlayerPrefab;
+
+    [Header("Character Prefabs")]
+    [Tooltip("CharacterType enum 순서대로 캐릭터 외형 프리팹 연결\n[0]=Swordsman [1]=Mage ...")]
+    public GameObject[] characterPrefabs;
 
     private List<LobbyNetworkPlayer> matchQueue = new();
     public bool blockSceneActivation = false;
@@ -27,7 +31,6 @@ public class CustomNetworkManager : NetworkManager
         base.Awake();
         Instance = this;
     }
-
 
     public override void Start()
     {
@@ -39,7 +42,7 @@ public class CustomNetworkManager : NetworkManager
         }
     }
 
-    void ParseCommandLineArgs()
+    private void ParseCommandLineArgs()
     {
         string[] args = System.Environment.GetCommandLineArgs();
         for (int i = 0; i < args.Length; i++)
@@ -48,36 +51,33 @@ public class CustomNetworkManager : NetworkManager
             {
                 if (ushort.TryParse(args[i + 1], out ushort port))
                 {
-                    var transport = GetComponent<kcp2k.KcpTransport>();
-                    transport.port = port;
-                    Debug.Log($"[SERVER] Port set to {port}");
+                    GetComponent<kcp2k.KcpTransport>().port = port;
+                    Debug.Log($"[SERVER] Port: {port}");
                 }
             }
             if (args[i] == "-serverType" && i + 1 < args.Length)
             {
                 serverType = args[i + 1];
-                Debug.Log($"[SERVER] ServerType set to {serverType}");
+                Debug.Log($"[SERVER] ServerType: {serverType}");
             }
             if (args[i] == "-scene" && i + 1 < args.Length)
             {
                 onlineScene = args[i + 1];
-                Debug.Log($"[SERVER] Scene set to {onlineScene}");
+                Debug.Log($"[SERVER] Scene: {onlineScene}");
             }
         }
     }
 
     public override void OnServerAddPlayer(NetworkConnectionToClient conn)
     {
-        Debug.Log($"[SERVER] OnServerAddPlayer called, serverType={serverType}");
+        Debug.Log($"[SERVER] OnServerAddPlayer | serverType={serverType}");
 
-        GameObject prefab = serverType == "battle"
-            ? battlePlayerPrefab
-            : lobbyPlayerPrefab;
-
+        GameObject prefab = serverType == "battle" ? battlePlayerPrefab : lobbyPlayerPrefab;
         GameObject player = Instantiate(prefab);
 
         if (SpawnManager.Instance != null)
             player.transform.position = SpawnManager.Instance.GetNextSpawnPosition();
+
         NetworkServer.AddPlayerForConnection(conn, player);
 
         var authData = (MyAuthenticator.AuthRequestMessage)conn.authenticationData;
@@ -88,7 +88,7 @@ public class CustomNetworkManager : NetworkManager
             if (lobbyPlayer != null)
             {
                 lobbyPlayer.SetInfo(authData);
-                Debug.Log($"[LOBBY] Player joined: {authData.nickname}");
+                Debug.Log($"[LOBBY] 입장: {authData.nickname}");
             }
         }
         else if (serverType == "battle")
@@ -96,12 +96,21 @@ public class CustomNetworkManager : NetworkManager
             var battlePlayer = player.GetComponent<BattleNetworkPlayer>();
             if (battlePlayer != null)
             {
+                // 1. BattleNetworkPlayer에 유저 정보 저장
                 battlePlayer.SetInfo(authData);
-                Debug.Log($"[BATTLE] Player joined: {authData.nickname}");
+
+                // 2. CharacterSpawner에 characterPrefabs 배열 전달
+                //    CharacterSpawner.OnStartServer()가 이 배열에서 올바른 프리팹을 꺼냄
+                var spawner = player.GetComponent<CharacterSpawner>();
+                if (spawner != null)
+                    spawner.characterPrefabs = characterPrefabs;
+
+                Debug.Log($"[BATTLE] 입장: {authData.nickname} | 캐릭터: {authData.selectedCharacter}");
 
                 if (numPlayers >= 2)
                 {
-                    Debug.Log("[BATTLE] 2명 모두 접속! 타이머 시작");
+                    Debug.Log("[BATTLE] 2명 모두 접속! 배틀 시작");
+                    BattleManager.Instance?.StartBattle();
                     StartCoroutine(BattleTimer());
                 }
             }
@@ -112,48 +121,36 @@ public class CustomNetworkManager : NetworkManager
     public void RequestMatch(LobbyNetworkPlayer player)
     {
         if (matchQueue.Contains(player)) return;
-
         matchQueue.Add(player);
-        Debug.Log($"[MATCH] Queue count = {matchQueue.Count}");
-
-        if (matchQueue.Count >= 2)
-            StartMatch();
+        Debug.Log($"[MATCH] 대기 {matchQueue.Count}명");
+        if (matchQueue.Count >= 2) StartMatch();
     }
 
     [Server]
-    async void StartMatch()
+    private async void StartMatch()
     {
-        var matched = new List<LobbyNetworkPlayer>
-        {
-            matchQueue[0],
-            matchQueue[1]
-        };
+        var matched = new List<LobbyNetworkPlayer> { matchQueue[0], matchQueue[1] };
         matchQueue.RemoveRange(0, 2);
 
-        string res = await BackendManager.AcquirePort();
+        string res  = await BackendManager.AcquirePort();
         JObject json = JObject.Parse(res);
 
         if (json["success"].ToObject<bool>())
         {
             int port = json["port"].ToObject<int>();
-            Debug.Log($"[MATCH] Port acquired: {port}");
-            foreach (var player in matched)
-                player.TargetMoveToServer(player.connectionToClient, "127.0.0.1", (ushort)port);
+            Debug.Log($"[MATCH] 포트 확보: {port}");
+            foreach (var p in matched)
+                p.TargetMoveToServer(p.connectionToClient, "127.0.0.1", (ushort)port);
         }
         else
         {
-            Debug.LogWarning("[MATCH] No available servers!");
-            // TODO: 클라이언트에게 대기 알림
+            Debug.LogWarning("[MATCH] 서버 없음");
         }
     }
 
     public override void OnClientDisconnect()
     {
-        if (isMovingToBattle)
-        {
-            isMovingToBattle = false;
-            return;
-        }
+        if (isMovingToBattle) { isMovingToBattle = false; return; }
     }
 
     public override void OnStopClient()
@@ -168,57 +165,55 @@ public class CustomNetworkManager : NetworkManager
         StopClient();
         SceneFlowManager.Instance.Load(new LoadRequest
         {
-            sceneName = "BattleScene",
+            sceneName     = "BattleScene",
             serverAddress = "127.0.0.1",
-            port = 7778
+            port          = 7778
         });
     }
 
     [Server]
     public IEnumerator BattleTimer()
     {
-        Debug.Log("[BATTLE] 60초 후 종료");
-        yield return new WaitForSeconds(60f);
+        Debug.Log("[BATTLE] 타이머 시작");
+        yield return new WaitForSeconds(180f);
         EndBattle();
     }
 
     [Server]
-    void EndBattle()
+    private void EndBattle()
     {
         foreach (var conn in NetworkServer.connections.Values)
         {
             var player = conn.identity?.GetComponent<BattleNetworkPlayer>();
-            if (player != null)
-                player.TargetReturnToLobby(conn);
+            if (player != null) player.TargetReturnToLobby(conn);
         }
         ShutdownBattleServer();
     }
 
-    async void ShutdownBattleServer()
+    private async void ShutdownBattleServer()
     {
         await Task.Delay(3000);
         int port = GetComponent<kcp2k.KcpTransport>().port;
         await BackendManager.ReleasePort(port);
-        Debug.Log($"[BATTLE] Port {port} released, waiting for next match");
+        Debug.Log($"[BATTLE] 포트 {port} 반환");
     }
 
     public void ReturnToLobby()
     {
-        Debug.Log("[CLIENT] 로비 복귀 시작");
+        Debug.Log("[CLIENT] 로비 복귀");
         isMovingToBattle = true;
         StopClient();
         SceneFlowManager.Instance.Load(new LoadRequest
         {
-            sceneName = "MainLobbyScene",
+            sceneName     = "MainLobbyScene",
             serverAddress = "127.0.0.1",
-            port = 7777
+            port          = 7777
         });
     }
 
     public override void OnClientConnect()
     {
         base.OnClientConnect();
-
         OnClientConnected?.Invoke();
     }
 }

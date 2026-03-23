@@ -11,11 +11,15 @@ public class BattleNetworkPlayer : NetworkBehaviour
     public static List<BattleNetworkPlayer> players = new List<BattleNetworkPlayer>();
     public static event Action<BattleNetworkPlayer> OnPlayerJoined;
 
-    [SyncVar] public int userId;
-    [SyncVar(hook = nameof(OnNicknameChanged))] public string nickname;
-    [SyncVar] public int level;
+    [SyncVar] public int           userId;
+    [SyncVar] public string        nickname;
+    [SyncVar] public int           level;
+    [SyncVar] public CharacterType selectedCharacter;   // 로비에서 고른 캐릭터
 
-    void OnNicknameChanged(string oldValue, string newValue)
+    [SyncVar(hook = nameof(OnNicknameChanged))]
+    public string nicknameHook;
+
+    private void OnNicknameChanged(string _, string newValue)
     {
         OnPlayerJoined?.Invoke(this);
     }
@@ -29,7 +33,7 @@ public class BattleNetworkPlayer : NetworkBehaviour
     public override void OnStartLocalPlayer()
     {
         base.OnStartLocalPlayer();
-        Debug.Log("[BATTLE] Local Battle Player Ready");
+        Debug.Log($"[BATTLE] 로컬 플레이어 준비 | 캐릭터: {selectedCharacter}");
     }
 
     public override void OnStopClient()
@@ -38,7 +42,7 @@ public class BattleNetworkPlayer : NetworkBehaviour
         players.Remove(this);
     }
 
-    void OnDestroy()
+    private void OnDestroy()
     {
         players.Clear();
     }
@@ -46,9 +50,11 @@ public class BattleNetworkPlayer : NetworkBehaviour
     [Server]
     public void SetInfo(MyAuthenticator.AuthRequestMessage authData)
     {
-        userId = authData.userId;
-        nickname = authData.nickname;
-        level = authData.level;
+        userId            = authData.userId;
+        nickname          = authData.nickname;
+        nicknameHook      = authData.nickname;
+        level             = authData.level;
+        selectedCharacter = authData.selectedCharacter;
     }
 
     [TargetRpc]
