@@ -1,0 +1,24 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8a98799f08e0a654aaecd11824bbcdf0, type: 3}
+  m_Name: SO_SwordChanAD
+  m_EditorClassIdentifier: Assembly-CSharp::AttackDataSO
+  attackName: "\uACF5\uACA9"
+  damageMultiplier: 1
+  cooldown: 0.8
+  targetLayer:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  attackType: 0
+  meleeRange: 2.5
+  meleeAngle: 120
+  projectilePrefab: {fileID: 0}

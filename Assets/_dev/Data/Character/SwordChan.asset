@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bcbcf1abfec4dc4097f0ad07baf155f, type: 3}
+  m_Name: SwordChan
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterDataSO
+  characterName: "\uAC80\uC0AC"
+  weaponMeshPrefab: {fileID: 2229370667690413967, guid: 8474dc6a58811014f879e23fd6f02766, type: 3}
+  baseAttack: 20
+  baseMaxHp: 100
+  baseDefense: 5
+  moveSpeed: 5
+  basicAttack: {fileID: 0}
+  skillAttack: {fileID: 0}
+  attackUpgradeBonus: 0.1
+  hpUpgradeBonus: 0.08
+  defenseUpgradeBonus: 0.05
