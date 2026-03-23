@@ -39,7 +39,7 @@ public abstract class WeaponBase : NetworkBehaviour
 
     // ─── 최종 데미지 계산 ─────────────────────────────────────────────────
     // CharacterStats 없으면 damageMultiplier를 기본값(20)으로 계산
-    protected float GetFinalDamage()
+    public float GetFinalDamage()
     {
         if (stats != null)
             return stats.FinalAttack * damageMultiplier;

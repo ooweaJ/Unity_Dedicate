@@ -37,25 +37,38 @@ public class PlayerStats : NetworkBehaviour, IDamageable
         if (charStats != null)
             charStats.OnUpgraded -= OnCharacterUpgraded;
     }
+    public float CurrentHpRatio => charStats != null
+    ? currentHp / charStats.FinalMaxHp
+    : currentHp / 100f;
 
     // ─── IDamageable 구현 ────────────────────────────────────────────────
     [Server]
     public void TakeDamage(float damage, GameObject attacker)
     {
         if (IsDead) return;
-
-        // 방어력 적용 (CharacterStats.FinalDefense)
-        float defense      = charStats != null ? charStats.FinalDefense : 0f;
+        float defense = charStats != null ? charStats.FinalDefense : 0f;
         float actualDamage = Mathf.Max(1f, damage - defense);
-
         currentHp = Mathf.Max(0f, currentHp - actualDamage);
 
-        Debug.Log($"[STATS] {gameObject.name} 피격 | " +
-                  $"입력={damage:F1} 방어={defense:F1} 실데미지={actualDamage:F1} " +
-                  $"HP={currentHp:F1}/{GetMaxHp():F1}");
+        // 데미지 기록 → 결과창에 표시
+        var attackerStats = attacker?.GetComponent<PlayerStats>();
+        if (attackerStats != null)
+            BattleManager.Instance?.RecordDamage(attackerStats, actualDamage);
 
-        if (IsDead)
-            RpcOnDeath();
+        if (IsDead) RpcOnDeath(attacker);
+    }
+
+    [ClientRpc]
+    private void RpcOnDeath(GameObject killer)
+    {
+        if (isServer)
+        {
+            var killerStats = killer?.GetComponent<PlayerStats>();
+            if (killerStats != null)
+                BattleManager.Instance?.RecordKill(killerStats, this);
+
+            BattleManager.Instance?.OnPlayerDead(this);
+        }
     }
 
     // ─── 강화 시 HP 비율 유지 ─────────────────────────────────────────────
