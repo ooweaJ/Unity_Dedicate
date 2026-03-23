@@ -94,11 +94,4 @@ public class PlayerStats : NetworkBehaviour, IDamageable
     {
         currentHp = GetMaxHp();
     }
-
-    [ClientRpc]
-    private void RpcOnDeath()
-    {
-        Debug.Log($"[STATS] {gameObject.name} 사망");
-        // 사망 연출, UI 처리 등 추가
-    }
 }
