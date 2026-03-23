@@ -21,6 +21,7 @@ public class PlayerAnimationController : NetworkBehaviour
     private static readonly int ParamHit = Animator.StringToHash("Hit");
 
     private Animator animator;
+    private CharacterSpawner characterSpawner;
 
     // ─── SyncVar : 이동 파라미터 ─────────────────────────────────────────
     // 언리얼 RepNotify와 동일 — 서버에서 값 변경 시 모든 클라이언트 hook 호출
@@ -53,7 +54,26 @@ public class PlayerAnimationController : NetworkBehaviour
 
     private void Awake()
     {
-        animator = GetComponentInChildren<Animator>();
+        characterSpawner = gameObject.GetComponent<CharacterSpawner>();
+    }
+    private void OnEnable()
+    {
+        if (characterSpawner != null)
+        {
+            characterSpawner.OnCharacterSpawned += SetAnimater;
+        }
+    }
+    private void OnDisable()
+    {
+        if (characterSpawner != null)
+        {
+            characterSpawner.OnCharacterSpawned -= SetAnimater;
+        }
+    }
+
+    public void SetAnimater(Animator animator)
+    {
+        this.animator = animator;
     }
 
     // ─── 로컬 플레이어 파라미터 업데이트 (PlayerController에서 호출) ──────

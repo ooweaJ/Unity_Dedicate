@@ -21,15 +21,15 @@ MonoBehaviour:
   m_OverrideGlobalSceneList: 1
   m_Scenes:
   - m_enabled: 1
-    m_path: Assets/Scenes/BootScene.unity
+    m_path: Assets/_dev/Scenes/BootScene.unity
   - m_enabled: 1
-    m_path: Assets/Scenes/LoginScene.unity
+    m_path: Assets/_dev/Scenes/LoginScene.unity
   - m_enabled: 1
-    m_path: Assets/Scenes/LoadingScene.unity
+    m_path: Assets/_dev/Scenes/LoadingScene.unity
   - m_enabled: 1
-    m_path: Assets/Scenes/MainLobbyScene.unity
+    m_path: Assets/_dev/Scenes/MainLobbyScene.unity
   - m_enabled: 1
-    m_path: Assets/Scenes/BattleScene.unity
+    m_path: Assets/_dev/Scenes/BattleScene.unity
   m_HasScriptingDefines: 0
   m_ScriptingDefines: []
   m_PlayerSettingsYaml:

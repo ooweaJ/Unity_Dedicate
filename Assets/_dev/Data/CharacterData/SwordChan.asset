@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: SwordChan
   m_EditorClassIdentifier: Assembly-CSharp::CharacterDataSO
   characterName: "\uAC80\uC0AC"
-  weaponMeshPrefab: {fileID: 2229370667690413967, guid: 8474dc6a58811014f879e23fd6f02766, type: 3}
+  weaponMeshPrefab: {fileID: 8384663211046332819, guid: f35679122b59888499aef7a69b391c05, type: 3}
   baseAttack: 20
   baseMaxHp: 100
   baseDefense: 5
   moveSpeed: 5
-  basicAttack: {fileID: 0}
+  basicAttack: {fileID: 11400000, guid: b9d4af572287ad64db02f5af51e3667b, type: 2}
   skillAttack: {fileID: 0}
   attackUpgradeBonus: 0.1
   hpUpgradeBonus: 0.08

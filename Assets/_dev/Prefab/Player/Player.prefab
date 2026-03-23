@@ -315,7 +315,8 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  characterPrefabs: []
+  characterPrefabs:
+  - {fileID: 3491019777765594031, guid: a3748ad20121079418f5f03835e119f8, type: 3}
   characterModelRoot: {fileID: 3472486207733958798}
 --- !u!1001 &5107495591285288626
 PrefabInstance:

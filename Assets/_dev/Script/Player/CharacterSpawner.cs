@@ -27,6 +27,8 @@ public class CharacterSpawner : NetworkBehaviour
     [Tooltip("캐릭터 메시가 붙을 빈 오브젝트")]
     public Transform characterModelRoot;
 
+    public System.Action<Animator> OnCharacterSpawned; // 캐릭터 스폰시 애니메이터 캐싱
+
     // SyncVar로 캐릭터 타입 동기화 — 클라이언트에서 올바른 메시 생성에 사용
     [SyncVar]
     private int characterTypeIndex = 0;
@@ -100,8 +102,14 @@ public class CharacterSpawner : NetworkBehaviour
             Destroy(child.gameObject);
 
         // 캐릭터 외형 프리팹을 CharacterModelRoot 자식으로 생성
-        Instantiate(characterPrefabs[characterTypeIndex], characterModelRoot);
+        GameObject visualObj = Instantiate(characterPrefabs[characterTypeIndex], characterModelRoot);
+        Animator childAnimator = visualObj.GetComponentInChildren<Animator>();
 
-        Debug.Log($"[SPAWNER] 캐릭터 메시 부착: {characterPrefabs[characterTypeIndex].name}");
+        if (childAnimator != null)
+        {
+            OnCharacterSpawned?.Invoke(childAnimator);
+
+            Debug.Log($"[SPAWNER] 캐릭터 메시 부착: {characterPrefabs[characterTypeIndex].name}");
+        }
     }
 }

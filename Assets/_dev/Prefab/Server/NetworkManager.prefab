@@ -85,6 +85,8 @@ MonoBehaviour:
   isMovingToBattle: 0
   lobbyPlayerPrefab: {fileID: 7999482444916302808, guid: a519d4ae8c17ec84888daa6119bc6ca7, type: 3}
   battlePlayerPrefab: {fileID: 6988632536861101562, guid: 93b829961db78824aab2037475ec3df9, type: 3}
+  characterPrefabs:
+  - {fileID: 3491019777765594031, guid: a3748ad20121079418f5f03835e119f8, type: 3}
   blockSceneActivation: 0
 --- !u!114 &5700574643968675312
 MonoBehaviour:
