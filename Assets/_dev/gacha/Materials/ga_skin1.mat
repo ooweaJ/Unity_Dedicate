@@ -2,15 +2,22 @@
 %TAG !u! tag:unity3d.com,2011:
 --- !u!21 &2100000
 Material:
-  serializedVersion: 6
+  serializedVersion: 8
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_Name: ga_skin1
   m_Shader: {fileID: 4800000, guid: be891319084e9d147b09d89e80ce60e0, type: 3}
-  m_ShaderKeywords: _EMISSIVE_SIMPLE _IS_ANGELRING_OFF _IS_CLIPPING_OFF _IS_OUTLINE_CLIPPING_NO
-    _OUTLINE_NML
+  m_Parent: {fileID: 0}
+  m_ModifiedSerializedProperties: 0
+  m_ValidKeywords:
+  - _EMISSIVE_SIMPLE
+  - _IS_CLIPPING_OFF
+  - _IS_OUTLINE_CLIPPING_NO
+  - _OUTLINE_NML
+  m_InvalidKeywords:
+  - _IS_ANGELRING_OFF
   m_LightmapFlags: 4
   m_EnableInstancingVariants: 0
   m_DoubleSidedGI: 0
@@ -19,6 +26,7 @@ Material:
     IgnoreProjection: False
     RenderType: Opaque
   disabledShaderPasses: []
+  m_LockedProperties: 
   m_SavedProperties:
     serializedVersion: 3
     m_TexEnvs:
@@ -186,6 +194,8 @@ Material:
         m_Texture: {fileID: 0}
         m_Scale: {x: 1, y: 1}
         m_Offset: {x: 0, y: 0}
+    m_Ints:
+    - _ToonMaterialVersion: 0
     m_Floats:
     - _1st2nd_Shades_Feather: 0.2
     - _1st_ShadeColor_Feather: 0.2
@@ -342,7 +352,7 @@ Material:
     - _Offset_Z: 0
     - _OutlineOverridden: 0
     - _OutlineVisible: 1
-    - _Outline_Width: 1
+    - _Outline_Width: 4
     - _PPDLodThreshold: 5
     - _PPDMaxSamples: 15
     - _PPDMinSamples: 5
@@ -355,7 +365,7 @@ Material:
     - _RimLightVisible: 1
     - _RimLight_FeatherOff: 0
     - _RimLight_InsideMask: 0.167
-    - _RimLight_Power: 0.293
+    - _RimLight_Power: 0.485
     - _Rotate_EmissiveUV: 0
     - _Rotate_MatCapUV: 0
     - _Rotate_NormalMapForMatCapUV: 0
@@ -464,7 +474,7 @@ Material:
     - _MatCapColor: {r: 1, g: 1, b: 1, a: 1}
     - _OutlineMaskColor: {r: 0, g: 0, b: 0, a: 1}
     - _Outline_Color: {r: 0.7264151, g: 0.5834165, b: 0.42831078, a: 1}
-    - _RimLightColor: {r: 0.8396226, g: 0.7152341, b: 0.629717, a: 1}
+    - _RimLightColor: {r: 1, g: 0.95686275, b: 0.81960785, a: 1}
     - _RimLightMaskColor: {r: 1, g: 0, b: 1, a: 1}
     - _SecondShadeMaskColor: {r: 0, g: 0, b: 1, a: 1}
     - _ShadowColor: {r: 0.8, g: 0.8, b: 1, a: 1}
@@ -477,3 +487,4 @@ Material:
     - _ViewShift: {r: 0, g: 0, b: 0, a: 1}
     - emissive: {r: 0, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []
+  m_AllowLocking: 1
