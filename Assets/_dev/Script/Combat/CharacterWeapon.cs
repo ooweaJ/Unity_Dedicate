@@ -44,9 +44,6 @@ public class CharacterWeapon : NetworkBehaviour
         if (Time.time - lastBasicTime < basicAttackData.cooldown) return;
         lastBasicTime = Time.time;
 
-        // 로컬: 즉시 애니 재생 (레이턴시 보상)
-        anim?.PlayAttackLocal();
-
         if (isLocalPlayer)
             CmdUseAttack(transform.position, transform.forward, isSkill: false);
     }

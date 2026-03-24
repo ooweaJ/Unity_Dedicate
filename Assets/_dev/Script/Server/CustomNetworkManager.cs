@@ -99,12 +99,6 @@ public class CustomNetworkManager : NetworkManager
                 // 1. BattleNetworkPlayer에 유저 정보 저장
                 battlePlayer.SetInfo(authData);
 
-                // 2. CharacterSpawner에 characterPrefabs 배열 전달
-                //    CharacterSpawner.OnStartServer()가 이 배열에서 올바른 프리팹을 꺼냄
-                var spawner = player.GetComponent<CharacterSpawner>();
-                if (spawner != null)
-                    spawner.characterPrefabs = characterPrefabs;
-
                 Debug.Log($"[BATTLE] 입장: {authData.nickname} | 캐릭터: {authData.selectedCharacter}");
 
                 if (numPlayers >= 2)

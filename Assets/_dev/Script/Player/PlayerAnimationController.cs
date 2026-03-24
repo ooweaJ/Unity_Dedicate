@@ -117,6 +117,7 @@ public class PlayerAnimationController : NetworkBehaviour
     [ClientRpc]
     public void RpcPlayAttack()
     {
+        Debug.Log("Rpc어택");
         animator.SetTrigger(ParamAttack);
     }
 
