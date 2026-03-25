@@ -432,6 +432,10 @@ PrefabInstance:
       propertyPath: m_Layer
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: 3419455506226768407, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
+      propertyPath: m_PresetInfoIsWorld
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 3459339935210948148, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_Name
       value: HPBar
