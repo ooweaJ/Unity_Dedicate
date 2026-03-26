@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: MTUI_NameBar
-  m_Shader: {fileID: -6465566751694194690, guid: 669e84ac69e127d4981095dc062d9a7b, type: 3}
+  m_Name: MTUI_ExpBar_Frame
+  m_Shader: {fileID: -6465566751694194690, guid: 1f812fff8e68844429a93ec1a99672eb, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -42,21 +42,18 @@ Material:
     m_Ints: []
     m_Floats:
     - _ColorMask: 15
-    - _SlopeSlant: 1
+    - _Progress: 1
     - _Stencil: 0
     - _StencilComp: 8
     - _StencilOp: 0
     - _StencilReadMask: 255
     - _StencilWriteMask: 255
-    - _Transparency: 0.45
     - _UIMaskSoftnessX: 1
     - _UIMaskSoftnessY: 1
     m_Colors:
-    - _BackGroundColor: {r: 0.99150425, g: 0.6257861, b: 1, a: 1}
     - _ClipRect: {r: 0, g: 0, b: 0, a: 0}
-    - _Color: {r: 0.96078426, g: 0.96078426, b: 0.9686274, a: 1}
-    - _Color_1: {r: 0, g: 0, b: 0, a: 1}
-    - _Color_Left: {r: 0, g: 0, b: 0, a: 0.6039216}
-    - _Color_Right: {r: 1, g: 1, b: 1, a: 0.6039216}
+    - _Color: {r: 0, g: 0.2695744, b: 1, a: 1}
+    - _Color_1: {r: 0.3584906, g: 0.3584906, b: 0.3584906, a: 1}
+    - _color: {r: 0, g: 0, b: 0, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

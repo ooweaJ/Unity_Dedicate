@@ -7,8 +7,8 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: MTUI_NameBar
-  m_Shader: {fileID: -6465566751694194690, guid: 669e84ac69e127d4981095dc062d9a7b, type: 3}
+  m_Name: MTUI_ButtonBox
+  m_Shader: {fileID: -6465566751694194690, guid: 81d4c3afa4e2d6e4cb572d119bd428fa, type: 3}
   m_Parent: {fileID: 0}
   m_ModifiedSerializedProperties: 0
   m_ValidKeywords: []
@@ -42,21 +42,19 @@ Material:
     m_Ints: []
     m_Floats:
     - _ColorMask: 15
-    - _SlopeSlant: 1
+    - _Hovered: 0
+    - _Ratio: 1
     - _Stencil: 0
     - _StencilComp: 8
     - _StencilOp: 0
     - _StencilReadMask: 255
     - _StencilWriteMask: 255
-    - _Transparency: 0.45
+    - _Transparency: 0.3
     - _UIMaskSoftnessX: 1
     - _UIMaskSoftnessY: 1
     m_Colors:
-    - _BackGroundColor: {r: 0.99150425, g: 0.6257861, b: 1, a: 1}
     - _ClipRect: {r: 0, g: 0, b: 0, a: 0}
-    - _Color: {r: 0.96078426, g: 0.96078426, b: 0.9686274, a: 1}
-    - _Color_1: {r: 0, g: 0, b: 0, a: 1}
-    - _Color_Left: {r: 0, g: 0, b: 0, a: 0.6039216}
-    - _Color_Right: {r: 1, g: 1, b: 1, a: 0.6039216}
+    - _Color: {r: 0.10588237, g: 0.14901957, b: 0.19215685, a: 1}
+    - _FrameColor: {r: 0.7987421, g: 0.7987421, b: 0.7987421, a: 1}
   m_BuildTextureStacks: []
   m_AllowLocking: 1

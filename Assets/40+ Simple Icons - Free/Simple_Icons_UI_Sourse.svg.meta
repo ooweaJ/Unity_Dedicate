@@ -1,0 +1,60 @@
+fileFormatVersion: 2
+guid: 9ecab9ab938ee51489305eba7e61249b
+AssetOrigin:
+  serializedVersion: 1
+  productId: 171008
+  packageName: 40+ Simple Icons - Free
+  packageVersion: 1.0
+  assetPath: Assets/40+ Simple Icons - Free/Simple_Icons_UI_Sourse.svg
+  uploadId: 373667
+ScriptedImporter:
+  internalIDToNameTable: []
+  externalObjects: {}
+  serializedVersion: 2
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+  script: {fileID: 12408, guid: 0000000000000000e000000000000000, type: 0}
+  svgType: 0
+  texturedSpriteMeshType: 0
+  svgPixelsPerUnit: 100
+  gradientResolution: 64
+  alignment: 0
+  customPivot: {x: 0, y: 0}
+  generatePhysicsShape: 0
+  viewportOptions: 0
+  preserveViewport: 0
+  advancedMode: 0
+  tessellationMode: 0
+  predefinedResolutionIndex: 1
+  targetResolution: 1080
+  resolutionMultiplier: 1
+  stepDistance: 10
+  samplingStepDistance: 100
+  maxCordDeviationEnabled: 0
+  maxCordDeviation: 1
+  maxTangentAngleEnabled: 0
+  maxTangentAngle: 5
+  keepTextureAspectRatio: 1
+  textureSize: 256
+  textureWidth: 256
+  textureHeight: 256
+  wrapMode: 0
+  filterMode: 1
+  sampleCount: 4
+  preserveSVGImageAspect: 0
+  useSVGPixelsPerUnit: 0
+  spriteData:
+    TessellationDetail: 0
+    SpriteName: Simple_Icons_UI_SourseSprite
+    SpritePivot: {x: 0.5, y: 0.5}
+    SpriteAlignment: 0
+    SpriteBorder: {x: 0, y: 0, z: 0, w: 0}
+    SpriteRect:
+      serializedVersion: 2
+      x: 0
+      y: 0
+      width: 2000
+      height: 1203
+    SpriteID: a778012f1aa55294fb5d0782c6e61f0a
+    PhysicsOutlines: []
