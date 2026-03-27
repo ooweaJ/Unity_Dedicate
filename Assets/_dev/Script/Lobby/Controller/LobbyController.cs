@@ -18,14 +18,16 @@ public class LobbyController : MonoBehaviour
         playerInfoUI.OnLogoutButtonClicked += HandleLogout;
         lobbyUI.OnInventoryButtonClicked += HandleOnInventory;
         lobbyUI.OnMatchButtonClicked += HandleOnMatch;
+        lobbyUI.OnStoreButtonClicked += HandleOnStore;
     }
 
     private void OnDestroy()
     {
         playerInfoUI.OnLogoutButtonClicked -= HandleLogout;
         lobbyUI.OnInventoryButtonClicked -= HandleOnInventory;
+        lobbyUI.OnMatchButtonClicked -= HandleOnMatch;
+        lobbyUI.OnStoreButtonClicked -= HandleOnStore;
     }
-
     private void OnEnable()
     {
         UpdateInfoUI();
@@ -52,6 +54,11 @@ public class LobbyController : MonoBehaviour
 
         // 씬 이동
         SceneManager.LoadScene("LoginScene");
+    }
+
+    private void HandleOnStore()
+    {
+
     }
 
     private void HandleOnInventory() { inventoryUI.Open(); }
