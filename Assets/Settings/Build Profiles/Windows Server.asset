@@ -30,6 +30,8 @@ MonoBehaviour:
     m_path: Assets/_dev/Scenes/MainLobbyScene.unity
   - m_enabled: 1
     m_path: Assets/_dev/Scenes/BattleScene.unity
+  - m_enabled: 1
+    m_path: Assets/_dev/Scenes/GachaScene.unity
   m_HasScriptingDefines: 0
   m_ScriptingDefines: []
   m_PlayerSettingsYaml:

@@ -35,11 +35,14 @@ public class LobbyController : MonoBehaviour
 
     private void UpdateInfoUI()
     {
-        playerInfoUI.UpdateUI(
-            PlayerDataManager.Instance.GetUsername(),
-            PlayerDataManager.Instance.GetLevel(),
-            PlayerDataManager.Instance.GetGold()
-            );
+        if (PlayerDataManager.Instance)
+        {
+            playerInfoUI.UpdateUI(
+                PlayerDataManager.Instance.GetUsername(),
+                PlayerDataManager.Instance.GetLevel(),
+                PlayerDataManager.Instance.GetGold()
+                );
+        }
     }
 
     public void HandleLogout()

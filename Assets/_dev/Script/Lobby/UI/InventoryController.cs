@@ -10,7 +10,7 @@ public class InventoryController : MonoBehaviour
 
     void Start()
     {
-        Init();
+        //Init();
     }
 
     private void OnDestroy()
@@ -21,7 +21,8 @@ public class InventoryController : MonoBehaviour
 
     void Init()
     {
-        inventory = PlayerDataManager.Instance.GetPlayerInventory();
+        if(PlayerDataManager.Instance)
+            inventory = PlayerDataManager.Instance.GetPlayerInventory();
         if (inventory != null)
         {
             inventory.OnChanged += HandleRefresh;

@@ -1,9 +1,13 @@
+using System;
 using UnityEngine;
+using UnityEngine.UI;
 
-public class StoreUI : MonoBehaviour
+public class ShopUI : MonoBehaviour
 {
     [SerializeField] private GameObject panel;
+    [SerializeField] private Button GachaButton;
 
+    public event Action OnClikedGachaButton;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -24,5 +28,10 @@ public class StoreUI : MonoBehaviour
     public void Close()
     {
         panel.SetActive(false);
+    }
+
+    public void OnClickGachaButton()
+    {
+        OnClikedGachaButton.Invoke();
     }
 }
