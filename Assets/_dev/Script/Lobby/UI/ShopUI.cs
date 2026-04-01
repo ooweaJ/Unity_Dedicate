@@ -7,7 +7,7 @@ public class ShopUI : MonoBehaviour
     [SerializeField] private GameObject panel;
     [SerializeField] private Button GachaButton;
 
-    public event Action OnClikedGachaButton;
+    public event Action<int> OnClikedGachaButton;
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()
     {
@@ -30,8 +30,8 @@ public class ShopUI : MonoBehaviour
         panel.SetActive(false);
     }
 
-    public void OnClickGachaButton()
+    public void OnClickGachaButton(int amount)
     {
-        OnClikedGachaButton.Invoke();
+        OnClikedGachaButton.Invoke(amount);
     }
 }

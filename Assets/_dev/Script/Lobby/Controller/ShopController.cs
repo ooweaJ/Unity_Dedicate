@@ -22,7 +22,7 @@ public class ShopController : MonoBehaviour
             shopUI.OnClikedGachaButton += OnClickGacha;
         }
     }
-    void OnClickGacha()
+    void OnClickGacha(int amount)
     {
         if (lobbyCamera != null)
             lobbyCamera.gameObject.SetActive(false);

@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: f9c35566087a2044480278434fd613ff
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 2100000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 352382
+  packageName: Free Pack - Water Shader URP
+  packageVersion: 0.0.1
+  assetPath: Assets/PolyOne/Water URP/Materials/M_Skybox.mat
+  uploadId: 839758

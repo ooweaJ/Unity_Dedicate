@@ -1,0 +1,15 @@
+fileFormatVersion: 2
+guid: 4edda32478bceb6479b76b921cc13d17
+NativeFormatImporter:
+  externalObjects: {}
+  mainObjectFileID: 11400000
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+AssetOrigin:
+  serializedVersion: 1
+  productId: 352382
+  packageName: Free Pack - Water Shader URP
+  packageVersion: 0.0.1
+  assetPath: Assets/PolyOne/Water URP/Scene/PostProcessing Profile.asset
+  uploadId: 839758
