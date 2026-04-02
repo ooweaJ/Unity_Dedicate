@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b045433cef0927b42a0342b3adae133f, type: 3}
+  m_Name: SO_SapphiBanner
+  m_EditorClassIdentifier: Assembly-CSharp::BannerData
+  bannerId: 2
+  thumbnailSprite: {fileID: 21300000, guid: d12b6c897d8d4e44384df425213546c8, type: 3}
+  illustrationSprite: {fileID: 21300000, guid: 89b74697622a35a42a32d7ebd29643b2, type: 3}
+  bannerTitle: "\uC18C\uD53C\uB77C\uB294 \uCE90\uB9AD\uD130"
+  remainTime: "\uB0A8\uC740 \uC2DC\uAC04 : 20\uC77C"
+  characterName: "\uC18C\uD53C"
+  classIcon: {fileID: 21300000, guid: 3f06c0869badb5e468f660460fbc5d09, type: 3}
+  starCount: 4

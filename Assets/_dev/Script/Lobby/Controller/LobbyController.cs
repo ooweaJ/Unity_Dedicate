@@ -11,6 +11,7 @@ public class LobbyController : MonoBehaviour
     [SerializeField] private LobbyUI lobbyUI;
     [SerializeField] private PlayerInfoUI playerInfoUI;
     [SerializeField] private InventoryUI inventoryUI;
+    [SerializeField] private ShopUI shopUI;
 
     private void Awake()
     {
@@ -61,21 +62,11 @@ public class LobbyController : MonoBehaviour
 
     private void HandleOnStore()
     {
-
+        shopUI.Open();
     }
 
     private void HandleOnInventory() { inventoryUI.Open(); }
     private void HandleOffInventory() { inventoryUI.Close(); }
-
-    public async void HandleDraw()
-    {
-        int userId = PlayerDataManager.Instance.GetUserId();
-
-        string res = await BackendManager.DrawGacha(userId);
-        Debug.Log("Gacha Response Raw: " + res);
-
-        JObject json = JObject.Parse(res);
-    }
 
     void HandleOnMatch()
     {

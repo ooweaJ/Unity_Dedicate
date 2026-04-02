@@ -1,18 +1,17 @@
-// 씬이 바뀌어도 데이터 유지하는 정적 컨텍스트
+using System;
+
 public static class GachaContext
 {
-    // 상점에서 어떤 패널 열려있었는지
-    public static string LastShopPanelId = "";
-
-    // 서버에서 받은 결과 캐시
-    public static GachaResult PendingResult = null;
-
-    // 결과 도착 여부
+    public static int CurrentBannerId = -1;
+    public static int PullAmount = 1;
+    public static GachaRewardItem[] PendingResults = null;  // 배열로 변경
     public static bool IsResultReady = false;
+
+    public static Action OnGachaResult;
 
     public static void Clear()
     {
-        PendingResult = null;
+        PendingResults = null;
         IsResultReady = false;
     }
 }

@@ -140,7 +140,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 172c1d40777297249bbbcade181a2252, type: 3}
+  m_Sprite: {fileID: 0}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -285,8 +285,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1f06933664ca1ef4ca8789a1544e732a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::BannerListItem
-  thumbnailImage: {fileID: 0}
+  thumbnailImage: {fileID: 9123325590946526043}
   dimOverlay: {fileID: 1891492539307790090}
   button: {fileID: 7228546066627697610}
-  selectedColor: {r: 1, g: 1, b: 1, a: 1}
-  deselectedColor: {r: 0.3, g: 0.3, b: 0.3, a: 1}

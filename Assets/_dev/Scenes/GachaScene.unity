@@ -1850,7 +1850,7 @@ Camera:
     height: 1
   near clip plane: 0.3
   far clip plane: 1000
-  field of view: 45
+  field of view: 60.7
   orthographic: 0
   orthographic size: 5
   m_Depth: -1
@@ -1876,8 +1876,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 961739749}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.12507805, y: 0.0107808355, z: -0.00085607864, w: -0.992088}
-  m_LocalPosition: {x: 0.069, y: 1.513, z: -3.001}
+  m_LocalRotation: {x: -0.2583171, y: 0.7154079, z: 0.55857354, w: 0.3308465}
+  m_LocalPosition: {x: 35.42931, y: 12.63, z: -9.300829}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3234,7 +3234,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1545570528}
   serializedVersion: 2
-  m_LocalRotation: {x: -0.2577734, y: 0.71572953, z: 0.5588247, w: 0.33015007}
+  m_LocalRotation: {x: -0.25831723, y: 0.71540785, z: 0.55857354, w: 0.3308466}
   m_LocalPosition: {x: 3.6499996, y: 12.63, z: -14.189999}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -3983,6 +3983,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1998733296}
+  - component: {fileID: 1998733297}
   m_Layer: 0
   m_Name: GachaSceneController
   m_TagString: Untagged
@@ -4005,6 +4006,20 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1998733297
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1998733295}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: cca088433b8666e45a4a613d834f8915, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::GachaSceneController
+  timelineController: {fileID: 1495708290}
+  confirmButton: {fileID: 0}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0

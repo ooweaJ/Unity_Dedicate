@@ -39,13 +39,6 @@ public static class BackendManager
         return await res.Content.ReadAsStringAsync();
     }
 
-    // POST /gacha/draw/:userId
-    public static async Task<string> DrawGacha(int userId)
-    {
-        var res = await client.PostAsync(baseUrl + $"/gacha/draw/{userId}", null);
-        return await res.Content.ReadAsStringAsync();
-    }
-
     public static async Task<string> GetUserCharacters(int userId)
     {
         var res = await client.GetAsync(baseUrl + $"/users/{userId}/characters");
@@ -65,6 +58,16 @@ public static class BackendManager
         var json = $"{{\"port\":{port}}}";
         var content = new StringContent(json, Encoding.UTF8, "application/json");
         HttpResponseMessage res = await client.PostAsync(baseUrl + "/match/release", content);
+        return await res.Content.ReadAsStringAsync();
+    }
+
+    // POST /gacha/draw
+
+    public static async Task<string> GachaDraw(int userId, int bannerId, int amount)
+    {
+        var json = $"{{\"bannerId\":{bannerId},\"amount\":{amount}}}";
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var res = await client.PostAsync(baseUrl + $"/gacha/draw/{userId}", content);
         return await res.Content.ReadAsStringAsync();
     }
 }

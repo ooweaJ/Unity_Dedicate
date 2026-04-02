@@ -17,21 +17,12 @@ public class CharacterNamePlate : MonoBehaviour
     [Header("UP 뱃지")]
     [SerializeField] private GameObject upBadge;
 
-    // ── 외부에서 이걸 호출 ────────────────────────────
-    public void Setup(CharacterNamePlateData data)
+    public void Setup(BannerData data)
     {
-        // 아이콘
-        classIconImage.sprite = data.classIcon;
-        iconBoxBackground.color = data.iconBoxColor;
-
-        // 이름
         nameText.text = data.characterName;
+        classIconImage.sprite = data.classIcon;
 
-        // 별 개수
         for (int i = 0; i < stars.Length; i++)
             stars[i].SetActive(i < data.starCount);
-
-        // UP 뱃지
-        upBadge.SetActive(data.showUpBadge);
     }
 }

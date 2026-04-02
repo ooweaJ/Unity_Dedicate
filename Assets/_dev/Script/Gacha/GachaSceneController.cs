@@ -1,73 +1,72 @@
+// GachaSceneController.cs
+
 using System.Collections;
 using UnityEngine;
-using UnityEngine.UI;
-using TMPro;
 
 public class GachaSceneController : MonoBehaviour
 {
-    [Header("UI")]
     [SerializeField] private GachaTimelineController timelineController;
-    [SerializeField] private GameObject resultPanelObj;
-    [SerializeField] private Button confirmButton;             // 확인 버튼
+    //[SerializeField] private GachaResultUI resultUI;
+    [SerializeField] private UnityEngine.UI.Button confirmButton;
 
     void Start()
     {
-        confirmButton.onClick.AddListener(OnConfirm);
+        //confirmButton.onClick.AddListener(OnConfirm);
+        //Camera.main?.gameObject.SetActive(false);
+        //StartCoroutine(GachaFlow());
+    }
 
-        // 로비 카메라 끄기
-        Camera.main?.gameObject.SetActive(false);
+    private void OnEnable()
+    {
+        GachaContext.OnGachaResult += OnGachaStart;
+    }
 
-        StartCoroutine(GachaFlow());
+    private void OnDisable()
+    {
+        GachaContext.OnGachaResult -= OnGachaStart;
+    }
+
+    private void OnGachaStart()
+    {
+        // 1. 공통 연출 (서버 응답 기다리는 동안 재생)
+        timelineController.PlayAndWait("common");
     }
 
     IEnumerator GachaFlow()
     {
-        // 1. 공용 연출 재생
-        yield return StartCoroutine(timelineController.PlayAndWait("common"));
-
-        // 2. 서버 결과 대기
-        yield return StartCoroutine(WaitForResult());
-
-        GachaResult result = GachaContext.PendingResult;
-
-        // 3. 결과에 따라 캐릭터 타임라인 분기
-        if (result.IsSpecialCutscene)
-        {
-            // CharacterId 그대로 key로 사용
-            // "char_special_001" → 해당 타임라인 재생
-            yield return StartCoroutine(
-                timelineController.PlayAndWait(result.CharacterId)
-            );
-        }
-
-        // 4. 결과 UI
-        ShowResult(result);
-    }
-
-    IEnumerator WaitForResult()
-    {
-        float timeout = 10f;
-        float elapsed = 0f;
+        // 2. 결과 대기 (연출 끝났는데 아직 안 왔으면 대기)
+        float timeout = 10f, elapsed = 0f;
         while (!GachaContext.IsResultReady)
         {
             elapsed += Time.deltaTime;
             if (elapsed >= timeout) yield break;
             yield return null;
         }
-    }
 
-    void ShowResult(GachaResult result)
-    {
-        resultPanelObj.SetActive(true);
+        var results = GachaContext.PendingResults;
+
+        // 3. 전설 등급 있으면 컷씬 재생
+        foreach (var item in results)
+        {
+            if (item.IsLegendary)
+            {
+                var data = GachaRewardDatabase.Instance.Find(item.typeId, item.rewardId);
+                if (data is CharacterRewardData charData && !string.IsNullOrEmpty(charData.cutsceneKey))
+                    yield return StartCoroutine(timelineController.PlayAndWait(charData.cutsceneKey));
+                break; // 첫 번째 전설만 컷씬
+            }
+        }
+
+        // 4. 결과 UI 표시
+        //resultUI.Show(results);
     }
 
     void OnConfirm()
     {
-        string panelId = GachaContext.LastShopPanelId;
         GachaSceneLoader.Unload(() =>
         {
-            //Camera.main?.gameObject.SetActive(true);
-            //ShopManager.Instance.OpenPanel(panelId);
+            Camera.main?.gameObject.SetActive(true);
+            ShopController.Instance.RestoreBanner(GachaContext.CurrentBannerId);
         });
     }
 }

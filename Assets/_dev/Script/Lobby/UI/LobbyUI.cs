@@ -23,4 +23,15 @@ public class LobbyUI : MonoBehaviour
     {
         OnMatchButtonClicked?.Invoke();
     }
+
+    public void Open()
+    {
+        gameObject.SetActive(true);
+    }
+
+    public void Close()
+    {
+        gameObject.SetActive(false);
+    }
+
 }
