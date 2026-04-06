@@ -20,6 +20,7 @@ public class LobbyController : MonoBehaviour
         lobbyUI.OnInventoryButtonClicked += HandleOnInventory;
         lobbyUI.OnMatchButtonClicked += HandleOnMatch;
         lobbyUI.OnStoreButtonClicked += HandleOnStore;
+        ShopController.Instance.OnsuccessGacha += OnsuccessGacha;
     }
 
     private void OnDestroy()
@@ -28,12 +29,17 @@ public class LobbyController : MonoBehaviour
         lobbyUI.OnInventoryButtonClicked -= HandleOnInventory;
         lobbyUI.OnMatchButtonClicked -= HandleOnMatch;
         lobbyUI.OnStoreButtonClicked -= HandleOnStore;
+        ShopController.Instance.OnsuccessGacha -= OnsuccessGacha;
     }
     private void OnEnable()
     {
         UpdateInfoUI();
     }
 
+    private void OnsuccessGacha()
+    {
+        UpdateInfoUI();
+    }
     private void UpdateInfoUI()
     {
         if (PlayerDataManager.Instance)

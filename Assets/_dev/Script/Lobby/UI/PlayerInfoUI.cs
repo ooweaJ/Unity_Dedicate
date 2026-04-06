@@ -8,7 +8,7 @@ public class PlayerInfoUI : MonoBehaviour
 
     public TextMeshProUGUI usernameText;
     public TextMeshProUGUI levelText;
-    public TextMeshProUGUI goldText;
+    public TextMeshProUGUI[] goldTexts;
 
     public void LogoutButtonPressed()
     {
@@ -19,7 +19,8 @@ public class PlayerInfoUI : MonoBehaviour
     {
         usernameText.text = username;
         levelText.text = "Lv. " + level.ToString();
-        goldText.text = gold.ToString();
+        foreach (var goldtext in goldTexts)
+            goldtext.text = gold.ToString();
     }
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Start()

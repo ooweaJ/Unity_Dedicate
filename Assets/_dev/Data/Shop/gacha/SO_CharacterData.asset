@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e57e1d0650f55147a5a17f67d988ab9, type: 3}
+  m_Name: SO_CharacterData
+  m_EditorClassIdentifier: Assembly-CSharp::GachaRewardDatas
+  RewardDatas:
+  - rewardId: 1
+    grade: 4
+    rewardName: "\uC9F1"
+    thumbnail: {fileID: 21300000, guid: 172c1d40777297249bbbcade181a2252, type: 3}
+    classIcon: {fileID: 0}
+    cutsceneKey: chan
+    playcutscene: 1

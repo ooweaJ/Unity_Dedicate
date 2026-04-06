@@ -10,6 +10,10 @@ public class PlayerData
 
     public PlayerInventory inventory { get; } = new PlayerInventory();
 
+    public void ConsumeGold(int amount)
+    {
+        this.gold -= amount;
+    }
     public void Apply(JToken user)
     {
         userId = (int)user["id"];

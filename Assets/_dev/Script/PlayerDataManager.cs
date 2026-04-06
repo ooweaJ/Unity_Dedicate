@@ -51,5 +51,11 @@ public class PlayerDataManager : MonoBehaviour
     public string GetUsername()  => Data.username;
     public int    GetLevel()     => Data.level;
     public int    GetGold()      => Data.gold;
+
+    public void ConsumeGold(int amount)
+    {
+        Data.ConsumeGold(amount);
+    }
     public PlayerInventory GetPlayerInventory() => Data.inventory;
+    
 }

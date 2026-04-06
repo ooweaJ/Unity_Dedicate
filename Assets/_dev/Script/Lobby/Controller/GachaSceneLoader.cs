@@ -92,7 +92,7 @@ public class GachaSceneLoader : MonoBehaviour
         AsyncOperation unloadOp = SceneManager.UnloadSceneAsync(GACHA_SCENE);
         yield return unloadOp;
 
-        Scene lobbyScene = SceneManager.GetSceneByName("LobbyScene");
+        Scene lobbyScene = SceneManager.GetSceneByName("MainLobbyScene");
         SceneManager.SetActiveScene(lobbyScene);
 
         onComplete?.Invoke();

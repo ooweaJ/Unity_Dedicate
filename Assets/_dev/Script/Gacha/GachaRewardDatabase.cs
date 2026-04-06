@@ -1,13 +1,12 @@
-using System.Collections.Generic;
+// GachaRewardDatabase.cs
 using UnityEngine;
 
 public class GachaRewardDatabase : MonoBehaviour
 {
     public static GachaRewardDatabase Instance;
 
-    [SerializeField] private List<CharacterRewardData> characters;
-    [SerializeField] private List<ExpPotionRewardData> expPotions;
-    [SerializeField] private List<OrbRewardData> orbs;
+    [SerializeField] private GachaRewardDatas characterTable;
+    [SerializeField] private GachaRewardDatas itemTable;
 
     void Awake() => Instance = this;
 
@@ -15,9 +14,8 @@ public class GachaRewardDatabase : MonoBehaviour
     {
         return typeId switch
         {
-            1 => characters.Find(c => c.rewardId == rewardId),
-            2 => expPotions.Find(p => p.rewardId == rewardId),
-            3 => orbs.Find(o => o.rewardId == rewardId),
+            1 => characterTable.Find(rewardId),
+            2 => itemTable.Find(rewardId),
             _ => null
         };
     }

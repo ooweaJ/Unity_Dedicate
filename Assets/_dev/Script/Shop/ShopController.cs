@@ -3,10 +3,16 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using Unity.VisualScripting;
+using Mirror.BouncyCastle.Crypto.Operators;
+using System;
+using System.Net.WebSockets;
 
 public class ShopController : MonoBehaviour
 {
     static public ShopController Instance;
+
+    public event Action OnsuccessGacha;
+
     [Header("배너 데이터")]
     [SerializeField] private List<BannerData> bannerDataList;
 
@@ -32,6 +38,7 @@ public class ShopController : MonoBehaviour
 
     void Awake()
     {
+        Instance = this;
         BuildList();
 
         if (bannerDataList.Count > 0)
@@ -43,24 +50,32 @@ public class ShopController : MonoBehaviour
         if (shopUI != null)
         {
             shopUI.OnClikedGachaButton += OnClickGacha;
+            shopUI.OnClickedCloseButton += OnClickCloseButton;
         }
     }
-  async void OnClickGacha(int amount)
+
+    private void OnDisable()
     {
+        if (shopUI != null)
+        {
+            shopUI.OnClikedGachaButton -= OnClickGacha;
+            shopUI.OnClickedCloseButton -= OnClickCloseButton;
+
+        }
+    }
+    async void OnClickGacha(int amount)
+    {
+        OnOffCamera(false);
+        OnOffUI(false);
+
+        // 씬  활성화
+        GachaSceneLoader.Activate();
+
         GachaContext.CurrentBannerId = _currentBannerId;
         GachaContext.PullAmount = amount;
         GachaContext.Clear();
 
-        if (lobbyCamera != null)
-            lobbyCamera.gameObject.SetActive(false);
-
-        shopUI.Close();
-        lobbyUI.Close();
-
-        // 씬 먼저 활성화 (연출 바로 시작)
-        GachaSceneLoader.Activate();
-
-        // 서버 요청 (연출 도중 응답 옴)
+        // 서버 요청
         string json = await BackendManager.GachaDraw(
             userId: PlayerDataManager.Instance.GetUserId(),
             bannerId: _currentBannerId,
@@ -68,11 +83,22 @@ public class ShopController : MonoBehaviour
         );
 
         var response = JsonUtility.FromJson<GachaPullResponse>(json);
+
         if (response.success)
         {
+            foreach (var item in response.results)
+            {
+
+                Debug.Log($"grade: {item.grade}, typeId: {item.typeId}, rewardId: {item.rewardId}, IsLegendary: {item.IsLegendary}");
+            }
             GachaContext.PendingResults = response.results;
             GachaContext.IsResultReady = true;
             GachaContext.OnGachaResult.Invoke();
+        }
+        else
+        {
+            Debug.Log("골드가 부족합니다");
+            return;
         }
     }
     void BuildList()
@@ -113,9 +139,42 @@ public class ShopController : MonoBehaviour
     }
 
     // 가챠 씬 복귀 시 호출
-    public void RestoreBanner(int bannerId)
+
+    public void ReturnToShop()
     {
-        var data = bannerDataList.Find(b => b.bannerId == bannerId);
+        OnOffCamera(true);
+        OnOffUI(true);
+        RestoreBanner();
+        OnsuccessGacha.Invoke();
+    }
+    private void RestoreBanner()
+    {
+        var data = bannerDataList.Find(b => b.bannerId == GachaContext.CurrentBannerId);
         if (data != null) SelectBanner(data);
+    }
+
+    private void OnOffCamera(bool trigger)
+    {
+        if (lobbyCamera != null)
+            lobbyCamera.gameObject.SetActive(trigger);
+    }
+
+    private void OnOffUI(bool trigger)
+    {
+        if(trigger)
+        {
+            shopUI.Open();
+            lobbyUI.Open();
+        }
+        else
+        {
+            shopUI.Close();
+            lobbyUI.Close();
+        }
+    }
+
+    private void OnClickCloseButton()
+    {
+        shopUI.Close();
     }
 }
