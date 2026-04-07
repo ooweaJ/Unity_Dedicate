@@ -86,6 +86,7 @@ public class ShopController : MonoBehaviour
 
         if (response.success)
         {
+            PlayerDataManager.Instance.ConsumeGold(amount * 100);
             foreach (var item in response.results)
             {
 
