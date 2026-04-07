@@ -6,7 +6,7 @@ using UnityEngine;
 public static class BackendManager
 {
     private static readonly HttpClient client = new HttpClient();
-    private static string baseUrl = "http://3.36.43.148:3000";
+    private static string baseUrl = "http://api.jaewoo98.store";
 
     // POST /users/login
     public static async Task<string> Login(string username, string password)
@@ -32,11 +32,12 @@ public static class BackendManager
         return await res.Content.ReadAsStringAsync();
     }
 
-    // POST /characters/draw/:userId
-    public static async Task<string> DrawCharacter(int userId)
+    public static async Task RefreshUserData(int userId)
     {
-        var res = await client.PostAsync(baseUrl + $"/characters/draw/{userId}", null);
-        return await res.Content.ReadAsStringAsync();
+        string json = await GetUserInfo(userId);
+        var response = JsonUtility.FromJson<UserInfoResponse>(json);
+        if (response.success)
+            PlayerDataManager.Instance.UpdateAll(response);
     }
 
     public static async Task<string> GetUserCharacters(int userId)

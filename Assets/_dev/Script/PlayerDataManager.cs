@@ -1,5 +1,7 @@
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.TextCore.Text;
 
 public class PlayerDataManager : MonoBehaviour
 {
@@ -20,6 +22,15 @@ public class PlayerDataManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+    }
+
+    public void UpdateAll(UserInfoResponse response)
+    {
+        //Gold = response.gold;
+        //Characters = new List<UserCharacterData>(response.characters);
+        //Items = new List<UserItemData>(response.items);
+
+        //OnDataUpdated?.Invoke();  // UI에 갱신 알림
     }
 
     public void ApplyUserData(JToken data)

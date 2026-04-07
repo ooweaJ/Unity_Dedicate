@@ -1,4 +1,5 @@
 using Newtonsoft.Json.Linq;
+using System.Collections.Generic;
 
 [System.Serializable]
 public class PlayerData
@@ -7,6 +8,8 @@ public class PlayerData
     public string username { get; private set; }
     public int gold { get; private set; }
     public int level { get; private set; }
+    public List<UserCharacterData> Characters { get; private set; } = new();
+    public List<UserItemData> Items { get; private set; } = new();
 
     public PlayerInventory inventory { get; } = new PlayerInventory();
 
