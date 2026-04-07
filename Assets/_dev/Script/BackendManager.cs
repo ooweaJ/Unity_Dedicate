@@ -32,20 +32,6 @@ public static class BackendManager
         return await res.Content.ReadAsStringAsync();
     }
 
-    public static async Task RefreshUserData(int userId)
-    {
-        string json = await GetUserInfo(userId);
-        var response = JsonUtility.FromJson<UserInfoResponse>(json);
-        if (response.success)
-            PlayerDataManager.Instance.UpdateAll(response);
-    }
-
-    public static async Task<string> GetUserCharacters(int userId)
-    {
-        var res = await client.GetAsync(baseUrl + $"/users/{userId}/characters");
-        return await res.Content.ReadAsStringAsync();
-    }
-
     // POST /match/acquire
     public static async Task<string> AcquirePort()
     {

@@ -1,22 +1,24 @@
-using Newtonsoft.Json.Linq;
-using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.TextCore.Text;
+using Newtonsoft.Json.Linq;
+using System.Threading.Tasks;
 
 public class PlayerDataManager : MonoBehaviour
 {
-    public static PlayerDataManager Instance;
+    public static PlayerDataManager Instance { get; private set; }
 
-    private PlayerData Data = new PlayerData();
+    // 실제 데이터 뭉치
+    private PlayerData _data = new PlayerData();
+    public System.Action OnDataUpdated;
 
-    // 로비에서 선택한 캐릭터 — 배틀 서버 Auth 시 전달
-    private CharacterType selectedCharacter = CharacterType.Swordsman;
+    [Header("Session Data")]
+    [SerializeField] private CharacterType selectedCharacter = CharacterType.Swordsman;
 
     private void Awake()
     {
         if (Instance == null)
         {
             Instance = this;
+            DontDestroyOnLoad(gameObject); // 씬 전환 시 유지
         }
         else
         {
@@ -24,49 +26,46 @@ public class PlayerDataManager : MonoBehaviour
         }
     }
 
-    public void UpdateAll(UserInfoResponse response)
+    public async Task RefreshMyData()
     {
-        //Gold = response.gold;
-        //Characters = new List<UserCharacterData>(response.characters);
-        //Items = new List<UserItemData>(response.items);
+        // 1. 통신은 BackendManager에게 시킴
+        string json = await BackendManager.GetUserInfo(_data.userId);
+        JObject response = JObject.Parse(json);
 
-        //OnDataUpdated?.Invoke();  // UI에 갱신 알림
+        if (response["success"] != null && (bool)response["success"])
+        {
+            // 2. 내 데이터를 스스로 업데이트
+            this.ApplyUserData(response);
+            Debug.Log("내 정보 동기화 완료!");
+        }
     }
 
+    // 서버 데이터를 받았을 때 호출
     public void ApplyUserData(JToken data)
     {
-        Data.Apply(data);
+        _data.Apply(data);
+        OnDataUpdated?.Invoke();
+        Debug.Log($"[PlayerDataManager] Data Applied for: {GetUsername()}");
     }
 
-    public void ClearData()
-    {
-        Data.Clear();
-    }
+    public void ClearData() => _data.Clear();
 
-    public void CharacterAddOrUpdate(PlayerCharacterData data)
-    {
-        Data.inventory.AddOrUpdate(data);
-    }
-
-    // ─── 캐릭터 선택 ──────────────────────────────────────────────────
+    // 캐릭터 선택 비즈니스 로직
     public void SelectCharacter(CharacterType type)
     {
         selectedCharacter = type;
-        Debug.Log($"[PLAYER DATA] 캐릭터 선택: {type}");
+        Debug.Log($"[PlayerDataManager] 캐릭터 선택 변경: {type}");
     }
 
+    // 외부 참조용 Getter
     public CharacterType GetSelectedCharacter() => selectedCharacter;
+    public int GetUserId() => _data.userId;
+    public string GetUsername() => _data.username;
+    public int GetLevel() => _data.level;
+    public int GetGold() => _data.gold;
+    public PlayerInventory GetInventory() => _data.inventory;
 
-    // ─── 기본 정보 ────────────────────────────────────────────────────
-    public int    GetUserId()    => Data.userId;
-    public string GetUsername()  => Data.username;
-    public int    GetLevel()     => Data.level;
-    public int    GetGold()      => Data.gold;
-
-    public void ConsumeGold(int amount)
-    {
-        Data.ConsumeGold(amount);
-    }
-    public PlayerInventory GetPlayerInventory() => Data.inventory;
-    
+    // 편의용 메서드
+    public void ConsumeGold(int amount) => _data.ConsumeGold(amount);
+    public void CharacterAddOrUpdate(PlayerCharacterData charData) => _data.inventory.AddOrUpdateCharacter(charData);
 }

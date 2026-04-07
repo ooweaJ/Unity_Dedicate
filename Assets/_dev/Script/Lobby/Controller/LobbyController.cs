@@ -16,24 +16,26 @@ public class LobbyController : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+    }
+
+    private void OnEnable()
+    {
         playerInfoUI.OnLogoutButtonClicked += HandleLogout;
         lobbyUI.OnInventoryButtonClicked += HandleOnInventory;
         lobbyUI.OnMatchButtonClicked += HandleOnMatch;
         lobbyUI.OnStoreButtonClicked += HandleOnStore;
         ShopController.Instance.OnsuccessGacha += OnsuccessGacha;
+        PlayerDataManager.Instance.OnDataUpdated += UpdateInfoUI;
+        UpdateInfoUI();
     }
-
-    private void OnDestroy()
+    private void OnDisable()
     {
         playerInfoUI.OnLogoutButtonClicked -= HandleLogout;
         lobbyUI.OnInventoryButtonClicked -= HandleOnInventory;
         lobbyUI.OnMatchButtonClicked -= HandleOnMatch;
         lobbyUI.OnStoreButtonClicked -= HandleOnStore;
         ShopController.Instance.OnsuccessGacha -= OnsuccessGacha;
-    }
-    private void OnEnable()
-    {
-        UpdateInfoUI();
+        PlayerDataManager.Instance.OnDataUpdated -= UpdateInfoUI;
     }
 
     private void OnsuccessGacha()

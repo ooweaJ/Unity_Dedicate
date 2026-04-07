@@ -16,14 +16,3 @@ public class UserItemData
     public int itemId;
     public int count;
 }
-
-[Serializable]
-public class UserInfoResponse
-{
-    public bool success;
-    public int id;
-    public string username;
-    public int gold;
-    public UserCharacterData[] characters;
-    public UserItemData[] items;
-}

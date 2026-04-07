@@ -1,43 +1,71 @@
 using System;
 using System.Collections.Generic;
+using Newtonsoft.Json.Linq;
 
 public class PlayerInventory
 {
-    private Dictionary<int, PlayerCharacterData> characters
-        = new Dictionary<int, PlayerCharacterData>();
-
-    private Dictionary<int, int> characterShards
-    = new Dictionary<int, int>();
+    private Dictionary<int, PlayerCharacterData> characters = new();
+    private Dictionary<int, UserItemData> items = new();
 
     public event Action OnChanged;
-    public void AddOrUpdate(PlayerCharacterData data)
+
+    // 캐릭터 데이터 적용
+    public void ApplyCharacters(JArray charArray)
+    {
+        characters.Clear();
+        if (charArray == null) return;
+
+        foreach (var token in charArray)
+        {
+            var data = new PlayerCharacterData
+            {
+                characterId = (int)token["character_id"],
+                level = (int)token["level"],
+                exp = (int)token["exp"],
+                enhance = (int)token["enhance"],
+                shardAmount = (int)token["shardAmount"]
+            };
+            characters[data.characterId] = data;
+        }
+        OnChanged?.Invoke();
+    }
+
+    // 아이템 데이터 적용
+    public void ApplyItems(JArray itemArray)
+    {
+        items.Clear();
+        if (itemArray == null) return;
+
+        foreach (var token in itemArray)
+        {
+            var data = new UserItemData
+            {
+                itemId = (int)token["item_id"],
+                count = (int)token["count"]
+            };
+            items[data.itemId] = data;
+        }
+        OnChanged?.Invoke();
+    }
+
+    // 데이터 수정/추가 시 호출
+    public void AddOrUpdateCharacter(PlayerCharacterData data)
     {
         characters[data.characterId] = data;
+        OnChanged?.Invoke();
     }
 
-    public void AddShard(int characterId, int amount)
-    {
-        if (!characterShards.ContainsKey(characterId))
-            characterShards[characterId] = 0;
+    // Getter (조회용)
+    public PlayerCharacterData GetCharacter(int id) => characters.GetValueOrDefault(id);
+    public UserItemData GetItem(int id) => items.GetValueOrDefault(id);
 
-        characterShards[characterId] += amount;
-    }
-
-    public PlayerCharacterData Get(int characterId)
-    {
-        return characters.TryGetValue(characterId, out var c) ? c : null;
-    }
-
-    public IEnumerable<PlayerCharacterData> GetAll()
-    {
-        return characters.Values;
-    }
+    public IEnumerable<PlayerCharacterData> GetAllCharacters() => characters.Values;
+    public IEnumerable<UserItemData> GetAllItems() => items.Values;
 
     public void Clear()
     {
         characters.Clear();
-        characterShards.Clear();
-
+        items.Clear();
         OnChanged?.Invoke();
     }
 }

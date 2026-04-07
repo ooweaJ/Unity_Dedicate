@@ -24,48 +24,29 @@ public class LoginController : MonoBehaviour
 
         JObject json = JObject.Parse(res);
 
-
-        if (json["message"].ToString() == "Login success")
+        if (json["message"] != null && json["message"].ToString() == "Login success")
         {
-            PlayerDataManager.Instance.ApplyUserData(json["user"]);
+            // 1. 로그인 응답에 포함된 유저+캐릭터+아이템 정보를 통째로 데이터 매니저에 적용
+            // ApplyUserData 내부에서 캐릭터 리스트까지 한 번에 처리하도록 만들면 베스트!
+            PlayerDataManager.Instance.ApplyUserData(json["userData"]);
 
-            await InitAfterLogin(PlayerDataManager.Instance.GetUserId());
+            // 2. 이제 추가 서버 통신 없이 바로 씬 전환으로 넘어갑니다.
+            InitAfterLogin();
         }
         else
         {
-
+            Debug.Log($"로그인 실패: {json["message"]}");
         }
     }
 
-    public async Task InitAfterLogin(int userId)
+    // 플레이어 데이터를 넣은 후 로비로 이동
+    public void InitAfterLogin() 
     {
-        await LoadUserCharacters(userId);
         SceneFlowManager.Instance.Load(new LoadRequest
         {
             sceneName = "MainLobbyScene",
             serverAddress = "127.0.0.1",
             port = 7777
         });
-    }
-
-    async Task LoadUserCharacters(int userId)
-    {
-        string res = await BackendManager.GetUserCharacters(userId);
-        JObject json = JObject.Parse(res);
-
-        JArray arr = (JArray)json["characters"];
-
-        foreach (var j in arr)
-        {
-            PlayerCharacterData pc = new PlayerCharacterData
-            {
-                characterId = (int)j["characterId"],
-                level = (int)j["level"],
-                exp = (int)j["exp"],
-                enhance = (int)j["enhance"]
-            };
-
-            PlayerDataManager.Instance.CharacterAddOrUpdate(pc);
-        }
     }
 }

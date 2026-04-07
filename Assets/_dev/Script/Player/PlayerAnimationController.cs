@@ -29,7 +29,7 @@ public class PlayerAnimationController : NetworkBehaviour
     private float syncSpeed;
 
     [SyncVar(hook = nameof(OnSyncDirection))]
-    private float syncDirection;
+    private float moveDirectionSync;
 
     [SyncVar(hook = nameof(OnSyncJumpHeight))]
     private float syncJumpHeight;
@@ -103,7 +103,7 @@ public class PlayerAnimationController : NetworkBehaviour
                                        bool jump, bool rest)
     {
         syncSpeed = speed;
-        syncDirection = direction;
+        moveDirectionSync = direction;
         syncJumpHeight = jumpHeight;
         syncGravityControl = gravity;
         syncJump = jump;
