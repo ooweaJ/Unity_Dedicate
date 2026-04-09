@@ -10,8 +10,6 @@ public class BootManager : MonoBehaviour
 
     private void Start()
     {
-        // PlayerDataManager, NetworkManager ��� �̹� �� ������Ʈ�� �پ��ִ� = ��ü ���� �����
-
         SceneManager.LoadScene("LoginScene");
     }
 }
