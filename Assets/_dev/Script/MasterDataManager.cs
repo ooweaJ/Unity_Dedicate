@@ -4,7 +4,7 @@ public class MasterDataManager : MonoBehaviour
 {
     public static MasterDataManager Instance;
 
-    public CharacterDatabase characterDB;
+    public InventoryDataBase characterDB;
 
     void Awake()
     {

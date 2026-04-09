@@ -1,6 +1,23 @@
 using Newtonsoft.Json.Linq;
 
 [System.Serializable]
+public class PlayerCharacterData
+{
+    public int characterId;
+    public int level;
+    public int exp;
+    public int enhance;
+    public int shardAmount;
+}
+
+[System.Serializable]
+public class PlayerItemData
+{
+    public int itemId;
+    public int amoutn;
+}
+
+[System.Serializable]
 public class PlayerData
 {
     public int userId { get; private set; }

@@ -10,7 +10,7 @@ public class LobbyController : MonoBehaviour
 
     [SerializeField] private LobbyUI lobbyUI;
     [SerializeField] private PlayerInfoUI playerInfoUI;
-    [SerializeField] private InventoryUI inventoryUI;
+    [SerializeField] private InventoryUIManager inventoryUI;
     [SerializeField] private ShopUI shopUI;
 
     private void Awake()
@@ -74,7 +74,6 @@ public class LobbyController : MonoBehaviour
     }
 
     private void HandleOnInventory() { inventoryUI.Open(); }
-    private void HandleOffInventory() { inventoryUI.Close(); }
 
     void HandleOnMatch()
     {

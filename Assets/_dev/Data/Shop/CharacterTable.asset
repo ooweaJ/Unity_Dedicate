@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 51a6bbe1ee93b2a41b0d276280224acc, type: 3}
+  m_Name: CharacterTable
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterTableSO
+  characters:
+  - id: 1
+    displayName: "\uC9F1"
+    grade: 1
+    icon: {fileID: 21300000, guid: 172c1d40777297249bbbcade181a2252, type: 3}
+    description: 
+    modelPrefab: {fileID: 2229370667690413967, guid: 8474dc6a58811014f879e23fd6f02766, type: 3}
+    baseHp: 100
+    baseAtk: 10
+    baseDef: 5
+  - id: 2
+    displayName: "\uC18C\uD53C"
+    grade: 1
+    icon: {fileID: 21300000, guid: eafa08dd1f7cbcc4d99449016f73f1ae, type: 3}
+    description: 
+    modelPrefab: {fileID: 884545215330195733, guid: 2a838687c9067484cb2229a0a8bd118f, type: 3}
+    baseHp: 80
+    baseAtk: 10
+    baseDef: 4

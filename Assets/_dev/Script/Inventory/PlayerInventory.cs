@@ -5,7 +5,7 @@ using Newtonsoft.Json.Linq;
 public class PlayerInventory
 {
     private Dictionary<int, PlayerCharacterData> characters = new();
-    private Dictionary<int, UserItemData> items = new();
+    private Dictionary<int, PlayerItemData> items = new();
 
     public event Action OnChanged;
 
@@ -38,10 +38,10 @@ public class PlayerInventory
 
         foreach (var token in itemArray)
         {
-            var data = new UserItemData
+            var data = new PlayerItemData
             {
                 itemId = (int)token["item_id"],
-                count = (int)token["count"]
+                amoutn = (int)token["amount"]
             };
             items[data.itemId] = data;
         }
@@ -57,10 +57,10 @@ public class PlayerInventory
 
     // Getter (조회용)
     public PlayerCharacterData GetCharacter(int id) => characters.GetValueOrDefault(id);
-    public UserItemData GetItem(int id) => items.GetValueOrDefault(id);
+    public PlayerItemData GetItem(int id) => items.GetValueOrDefault(id);
 
     public IEnumerable<PlayerCharacterData> GetAllCharacters() => characters.Values;
-    public IEnumerable<UserItemData> GetAllItems() => items.Values;
+    public IEnumerable<PlayerItemData> GetAllItems() => items.Values;
 
     public void Clear()
     {
