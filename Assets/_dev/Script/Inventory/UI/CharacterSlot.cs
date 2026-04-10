@@ -12,7 +12,7 @@ public class CharacterSlot : MonoBehaviour
     [SerializeField] private Button slotButton; // 버튼 컴포넌트 참조
 
     [Header("Selection Colors")]
-    [SerializeField] private Color selectedColor = Color.yellow;
+    [SerializeField] private Color selectedColor = new Color(1f, 0.75f, 0f);
     [SerializeField] private Color unselectedColor = Color.white;
 
     private int _id;

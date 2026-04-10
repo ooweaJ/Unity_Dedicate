@@ -9,9 +9,24 @@ public class InventoryUIManager : MonoBehaviour
     [SerializeField] private CharacterListManager listManager;   // 오른쪽 리스트 관리
     [SerializeField] private CharacterModelManager modelManager; // 중앙 3D 모델 관리
     [SerializeField] private CharacterInfoPanel infoPanel;       // 왼쪽 스탯/상세정보 관리
-    // [SerializeField] private SidebarManager sidebarManager;   // (추후 추가될 왼쪽 탭 관리)
+    [SerializeField] private SidebarManager sidebarManager;     // 왼쪽 탭 관리
+
+    [Header("Tab Panels")]
+    [SerializeField] private List<TabPanelMapping> panelMappings;
 
     private List<CharacterUIModel> _characterUIModels = new();
+    private Dictionary<int, GameObject> _panelDict = new();
+
+    private void OnEnable()
+    {
+        // 패널 매핑 딕셔너리 초기화
+        foreach (var mapping in panelMappings)
+            _panelDict[mapping.tabId] = mapping.panel;
+
+        // 사이드바 매니저의 신호를 구독 (이게 바로 역할 분리!)
+        sidebarManager.OnTabChanged += SwitchSubPanel;
+        sidebarManager.Init();
+    }
 
     public void Open() { panel.SetActive(true); }
     public void Close() { panel.SetActive(false); modelManager.ClearAllModels(); }
@@ -29,6 +44,18 @@ public class InventoryUIManager : MonoBehaviour
         if (_characterUIModels.Count > 0)
         {
             OnSelectCharacter(_characterUIModels[0].StaticData.id);
+        }
+    }
+
+    private void SwitchSubPanel(int tabId)
+    {
+        // 모든 패널 끄고 선택된 것만 켜기
+        foreach (var p in _panelDict.Values) p.SetActive(false);
+
+        if (_panelDict.TryGetValue(tabId, out var targetPanel))
+        {
+            targetPanel.SetActive(true);
+            // 필요하다면 여기서 패널별 데이터 리프레시 호출
         }
     }
 
