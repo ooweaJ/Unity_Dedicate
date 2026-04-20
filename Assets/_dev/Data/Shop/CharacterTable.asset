@@ -17,6 +17,7 @@ MonoBehaviour:
     displayName: "\uC9F1"
     grade: 1
     icon: {fileID: 21300000, guid: 172c1d40777297249bbbcade181a2252, type: 3}
+    shardIcon: {fileID: 21300000, guid: 2492289769c4d7645afdf969ae087055, type: 3}
     description: 
     modelPrefab: {fileID: 2229370667690413967, guid: 8474dc6a58811014f879e23fd6f02766, type: 3}
     baseHp: 100
@@ -26,6 +27,7 @@ MonoBehaviour:
     displayName: "\uC18C\uD53C"
     grade: 1
     icon: {fileID: 21300000, guid: eafa08dd1f7cbcc4d99449016f73f1ae, type: 3}
+    shardIcon: {fileID: 0}
     description: 
     modelPrefab: {fileID: 884545215330195733, guid: 2a838687c9067484cb2229a0a8bd118f, type: 3}
     baseHp: 80

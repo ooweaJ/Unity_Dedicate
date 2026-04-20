@@ -6,7 +6,7 @@ using System;
 public class InventoryUI : MonoBehaviour
 {
     [Header("Settings")]
-    [SerializeField] private ItemType targetType; // 인스펙터에서 설정 (Equipment, Consumable 등)
+    [SerializeField] private ItemType targetType; // 인스펙터에서 설정 (Equipment, Consumable, Transcendence 등)
     
     [Header("UI References")]
     [SerializeField] private InventorySlot slotPrefab;
@@ -15,18 +15,38 @@ public class InventoryUI : MonoBehaviour
     private List<InventorySlot> _slots = new();
     private int _selectedId = -1;
 
-    // 아이템 선택 시 외부(상세 정보 창 등)에 알릴 이벤트
+    // ✅ 데이터 제공자들
+    private Func<IEnumerable<PlayerItemData>> _itemDataProvider;
+    private Func<IEnumerable<PlayerCharacterData>> _charDataProvider; // 초월 재료용
+    private Func<int> _selectedCharacterIdProvider;                   // 현재 선택된 캐릭터 확인용
+
     public event Action<int> OnItemSelected;
 
     /// <summary>
-    /// 데이터를 주입받아 슬롯을 생성하고 초기화합니다. (CharacterListManager 패턴)
+    /// 초기 설정: 데이터를 어디서 가져올지 정의합니다.
     /// </summary>
-    /// 
-
-    public void Init(IEnumerable<PlayerItemData> allItems, Action<int> onItemSelected = null)
+    public void Setup(
+        Func<IEnumerable<PlayerItemData>> itemDataProvider, 
+        Func<IEnumerable<PlayerCharacterData>> charDataProvider,
+        Func<int> selectedCharacterIdProvider,
+        Action<int> onItemSelected = null)
     {
+        _itemDataProvider = itemDataProvider;
+        _charDataProvider = charDataProvider;
+        _selectedCharacterIdProvider = selectedCharacterIdProvider;
         OnItemSelected = onItemSelected;
+    }
 
+    private void OnEnable()
+    {
+        Refresh();
+    }
+
+    /// <summary>
+    /// 실제 슬롯을 생성하고 데이터를 화면에 그립니다.
+    /// </summary>
+    public void Refresh()
+    {
         // 1. 기존 슬롯 제거
         foreach (Transform child in contentParent)
         {
@@ -34,33 +54,70 @@ public class InventoryUI : MonoBehaviour
         }
         _slots.Clear();
 
-        // 2. 내 타입에 맞는 데이터만 필터링
-        var filteredItems = allItems.Where(item => 
+        // 2. 타입에 따른 데이터 처리
+        if (targetType == ItemType.Transcendence)
         {
-            var staticData = GameDataManager.Instance.GetItem(item.itemId);
-            return staticData != null && staticData.itemType == targetType;
-        }).ToList();
-
-        // 3. 필터링된 데이터로 슬롯 생성
-        foreach (var item in filteredItems)
+            RefreshTranscendenceSlots();
+        }
+        else
         {
-            var staticData = GameDataManager.Instance.GetItem(item.itemId);
-            var slot = Instantiate(slotPrefab, contentParent);
-            
-            slot.Setup(
-                item.itemId, 
-                staticData.icon, 
-                item.amoutn, // 데이터의 오타(amoutn) 유지
-                OnSlotClickedInternal
-            );
-
-            _slots.Add(slot);
+            RefreshItemSlots();
         }
 
-        // 4. 초기 선택 처리 (첫 번째 아이템 자동 선택)
+        // 3. 초기 선택 처리
         if (_slots.Count > 0)
         {
             OnSlotClickedInternal(_slots[0].Id);
+        }
+    }
+
+    private void RefreshTranscendenceSlots()
+    {
+        if (_charDataProvider == null || _selectedCharacterIdProvider == null) return;
+
+        int selectedCharId = _selectedCharacterIdProvider.Invoke();
+        var allChars = _charDataProvider.Invoke();
+        
+        // ✅ 현재 선택된 캐릭터의 데이터만 찾아서 조각 정보를 표시
+        var targetChar = allChars.FirstOrDefault(c => c.characterId == selectedCharId);
+        if (targetChar == null) return;
+
+        if (targetChar.shardAmount <= 0) return;
+
+        var staticData = GameDataManager.Instance.GetCharacter(targetChar.characterId);
+        if (staticData == null) return;
+
+        // 조각 슬롯 생성 (ID는 캐릭터 ID를 그대로 사용하거나 별도 규칙 적용 가능)
+        var slot = Instantiate(slotPrefab, contentParent);
+        slot.Setup(
+            targetChar.characterId, 
+            staticData.shardIcon, 
+            targetChar.shardAmount, 
+            OnSlotClickedInternal
+        );
+        _slots.Add(slot);
+    }
+
+    private void RefreshItemSlots()
+    {
+        if (_itemDataProvider == null) return;
+
+        var allItems = _itemDataProvider.Invoke();
+        if (allItems == null) return;
+
+        foreach (var item in allItems)
+        {
+            var itemData = GameDataManager.Instance.GetItem(item.itemId);
+            if (itemData == null || itemData.itemType != targetType) continue;
+
+            var slot = Instantiate(slotPrefab, contentParent);
+            slot.Setup(
+                item.itemId, 
+                itemData.icon, 
+                item.amoutn, // 오타 유지
+                OnSlotClickedInternal
+            );
+            _slots.Add(slot);
         }
     }
 

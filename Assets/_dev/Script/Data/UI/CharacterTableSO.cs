@@ -8,7 +8,8 @@ public class CharacterRawData
     public int id;
     public string displayName;
     public int grade = 1;
-    public Sprite icon;
+    public Sprite icon;             // 본체 초상화
+    public Sprite shardIcon;        // 초월용 조각 아이콘
     [TextArea] public string description;
 
     [Header("Visuals")]
