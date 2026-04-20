@@ -2,6 +2,13 @@
 using System.Linq;
 using UnityEngine;
 
+[System.Serializable]
+public struct TabPanelMapping
+{
+    public int tabId;
+    public List<GameObject> panelsToShow; // 켜질 것만 관리
+}
+
 public class InventoryUIManager : MonoBehaviour
 {
     [SerializeField] private GameObject panel;
@@ -15,17 +22,20 @@ public class InventoryUIManager : MonoBehaviour
     [SerializeField] private List<TabPanelMapping> panelMappings;
 
     private List<CharacterUIModel> _characterUIModels = new();
-    private Dictionary<int, GameObject> _panelDict = new();
+    private Dictionary<int, TabPanelMapping> _panelDict = new();
 
     private void OnEnable()
     {
-        // 패널 매핑 딕셔너리 초기화
         foreach (var mapping in panelMappings)
-            _panelDict[mapping.tabId] = mapping.panel;
+            _panelDict[mapping.tabId] = mapping;
 
-        // 사이드바 매니저의 신호를 구독 (이게 바로 역할 분리!)
         sidebarManager.OnTabChanged += SwitchSubPanel;
         sidebarManager.Init();
+    }
+
+    private void OnDisable()
+    {
+        sidebarManager.OnTabChanged -= SwitchSubPanel;
     }
 
     public void Open() { panel.SetActive(true); }
@@ -49,19 +59,16 @@ public class InventoryUIManager : MonoBehaviour
 
     private void SwitchSubPanel(int tabId)
     {
-        // 모든 패널 끄고 선택된 것만 켜기
-        foreach (var p in _panelDict.Values) p.SetActive(false);
+        // 전체 패널 다 끄고
+        foreach (var mapping in _panelDict.Values)
+            mapping.panelsToShow.ForEach(p => p.SetActive(false));
 
-        if (_panelDict.TryGetValue(tabId, out var targetPanel))
-        {
-            targetPanel.SetActive(true);
-            // 필요하다면 여기서 패널별 데이터 리프레시 호출
-        }
+        // 해당 탭 것만 켜기
+        if (_panelDict.TryGetValue(tabId, out var target))
+            target.panelsToShow.ForEach(p => p.SetActive(true));
     }
 
-    /// <summary>
     /// 캐릭터가 선택되었을 때(슬롯 클릭 등) 모든 UI를 갱신하는 함수
-    /// </summary>
     private void OnSelectCharacter(int id)
     {
         var selectedModel = _characterUIModels.FirstOrDefault(m => m.StaticData.id == id);

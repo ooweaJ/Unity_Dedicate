@@ -2,12 +2,6 @@ using UnityEngine;
 using UnityEngine.UI;
 using System;
 
-[System.Serializable]
-public struct TabPanelMapping // 에디터에서 연결하기 위한 구조체
-{
-    public int tabId;
-    public GameObject panel;
-}
 public class TabButton : MonoBehaviour
 {
     public int tabId;

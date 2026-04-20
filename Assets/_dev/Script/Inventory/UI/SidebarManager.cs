@@ -22,7 +22,7 @@ public class SidebarManager : MonoBehaviour
         foreach (var tab in tabs)
         {
             // 각 버튼에 클릭 시 내부 함수 호출 바인딩
-            tab.OnTabClicked = HandleTabClicked;
+            tab.OnTabClicked += HandleTabClicked;
         }
 
         // 초기 탭 설정 (0번 상세 정보)

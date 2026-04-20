@@ -1,0 +1,22 @@
+# 유니티 자동 생성 폴더
+/Library/
+/Temp/
+/Obj/
+/Logs/
+/UserSettings/
+/.vs/
+
+# 프로젝트 설정 및 빌드 파일
+/ProjectSettings/
+/Packages/
+/Build/
+
+# 루트의 소스코드 외 파일들 (에이전트가 헷갈려 함)
+*.csproj
+*.sln
+*.slnx
+*.user
+*.git
+
+# 메타 파일 (데이터는 Assets 안에 있으므로 무시)
+*.meta
