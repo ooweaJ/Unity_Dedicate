@@ -1,55 +1,81 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using System;
 
 public class InventoryUI : MonoBehaviour
 {
-    [SerializeField] private Transform comsumcontent;
-    [SerializeField] private Transform Charactercontent;
-    [SerializeField] private Transform CharacterSharedcontent;
-    [SerializeField] private Transform Equipcontent;
-    [SerializeField] private CharacterSlot CharacterslotPrefab;
-    // 소비 슬롯?, 장비 슬롯? , 초월 재료 슬롯? 다만들어야하나? 하나로 관리할 수 있나?
+    [Header("Settings")]
+    [SerializeField] private ItemType targetType; // 인스펙터에서 설정 (Equipment, Consumable 등)
+    
+    [Header("UI References")]
+    [SerializeField] private InventorySlot slotPrefab;
+    [SerializeField] private Transform contentParent; // ScrollView의 Content 오브젝트
 
+    private List<InventorySlot> _slots = new();
+    private int _selectedId = -1;
 
-    public void Init(IEnumerable<PlayerCharacterData> playerCharacterDatas, IEnumerable<PlayerItemData> playerItemDatas)
+    // 아이템 선택 시 외부(상세 정보 창 등)에 알릴 이벤트
+    public event Action<int> OnItemSelected;
+
+    /// <summary>
+    /// 데이터를 주입받아 슬롯을 생성하고 초기화합니다. (CharacterListManager 패턴)
+    /// </summary>
+    /// 
+
+    public void Init(IEnumerable<PlayerItemData> allItems, Action<int> onItemSelected = null)
     {
-        foreach (var pc in playerCharacterDatas)
+        OnItemSelected = onItemSelected;
+
+        // 1. 기존 슬롯 제거
+        foreach (Transform child in contentParent)
         {
+            Destroy(child.gameObject);
+        }
+        _slots.Clear();
+
+        // 2. 내 타입에 맞는 데이터만 필터링
+        var filteredItems = allItems.Where(item => 
+        {
+            var staticData = GameDataManager.Instance.GetItem(item.itemId);
+            return staticData != null && staticData.itemType == targetType;
+        }).ToList();
+
+        // 3. 필터링된 데이터로 슬롯 생성
+        foreach (var item in filteredItems)
+        {
+            var staticData = GameDataManager.Instance.GetItem(item.itemId);
+            var slot = Instantiate(slotPrefab, contentParent);
+            
+            slot.Setup(
+                item.itemId, 
+                staticData.icon, 
+                item.amoutn, // 데이터의 오타(amoutn) 유지
+                OnSlotClickedInternal
+            );
+
+            _slots.Add(slot);
+        }
+
+        // 4. 초기 선택 처리 (첫 번째 아이템 자동 선택)
+        if (_slots.Count > 0)
+        {
+            OnSlotClickedInternal(_slots[0].Id);
         }
     }
-    //public void RefreshItems(IEnumerable<UserItemData> playerItems)
-    //{
-    //    // 1. 기존 슬롯 싹 비우기
-    //    foreach (Transform child in content)
-    //        Destroy(child.gameObject);
 
-    //    // 2. 아이템 데이터 순회하며 슬롯 생성
-    //    foreach (var pi in playerItems)
-    //    {
+    private void OnSlotClickedInternal(int id)
+    {
+        _selectedId = id;
+        RefreshSelection(id);
+        OnItemSelected?.Invoke(id);
+    }
 
-    //    }
-    //}
-
-    //public void Refresh(IEnumerable<PlayerDatas> playerCharacterDatas)
-    //{
-    //    foreach (Transform child in content)
-    //        Destroy(child.gameObject);
-
-    //    foreach (var pc in playerCharacterDatas)
-    //    {
-    //        var baseData = characterDatabase.GetById(pc.characterId);
-    //        var slot = Instantiate(slotPrefab, content);
-    //        slot.Set(pc, baseData);
-    //    }
-    //}
-
-    //public void Open()
-    //{
-    //    panel.SetActive(true);
-    //}
-
-    //public void Close()
-    //{
-    //    panel.SetActive(false);
-    //}
+    public void RefreshSelection(int selectedId)
+    {
+        foreach (var slot in _slots)
+        {
+            slot.SetSelect(slot.Id == selectedId);
+        }
+    }
 }

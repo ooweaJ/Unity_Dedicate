@@ -1,10 +1,18 @@
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum ItemType
+{
+    Equipment,      // 장비
+    Consumable,     // 소모품
+    Transcendence   // 초월 재료
+}
+
 [System.Serializable]
 public class ItemRawData
 {
     public int id;
+    public ItemType itemType; // 아이템 타입 추가
     public string displayName;
     public Sprite icon;
     public int maxStack;

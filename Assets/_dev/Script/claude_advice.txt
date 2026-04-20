@@ -1,0 +1,210 @@
+인벤토리 시스템 아키텍처 분석 및 제안
+코드 구조를 보니 전반적으로 관심사 분리가 잘 되어 있어요. 세 가지 질문에 순서대로 답할게요.
+
+1. 진입점(Entry Point) 설계
+결론: 인벤토리 버튼 클릭 시점에 초기화하되, InventoryController가 모든 책임을 가져가는 구조가 맞습니다.
+현재 InventoryController.OpenInventory()가 이미 그 역할을 하고 있는데, InventoryUI까지 연결이 안 된 게 문제예요. InventoryUIManager.InitInventory에서 캐릭터만 처리하고 아이템은 빠져 있습니다.
+csharp// InventoryUIManager.cs
+public void InitInventory(IEnumerable<PlayerCharacterData> charDatas, IEnumerable<PlayerItemData> itemDatas)
+{
+    // 기존 캐릭터 처리 로직...
+    _characterUIModels = charDatas.Select(s =>
+        new CharacterUIModel(s, GameDataManager.Instance.GetCharacter(s.characterId))
+    ).ToList();
+
+    listManager.Init(_characterUIModels, 1, OnSelectCharacter);
+    if (_characterUIModels.Count > 0)
+        OnSelectCharacter(_characterUIModels[0].StaticData.id);
+
+    // ✅ 추가: 각 InventoryUI(아이템 탭)에도 데이터를 밀어넣기
+    foreach (var inventoryUI in _itemInventoryUIs)
+    {
+        inventoryUI.Init(itemDatas, OnSelectItem);
+    }
+}
+로비 진입 시 미리 초기화하는 방식은 권장하지 않아요. 패널이 비활성화된 상태에서 슬롯을 Instantiate하면 레이아웃 계산이 틀어지는 Unity 버그가 자주 발생하고, 사용하지 않을 데이터를 미리 렌더링하는 건 낭비입니다.
+
+2. 데이터 동기화 이벤트 구조
+현재 문제: PlayerDataManager.OnDataUpdated → InventoryController 연결이 끊겨 있어요.
+권장 구조: PlayerInventory.OnChanged 이벤트를 그대로 활용하되, InventoryController가 구독 관리를 담당
+csharp// InventoryController.cs - 수정안
+
+private void OnEnable()
+{
+    if (PlayerDataManager.Instance == null) return;
+    if (lobbyUI != null)
+        lobbyUI.OnInventoryButtonClicked += OpenInventory;
+
+    _inventory = PlayerDataManager.Instance.GetInventory();
+
+    if (_inventory != null)
+    {
+        _inventory.OnChanged -= HandleRefresh;
+        _inventory.OnChanged += HandleRefresh;
+    }
+    
+    // ✅ 핵심: UI가 열려 있을 때만 갱신 (불필요한 렌더링 방지)
+}
+
+private void HandleRefresh()
+{
+    // uiManager가 활성화되어 있을 때만 갱신
+    if (uiManager != null && uiManager.gameObject.activeSelf)
+    {
+        RefreshUI();
+    }
+    // 비활성 상태면 무시 — 어차피 OpenInventory() 시점에 RefreshUI() 호출됨
+}
+이벤트 흐름:
+서버 응답
+  └─▶ PlayerDataManager.ApplyUserData()
+        └─▶ PlayerInventory.OnChanged 발행
+              └─▶ InventoryController.HandleRefresh()
+                    └─▶ (UI 열림 여부 체크)
+                          └─▶ InventoryUIManager.InitInventory()
+이 구조의 장점은 InventoryController가 유일한 구독자이기 때문에, 나중에 UI가 여러 개로 늘어나도 이 파일만 수정하면 됩니다.
+
+3. InventoryUIManager 보완 코드 (핵심)
+_itemInventoryUIs 리스트를 InventoryUIManager에 추가하고, 탭 전환 시 Init을 지연 호출하는 Lazy Init 패턴을 권장합니다.
+csharp// InventoryUIManager.cs - 전체 보완안
+
+public class InventoryUIManager : MonoBehaviour
+{
+    [Header("Sub Managers")]
+    [SerializeField] private CharacterListManager listManager;
+    [SerializeField] private CharacterModelManager modelManager;
+    [SerializeField] private CharacterInfoPanel infoPanel;
+    [SerializeField] private SidebarManager sidebarManager;
+
+    // ✅ 추가: 아이템 탭 UI들을 인스펙터에서 연결
+    [Header("Item Tab UIs")]
+    [SerializeField] private List<InventoryUI> _itemInventoryUIs;
+
+    [Header("Tab Panels")]
+    [SerializeField] private List<TabPanelMapping> panelMappings;
+
+    private List<CharacterUIModel> _characterUIModels = new();
+    private Dictionary<int, TabPanelMapping> _panelDict = new();
+
+    // ✅ 추가: 마지막으로 받은 아이템 데이터를 캐싱
+    private IEnumerable<PlayerItemData> _cachedItemDatas;
+    private bool _isItemUIsInitialized = false;
+
+    private void OnEnable()
+    {
+        foreach (var mapping in panelMappings)
+            _panelDict[mapping.tabId] = mapping;
+
+        sidebarManager.OnTabChanged += SwitchSubPanel;
+        sidebarManager.Init();
+    }
+
+    private void OnDisable()
+    {
+        sidebarManager.OnTabChanged -= SwitchSubPanel;
+        // ✅ 닫힐 때 초기화 플래그 리셋 (다음 오픈 시 재초기화)
+        _isItemUIsInitialized = false;
+    }
+
+    public void InitInventory(
+        IEnumerable<PlayerCharacterData> charDatas,
+        IEnumerable<PlayerItemData> itemDatas)
+    {
+        // --- 아이템 데이터 캐싱 ---
+        // ToList()로 고정: 원본 컬렉션이 바뀌어도 캐시는 유지
+        _cachedItemDatas = itemDatas.ToList();
+        _isItemUIsInitialized = false; // 데이터 갱신 시 재초기화 유도
+
+        // --- 캐릭터 초기화 (기존과 동일) ---
+        _characterUIModels = charDatas.Select(s =>
+            new CharacterUIModel(s, GameDataManager.Instance.GetCharacter(s.characterId))
+        ).ToList();
+
+        listManager.Init(_characterUIModels, 1, OnSelectCharacter);
+
+        if (_characterUIModels.Count > 0)
+            OnSelectCharacter(_characterUIModels[0].StaticData.id);
+
+        // --- 아이템 탭 초기화 ---
+        // 현재 활성화된 탭이 아이템 탭이라면 즉시, 아니면 탭 전환 시 Lazy Init
+        InitItemUIsIfNeeded();
+    }
+
+    private void InitItemUIsIfNeeded()
+    {
+        if (_isItemUIsInitialized || _cachedItemDatas == null) return;
+
+        foreach (var inventoryUI in _itemInventoryUIs)
+        {
+            // ✅ 패널이 활성화된 상태에서만 Init (레이아웃 오류 방지)
+            if (inventoryUI.gameObject.activeInHierarchy)
+            {
+                inventoryUI.Init(_cachedItemDatas, OnSelectItem);
+            }
+        }
+
+        _isItemUIsInitialized = true;
+    }
+
+    private void SwitchSubPanel(int tabId)
+    {
+        foreach (var mapping in _panelDict.Values)
+            mapping.panelsToShow.ForEach(p => p.SetActive(false));
+
+        if (_panelDict.TryGetValue(tabId, out var target))
+            target.panelsToShow.ForEach(p => p.SetActive(true));
+
+        // ✅ 탭 전환 후 아이템 UI가 아직 초기화 안 됐으면 지금 초기화
+        InitItemUIsIfNeeded();
+    }
+
+    // ✅ 추가: 아이템 선택 콜백 (필요에 따라 infoPanel 연동)
+    private void OnSelectItem(int itemId)
+    {
+        // 예: 아이템 상세 정보 패널 갱신
+        // infoPanel.SetItemData(GameDataManager.Instance.GetItem(itemId));
+        Debug.Log($"[InventoryUIManager] 아이템 선택: {itemId}");
+    }
+
+    private void OnSelectCharacter(int id)
+    {
+        var selectedModel = _characterUIModels
+            .FirstOrDefault(m => m.StaticData.id == id);
+        if (selectedModel == null) return;
+
+        modelManager.ShowModel(selectedModel);
+        infoPanel.SetData(selectedModel);
+        listManager.RefreshSelection(id);
+    }
+
+    public void Open() { panel.SetActive(true); }
+    public void Close() { panel.SetActive(false); modelManager.ClearAllModels(); }
+}
+
+최종 데이터 흐름 요약
+[버튼 클릭]
+    │
+    ▼
+InventoryController.OpenInventory()
+    ├── uiManager.SetActive(true)       ← UI 패널 활성화
+    └── RefreshUI()
+          └── uiManager.InitInventory(chars, items)
+                ├── 캐릭터 리스트 즉시 그리기
+                └── _cachedItemDatas 저장
+                      └── 현재 탭이 아이템 탭?
+                            ├── YES → InventoryUI.Init() 즉시 호출
+                            └── NO  → 탭 클릭 시 Lazy Init
+
+[서버 데이터 갱신]
+    │
+    ▼
+PlayerInventory.OnChanged 발행
+    └── InventoryController.HandleRefresh()
+          └── UI 활성 상태면 → RefreshUI() 재호출
+                (위 흐름 반복, _isItemUIsInitialized = false로 리셋됨)
+핵심 원칙 정리:
+
+단일 진입점: InventoryController만이 데이터→UI 흐름을 시작
+Lazy Init: 탭이 실제로 열릴 때 슬롯 생성 (Unity 레이아웃 안전성 + 불필요한 렌더링 제거)
+캐시 + 플래그: _cachedItemDatas와 _isItemUIsInitialized로 중복 Init 방지
+UI 활성 체크: 닫힌 UI는 갱신 건너뜀, 열릴 때 자동으로 최신 데이터 반영

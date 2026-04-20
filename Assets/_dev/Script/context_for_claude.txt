@@ -1,0 +1,431 @@
+
+
+### File: Inventory\InventoryController.cs
+```csharp
+using System.Collections.Generic;
+using UnityEngine;
+
+public class InventoryController : MonoBehaviour
+{
+    // 이제 UI가 아니라 매니저를 참조합니다.
+    [SerializeField] private InventoryUIManager uiManager;
+    [SerializeField] private LobbyUI lobbyUI;
+
+    private PlayerInventory _inventory;
+
+    // UI는 껐다 켰다 하는 경우가 많으므로 OnEnable/OnDisable이 더 안전합니다.
+    private void OnEnable()
+    {
+        if (PlayerDataManager.Instance == null) return;
+        if (lobbyUI != null)
+            lobbyUI.OnInventoryButtonClicked += OpenInventory;
+
+        _inventory = PlayerDataManager.Instance.GetInventory();
+
+        if (_inventory != null)
+        {
+            _inventory.OnChanged -= HandleRefresh;
+            _inventory.OnChanged += HandleRefresh;
+
+            // 처음 열렸을 때 UI 초기화 명령
+            RefreshUI();
+        }
+    }
+
+    private void OnDisable()
+    {
+        if (_inventory != null)
+            _inventory.OnChanged -= HandleRefresh;
+        if(lobbyUI != null)
+            lobbyUI.OnInventoryButtonClicked -= OpenInventory;
+
+    }
+
+    public void OpenInventory()
+    {
+        if (uiManager == null) return;
+
+        // 1. UI를 먼저 켭니다. (이때 UI의 OnEnable 등이 실행됨)
+        uiManager.gameObject.SetActive(true);
+
+        // 2. 데이터를 밀어넣습니다.
+        RefreshUI();
+    }
+
+    private void HandleRefresh()
+    {
+        RefreshUI();
+    }
+
+    private void RefreshUI()
+    {
+        if (_inventory == null || uiManager == null) return;
+
+        // 서버에서 온 가공되지 않은 데이터를 매니저에게 던져줍니다.
+        var characters = _inventory.GetAllCharacters();
+        var items = _inventory.GetAllItems();
+
+        uiManager.InitInventory(characters, items);
+    }
+}
+```
+
+### File: Inventory\UI\InventoryUIManager.cs
+```csharp
+﻿using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+
+[System.Serializable]
+public struct TabPanelMapping
+{
+    public int tabId;
+    public List<GameObject> panelsToShow; // 켜질 것만 관리
+}
+
+public class InventoryUIManager : MonoBehaviour
+{
+    [SerializeField] private GameObject panel;
+    [Header("Sub Managers")]
+    [SerializeField] private CharacterListManager listManager;   // 오른쪽 리스트 관리
+    [SerializeField] private CharacterModelManager modelManager; // 중앙 3D 모델 관리
+    [SerializeField] private CharacterInfoPanel infoPanel;       // 왼쪽 스탯/상세정보 관리
+    [SerializeField] private SidebarManager sidebarManager;     // 왼쪽 탭 관리
+
+    [Header("Tab Panels")]
+    [SerializeField] private List<TabPanelMapping> panelMappings;
+
+    private List<CharacterUIModel> _characterUIModels = new();
+    private Dictionary<int, TabPanelMapping> _panelDict = new();
+
+    private void OnEnable()
+    {
+        foreach (var mapping in panelMappings)
+            _panelDict[mapping.tabId] = mapping;
+
+        sidebarManager.OnTabChanged += SwitchSubPanel;
+        sidebarManager.Init();
+    }
+
+    private void OnDisable()
+    {
+        sidebarManager.OnTabChanged -= SwitchSubPanel;
+    }
+
+    public void Open() { panel.SetActive(true); }
+    public void Close() { panel.SetActive(false); modelManager.ClearAllModels(); }
+    public void InitInventory(IEnumerable<PlayerCharacterData> charDatas, IEnumerable<PlayerItemData> itemDatas)
+    {
+        // 1. 데이터를 UI용 모델로 가공 (서버 데이터 + SO 정적 데이터)
+        _characterUIModels = charDatas.Select(s =>
+            new CharacterUIModel(s, GameDataManager.Instance.GetCharacter(s.characterId))
+        ).ToList();
+
+        // 2. 리스트 매니저에게 슬롯 생성을 시킴 (클릭 콜백 전달)
+        listManager.Init(_characterUIModels, 1 , OnSelectCharacter);
+
+        // 3. 초기 선택 처리 (첫 번째 캐릭터가 있다면 자동 선택)
+        if (_characterUIModels.Count > 0)
+        {
+            OnSelectCharacter(_characterUIModels[0].StaticData.id);
+        }
+    }
+
+    private void SwitchSubPanel(int tabId)
+    {
+        // 전체 패널 다 끄고
+        foreach (var mapping in _panelDict.Values)
+            mapping.panelsToShow.ForEach(p => p.SetActive(false));
+
+        // 해당 탭 것만 켜기
+        if (_panelDict.TryGetValue(tabId, out var target))
+            target.panelsToShow.ForEach(p => p.SetActive(true));
+    }
+
+    /// 캐릭터가 선택되었을 때(슬롯 클릭 등) 모든 UI를 갱신하는 함수
+    private void OnSelectCharacter(int id)
+    {
+        var selectedModel = _characterUIModels.FirstOrDefault(m => m.StaticData.id == id);
+        if (selectedModel == null) return;
+
+        // 중앙 모델 교체 지시
+        modelManager.ShowModel(selectedModel);
+
+        // 정보 패널(스탯 등) 갱신 지시
+        infoPanel.SetData(selectedModel);
+
+        // 리스트 매니저에게 '선택 테두리' 갱신 지시
+        listManager.RefreshSelection(id);
+    }
+}
+```
+
+### File: PlayerDataManager.cs
+```csharp
+using UnityEngine;
+using Newtonsoft.Json.Linq;
+using System.Threading.Tasks;
+
+public class PlayerDataManager : MonoBehaviour
+{
+    public static PlayerDataManager Instance { get; private set; }
+
+    // 실제 데이터 뭉치
+    private PlayerData _data = new PlayerData();
+    public System.Action OnDataUpdated;
+
+    [Header("Session Data")]
+    [SerializeField] private CharacterType selectedCharacter = CharacterType.Swordsman;
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+            DontDestroyOnLoad(gameObject); // 씬 전환 시 유지
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+
+    public async Task RefreshMyData()
+    {
+        // 1. 통신은 BackendManager에게 시킴
+        string json = await BackendManager.GetUserInfo(_data.userId);
+        JObject response = JObject.Parse(json);
+
+        if (response["success"] != null && (bool)response["success"])
+        {
+            // 2. 내 데이터를 스스로 업데이트
+            this.ApplyUserData(response);
+            Debug.Log("내 정보 동기화 완료!");
+        }
+    }
+
+    // 서버 데이터를 받았을 때 호출
+    public void ApplyUserData(JToken data)
+    {
+        _data.Apply(data);
+        OnDataUpdated?.Invoke();
+        Debug.Log($"[PlayerDataManager] Data Applied for: {GetUsername()}");
+    }
+
+    public void ClearData() => _data.Clear();
+
+    // 캐릭터 선택 비즈니스 로직
+    public void SelectCharacter(CharacterType type)
+    {
+        selectedCharacter = type;
+        Debug.Log($"[PlayerDataManager] 캐릭터 선택 변경: {type}");
+    }
+
+    // 외부 참조용 Getter
+    public CharacterType GetSelectedCharacter() => selectedCharacter;
+    public int GetUserId() => _data.userId;
+    public string GetUsername() => _data.username;
+    public int GetLevel() => _data.level;
+    public int GetGold() => _data.gold;
+    public PlayerInventory GetInventory() => _data.inventory;
+
+    // 편의용 메서드
+    public void ConsumeGold(int amount) => _data.ConsumeGold(amount);
+    public void CharacterAddOrUpdate(PlayerCharacterData charData) => _data.inventory.AddOrUpdateCharacter(charData);
+}
+```
+
+### File: Inventory\UI\InventoryUI.cs
+```csharp
+using System.Collections.Generic;
+using System.Linq;
+using UnityEngine;
+using System;
+
+public class InventoryUI : MonoBehaviour
+{
+    [Header("Settings")]
+    [SerializeField] private ItemType targetType; // 인스펙터에서 설정 (Equipment, Consumable 등)
+    
+    [Header("UI References")]
+    [SerializeField] private InventorySlot slotPrefab;
+    [SerializeField] private Transform contentParent; // ScrollView의 Content 오브젝트
+
+    private List<InventorySlot> _slots = new();
+    private int _selectedId = -1;
+
+    // 아이템 선택 시 외부(상세 정보 창 등)에 알릴 이벤트
+    public event Action<int> OnItemSelected;
+
+    /// <summary>
+    /// 데이터를 주입받아 슬롯을 생성하고 초기화합니다. (CharacterListManager 패턴)
+    /// </summary>
+    /// 
+
+    public void Init(IEnumerable<PlayerItemData> allItems, Action<int> onItemSelected = null)
+    {
+        OnItemSelected = onItemSelected;
+
+        // 1. 기존 슬롯 제거
+        foreach (Transform child in contentParent)
+        {
+            Destroy(child.gameObject);
+        }
+        _slots.Clear();
+
+        // 2. 내 타입에 맞는 데이터만 필터링
+        var filteredItems = allItems.Where(item => 
+        {
+            var staticData = GameDataManager.Instance.GetItem(item.itemId);
+            return staticData != null && staticData.itemType == targetType;
+        }).ToList();
+
+        // 3. 필터링된 데이터로 슬롯 생성
+        foreach (var item in filteredItems)
+        {
+            var staticData = GameDataManager.Instance.GetItem(item.itemId);
+            var slot = Instantiate(slotPrefab, contentParent);
+            
+            slot.Setup(
+                item.itemId, 
+                staticData.icon, 
+                item.amoutn, // 데이터의 오타(amoutn) 유지
+                OnSlotClickedInternal
+            );
+
+            _slots.Add(slot);
+        }
+
+        // 4. 초기 선택 처리 (첫 번째 아이템 자동 선택)
+        if (_slots.Count > 0)
+        {
+            OnSlotClickedInternal(_slots[0].Id);
+        }
+    }
+
+    private void OnSlotClickedInternal(int id)
+    {
+        _selectedId = id;
+        RefreshSelection(id);
+        OnItemSelected?.Invoke(id);
+    }
+
+    public void RefreshSelection(int selectedId)
+    {
+        foreach (var slot in _slots)
+        {
+            slot.SetSelect(slot.Id == selectedId);
+        }
+    }
+}
+```
+
+### File: Inventory\UI\InventorySlot.cs
+```csharp
+using UnityEngine;
+using UnityEngine.UI;
+using TMPro;
+using System;
+
+[RequireComponent(typeof(Button))]
+public class InventorySlot : MonoBehaviour
+{
+    [Header("UI References")]
+    [SerializeField] private Image iconImage;
+    [SerializeField] private TextMeshProUGUI amountText;
+    [SerializeField] private Image selectFrameImage;
+    [SerializeField] private Button slotButton;
+
+    [Header("Selection Colors")]
+    [SerializeField] private Color selectedColor = new Color(1f, 0.75f, 0f);
+    [SerializeField] private Color unselectedColor = new Color(1f, 1f, 1f, 0f); // 투명
+
+    private int _id;
+    public int Id => _id;
+
+    private Action<int> _onClicked;
+
+    private void Awake()
+    {
+        if (slotButton == null) slotButton = GetComponent<Button>();
+        slotButton.onClick.AddListener(OnSlotClick);
+    }
+
+    public void Setup(int id, Sprite icon, int amount, Action<int> onClicked)
+    {
+        _id = id;
+        _onClicked = onClicked;
+
+        if (iconImage != null) iconImage.sprite = icon;
+        if (amountText != null) 
+        {
+            // 수량이 1개보다 많을 때만 텍스트 표시 (선택 사항)
+            amountText.text = amount > 1 ? amount.ToString() : "";
+        }
+
+        SetSelect(false);
+    }
+
+    public void SetSelect(bool isSelected)
+    {
+        if (selectFrameImage != null)
+        {
+            selectFrameImage.color = isSelected ? selectedColor : unselectedColor;
+        }
+    }
+
+    private void OnSlotClick()
+    {
+        _onClicked?.Invoke(_id);
+    }
+}
+```
+
+### File: Data\UI\ItemTableSO.cs
+```csharp
+using System.Collections.Generic;
+using UnityEngine;
+
+public enum ItemType
+{
+    Equipment,      // 장비
+    Consumable,     // 소모품
+    Transcendence   // 초월 재료
+}
+
+[System.Serializable]
+public class ItemRawData
+{
+    public int id;
+    public ItemType itemType; // 아이템 타입 추가
+    public string displayName;
+    public Sprite icon;
+    public int maxStack;
+    [TextArea(3, 10)]
+    public string description;
+}
+
+[CreateAssetMenu(fileName = "ItemTable", menuName = "Data/Table/Item")]
+public class ItemTableSO : ScriptableObject, ISerializationCallbackReceiver
+{
+    public List<ItemRawData> items = new List<ItemRawData>();
+    private Dictionary<int, ItemRawData> _itemMap = new();
+
+    public ItemRawData GetData(int id)
+    {
+        return _itemMap.TryGetValue(id, out var data) ? data : null;
+    }
+
+    public void OnAfterDeserialize()
+    {
+        _itemMap.Clear();
+        foreach (var i in items)
+        {
+            if (i != null && !_itemMap.ContainsKey(i.id))
+                _itemMap.Add(i.id, i);
+        }
+    }
+
+    public void OnBeforeSerialize() { }
+}
+```
