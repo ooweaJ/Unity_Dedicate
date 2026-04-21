@@ -1,4 +1,26 @@
-지금 구조의 핵심 문제
+# 🏗️ 프로젝트 전체 아키텍처 가이드
+
+본 가이드는 프로젝트의 전반적인 구조를 설명하여, 코드 수정 시 아키텍처 정렬을 유지하기 위함입니다.
+
+## 1. 아키텍처 맵 (High-Level)
+- **Backend API**: `http://api.jaewoo98.store` (Login, Gacha, Matchmaking)
+- **Core Managers (Singletons)**:
+  - `BackendManager`: 백엔드 통신 유틸리티 (Static)
+  - `GameDataManager`: 마스터 데이터 관리 (ScriptableObject 기반)
+  - `PlayerDataManager`: 유저 동적 데이터 (Gold, Inventory, Level)
+  - `SceneFlowManager`: 씬 전환 및 데이터 전달 (`LoadRequest`)
+- **Networking (Mirror)**:
+  - `CustomNetworkManager`: 로비/배틀 서버 통합 관리
+  - 배틀 서버 할당: `match/acquire` API를 통해 포트 동적 할당
+
+## 2. 데이터 흐름 원칙 (Data Flow)
+- **Static Data**: `GameDataManager.Instance.GetItem(id)`를 통해 접근
+- **Dynamic Data**: `PlayerDataManager.Instance.GetInventory()` 등으로 접근
+- **UI Logic**: 매니저가 UI를 직접 갱신하는 "Push" 방식 지양, UI가 활성화될 때 데이터를 가져오는 "Pull" 방식 지향 (아래 인벤토리 리팩토링 사례 참고)
+
+---
+
+## 💡 기존 구조의 핵심 문제 (Inventory 사례)
 맞아요, 현재 흐름이 뒤집혀 있어요. 문제를 시각적으로 보면:
 // ❌ 현재 (Manager가 모든 UI를 알고 직접 밀어넣는 구조)
 InventoryUIManager

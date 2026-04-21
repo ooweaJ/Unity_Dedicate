@@ -9,10 +9,12 @@ public class GachaResultCard : MonoBehaviour
     [SerializeField] private Image thumbnailImage;
     [SerializeField] private TextMeshProUGUI nameText;
     [SerializeField] private Image gradeFrame;
+    [SerializeField] private Image gradeBackground;
+    [SerializeField] private Sprite[] gradeFrames;
 
     [Header("등급 색상")]
-    [SerializeField] private Color colorNormal = Color.gray;
-    [SerializeField] private Color colorRare = Color.green;
+    [SerializeField] private Color colorNormal = Color.green;
+    [SerializeField] private Color colorRare = Color.blue;
     [SerializeField] private Color colorEpic = Color.magenta;
     [SerializeField] private Color colorLegendary = Color.yellow;
 
@@ -31,7 +33,7 @@ public class GachaResultCard : MonoBehaviour
 
         thumbnailImage.sprite = data.thumbnail;
         nameText.text = data.rewardName;
-        gradeFrame.color = GradeToColor(item.grade);
+        GradeToFrame(data.grade);
     }
 
     public IEnumerator PlayReveal()
@@ -48,12 +50,26 @@ public class GachaResultCard : MonoBehaviour
         _canvasGroup.alpha = 1f;
     }
 
-    Color GradeToColor(int grade) => grade switch
+    void GradeToFrame(int grade)
     {
-        1 => colorNormal,
-        2 => colorRare,
-        3 => colorEpic,
-        4 => colorLegendary,
-        _ => Color.white
-    };
+        switch(grade)
+        {
+            case 1:
+                gradeBackground.color = colorNormal;
+                gradeFrame.sprite = gradeFrames[grade-1];
+                break;
+            case 2:
+                gradeBackground.color = colorRare;
+                gradeFrame.sprite = gradeFrames[grade - 1];
+                break;
+            case 3:
+                gradeBackground.color = colorEpic;
+                gradeFrame.sprite = gradeFrames[grade - 1];
+                break;
+            case 4:
+                gradeBackground.color = colorLegendary;
+                gradeFrame.sprite = gradeFrames[grade - 1];
+                break;
+        }
+    }
 }
