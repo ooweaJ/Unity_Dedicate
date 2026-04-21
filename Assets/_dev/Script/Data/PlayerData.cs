@@ -14,7 +14,7 @@ public class PlayerCharacterData
 public class PlayerItemData
 {
     public int itemId;
-    public int amoutn;
+    public int amount;
 }
 
 [System.Serializable]

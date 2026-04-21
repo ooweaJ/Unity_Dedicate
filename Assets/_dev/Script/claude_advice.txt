@@ -96,7 +96,7 @@ csharppublic class InventoryUI : MonoBehaviour
         {
             var staticData = GameDataManager.Instance.GetItem(item.itemId);
             var slot = Instantiate(slotPrefab, contentParent);
-            slot.Setup(item.itemId, staticData.icon, item.amoutn, OnSlotClickedInternal);
+            slot.Setup(item.itemId, staticData.icon, item.amount, OnSlotClickedInternal);
             _slots.Add(slot);
         }
 

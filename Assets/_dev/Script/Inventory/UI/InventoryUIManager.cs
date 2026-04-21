@@ -16,6 +16,7 @@ public class InventoryUIManager : MonoBehaviour
     [SerializeField] private CharacterListManager listManager;   // 오른쪽 리스트 관리
     [SerializeField] private CharacterModelManager modelManager; // 중앙 3D 모델 관리
     [SerializeField] private CharacterInfoPanel infoPanel;       // 왼쪽 스탯/상세정보 관리
+    [SerializeField] private ItemInfoPanel itemInfoPanel;           // 왼쪽 아이템 상세정보 관리
     [SerializeField] private SidebarManager sidebarManager;     // 왼쪽 탭 관리
 
     [Header("Item Tab UIs")]
@@ -44,7 +45,9 @@ public class InventoryUIManager : MonoBehaviour
                 () => _cachedItemDatas, 
                 () => _cachedCharacterDatas,
                 () => _selectedCharacterId,
-                OnSelectItem
+                OnSelectItem,
+                OnItemHoverEnter,
+                OnItemHoverExit
             );
         }
 
@@ -58,7 +61,7 @@ public class InventoryUIManager : MonoBehaviour
     }
 
     public void Open() { panel.SetActive(true); }
-    public void Close() { panel.SetActive(false); modelManager.ClearAllModels(); }
+    public void Close() { panel.SetActive(false); modelManager.ClearAllModels(); itemInfoPanel.Hide(); }
 
     public bool IsOpen => panel != null && panel.activeSelf;
 
@@ -102,11 +105,41 @@ public class InventoryUIManager : MonoBehaviour
 
         if (_panelDict.TryGetValue(tabId, out var target))
             target.panelsToShow.ForEach(p => p.SetActive(true));
+
+        // ✅ 탭 전환 시 즉시 숨김 (딜레이 없이)
+        itemInfoPanel.Hide();
+    }
+
+    private void OnItemHoverExit()
+    {
+        // ✅ 딜레이 숨김으로 변경 (즉시 숨기면 재진입 시 깜빡임 발생 가능)
+        itemInfoPanel.Hide();
     }
 
     private void OnSelectItem(int itemId)
     {
-        Debug.Log($"[InventoryUIManager] 아이템 선택: {itemId}");
+        // 클릭 시 로직 (필요 시 유지)
+    }
+
+    private void OnItemHoverEnter(int itemId, Vector2 position)
+    {
+        // 1. 데이터 찾기 (OnSelectItem 로직 재활용)
+        var itemData = _cachedItemDatas.FirstOrDefault(i => i.itemId == itemId);
+        if (itemData != null)
+        {
+            var staticData = GameDataManager.Instance.GetItem(itemId);
+            itemInfoPanel.SetData(staticData, itemData.amount);
+            itemInfoPanel.ShowAt(position);
+            return;
+        }
+
+        var charData = _cachedCharacterDatas.FirstOrDefault(c => c.characterId == itemId);
+        if (charData != null)
+        {
+            var staticData = GameDataManager.Instance.GetCharacter(itemId);
+            itemInfoPanel.SetShardData(staticData, charData.shardAmount);
+            itemInfoPanel.ShowAt(position);
+        }
     }
 
     private void OnSelectCharacter(int id)

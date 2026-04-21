@@ -3,8 +3,10 @@ using UnityEngine.UI;
 using TMPro;
 using System;
 
+using UnityEngine.EventSystems;
+
 [RequireComponent(typeof(Button))]
-public class InventorySlot : MonoBehaviour
+public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [Header("UI References")]
     [SerializeField] private Image iconImage;
@@ -20,6 +22,8 @@ public class InventorySlot : MonoBehaviour
     public int Id => _id;
 
     private Action<int> _onClicked;
+    private Action<int, Vector2> _onHoverEnter;
+    private Action _onHoverExit;
 
     private void Awake()
     {
@@ -27,19 +31,30 @@ public class InventorySlot : MonoBehaviour
         slotButton.onClick.AddListener(OnSlotClick);
     }
 
-    public void Setup(int id, Sprite icon, int amount, Action<int> onClicked)
+    public void Setup(int id, Sprite icon, int amount, Action<int> onClicked, Action<int, Vector2> onHoverEnter = null, Action onHoverExit = null)
     {
         _id = id;
         _onClicked = onClicked;
+        _onHoverEnter = onHoverEnter;
+        _onHoverExit = onHoverExit;
 
         if (iconImage != null) iconImage.sprite = icon;
         if (amountText != null) 
         {
-            // 수량이 1개보다 많을 때만 텍스트 표시 (선택 사항)
             amountText.text = amount > 1 ? amount.ToString() : "";
         }
 
         SetSelect(false);
+    }
+
+    public void OnPointerEnter(PointerEventData eventData)
+    {
+        _onHoverEnter?.Invoke(_id, transform.position);
+    }
+
+    public void OnPointerExit(PointerEventData eventData)
+    {
+        _onHoverExit?.Invoke();
     }
 
     public void SetSelect(bool isSelected)

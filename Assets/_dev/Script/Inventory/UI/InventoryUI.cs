@@ -21,6 +21,8 @@ public class InventoryUI : MonoBehaviour
     private Func<int> _selectedCharacterIdProvider;                   // 현재 선택된 캐릭터 확인용
 
     public event Action<int> OnItemSelected;
+    public event Action<int, Vector2> OnItemHoverEnter;
+    public event Action OnItemHoverExit;
 
     /// <summary>
     /// 초기 설정: 데이터를 어디서 가져올지 정의합니다.
@@ -29,12 +31,16 @@ public class InventoryUI : MonoBehaviour
         Func<IEnumerable<PlayerItemData>> itemDataProvider, 
         Func<IEnumerable<PlayerCharacterData>> charDataProvider,
         Func<int> selectedCharacterIdProvider,
-        Action<int> onItemSelected = null)
+        Action<int> onItemSelected = null,
+        Action<int, Vector2> onHoverEnter = null,
+        Action onHoverExit = null)
     {
         _itemDataProvider = itemDataProvider;
         _charDataProvider = charDataProvider;
         _selectedCharacterIdProvider = selectedCharacterIdProvider;
         OnItemSelected = onItemSelected;
+        OnItemHoverEnter = onHoverEnter;
+        OnItemHoverExit = onHoverExit;
     }
 
     private void OnEnable()
@@ -93,7 +99,9 @@ public class InventoryUI : MonoBehaviour
             targetChar.characterId, 
             staticData.shardIcon, 
             targetChar.shardAmount, 
-            OnSlotClickedInternal
+            OnSlotClickedInternal,
+            OnItemHoverEnter,
+            OnItemHoverExit
         );
         _slots.Add(slot);
     }
@@ -114,8 +122,10 @@ public class InventoryUI : MonoBehaviour
             slot.Setup(
                 item.itemId, 
                 itemData.icon, 
-                item.amoutn, // 오타 유지
-                OnSlotClickedInternal
+                item.amount, 
+                OnSlotClickedInternal,
+                OnItemHoverEnter,
+                OnItemHoverExit
             );
             _slots.Add(slot);
         }

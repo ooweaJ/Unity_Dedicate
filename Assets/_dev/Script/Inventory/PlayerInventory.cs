@@ -41,7 +41,7 @@ public class PlayerInventory
             var data = new PlayerItemData
             {
                 itemId = (int)token["item_id"],
-                amoutn = (int)token["amount"]
+                amount = (int)token["amount"]
             };
             items[data.itemId] = data;
         }
