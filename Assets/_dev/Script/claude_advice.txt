@@ -1,235 +1,321 @@
-# 🏗️ 프로젝트 전체 아키텍처 가이드
+전체 구조 설계
+현업에서 쓰는 방식은 레이어를 명확히 나누고, 각 레이어가 서로 직접 참조하지 않고 이벤트로만 통신하는 구조입니다.
+[Data]      ItemRawData (ScriptableObject)
+[Slot]      BaseSlot → InventorySlot / EquipmentSlot
+[Controller] DragController / ItemActionPopup / ItemInfoPanel
+[Manager]   InventoryUIManager (전체 조율)
 
-본 가이드는 프로젝트의 전반적인 구조를 설명하여, 코드 수정 시 아키텍처 정렬을 유지하기 위함입니다.
+1. 데이터 레이어
+장비 전용 상속 SO를 하나 두는 게 Unity에서 일반적입니다. MonoBehaviour 상속과 달리 데이터 SO 상속은 문제가 없습니다.
+csharppublic enum ItemType { Consumable, Equipment, Material, TranscendShard }
+public enum EquipmentSlotType { Weapon, Armor, Accessory, Ring }
+public enum ItemActionType { Use, Discard, OpenTranscendence }
 
-## 1. 아키텍처 맵 (High-Level)
-- **Backend API**: `http://api.jaewoo98.store` (Login, Gacha, Matchmaking)
-- **Core Managers (Singletons)**:
-  - `BackendManager`: 백엔드 통신 유틸리티 (Static)
-  - `GameDataManager`: 마스터 데이터 관리 (ScriptableObject 기반)
-  - `PlayerDataManager`: 유저 동적 데이터 (Gold, Inventory, Level)
-  - `SceneFlowManager`: 씬 전환 및 데이터 전달 (`LoadRequest`)
-- **Networking (Mirror)**:
-  - `CustomNetworkManager`: 로비/배틀 서버 통합 관리
-  - 배틀 서버 할당: `match/acquire` API를 통해 포트 동적 할당
-
-## 2. 데이터 흐름 원칙 (Data Flow)
-- **Static Data**: `GameDataManager.Instance.GetItem(id)`를 통해 접근
-- **Dynamic Data**: `PlayerDataManager.Instance.GetInventory()` 등으로 접근
-- **UI Logic**: 매니저가 UI를 직접 갱신하는 "Push" 방식 지양, UI가 활성화될 때 데이터를 가져오는 "Pull" 방식 지향 (아래 인벤토리 리팩토링 사례 참고)
-
----
-
-## 💡 기존 구조의 핵심 문제 (Inventory 사례)
-맞아요, 현재 흐름이 뒤집혀 있어요. 문제를 시각적으로 보면:
-// ❌ 현재 (Manager가 모든 UI를 알고 직접 밀어넣는 구조)
-InventoryUIManager
-  └─▶ inventoryUI_Equipment.Init(allItems)   // 매니저가 직접 순회
-  └─▶ inventoryUI_Consumable.Init(allItems)  // 강한 결합
-  └─▶ inventoryUI_Transcendence.Init(allItems)
-
-// ✅ 원하는 것 (각 UI가 활성화될 때 스스로 데이터를 요청)
-EquipmentInventoryUI.OnEnable()  ─▶ "데이터 줘" 델리게이트 호출
-ConsumableInventoryUI.OnEnable() ─▶ "데이터 줘" 델리게이트 호출
-InventoryUI에 이미 targetType이 있다는 게 포인트예요. 각 인스턴스가 자기 타입을 알고 있으니, 전체 아이템 데이터를 받아서 스스로 필터링하면 됩니다. 매니저는 그냥 데이터 공급자 역할만 하면 돼요.
-
-수정 방향: Func 델리게이트로 Pull 구조로 전환
-InventoryUI.cs
-csharppublic class InventoryUI : MonoBehaviour
+[Serializable]
+public class ItemActionDef
 {
-    [Header("Settings")]
-    [SerializeField] private ItemType targetType;
+    public string label;        // "사용", "버리기"
+    public ItemActionType type;
+}
 
-    [Header("UI References")]
-    [SerializeField] private InventorySlot slotPrefab;
-    [SerializeField] private Transform contentParent;
+// 기본 아이템 SO
+[CreateAssetMenu(menuName = "Item/ItemRawData")]
+public class ItemRawData : ScriptableObject
+{
+    public int id;
+    public string displayName;
+    public string description;
+    public Sprite icon;
+    public ItemType itemType;
+    public List<ItemActionDef> actions; // 소비템, 재료 등 클릭 액션
+}
 
-    private List<InventorySlot> _slots = new();
-    private int _selectedId = -1;
+// 장비 전용 SO (드래그 장착이므로 actions 불필요)
+[CreateAssetMenu(menuName = "Item/EquipmentRawData")]
+public class EquipmentRawData : ItemRawData
+{
+    public EquipmentSlotType slotType; // 어느 슬롯에 장착 가능한지
+    public int atkBonus;
+    public int defBonus;
+}
+ScriptableObject 설정 예시:
+아이템itemTypeactions체력물약Consumable[사용, 버리기]경험치물약Consumable[사용, 버리기]검Equipment없음 (드래그로만 장착)초월재료Material[초월창 열기, 버리기]초월조각TranscendShard[초월창 열기, 버리기]
 
-    // ✅ 외부에서 "데이터 어떻게 가져오는지"만 주입받음
-    // 호출 시점은 InventoryUI 스스로 결정
-    private Func<IEnumerable<PlayerItemData>> _dataProvider;
-    private Action<int> _onItemSelected;
+2. 슬롯 레이어
+csharp// BaseSlot: 아이콘/수량 표시만 담당
+public abstract class BaseSlot : MonoBehaviour
+{
+    [SerializeField] protected Image imgIcon;
+    [SerializeField] protected TextMeshProUGUI txtAmount;
+    [SerializeField] protected GameObject emptyIndicator;
 
-    /// <summary>
-    /// 매니저가 한 번만 호출. 델리게이트만 등록하고 렌더링은 하지 않음.
-    /// </summary>
-    public void Setup(Func<IEnumerable<PlayerItemData>> dataProvider, 
-                      Action<int> onItemSelected = null)
+    public int ItemId { get; private set; } = -1;
+    public ItemRawData StaticData { get; private set; }
+    public bool IsEmpty => ItemId == -1;
+
+    public virtual void SetItem(int itemId, ItemRawData data, int amount)
     {
-        _dataProvider = dataProvider;
-        _onItemSelected = onItemSelected;
+        ItemId = itemId;
+        StaticData = data;
+        imgIcon.sprite = data.icon;
+        imgIcon.gameObject.SetActive(true);
+        txtAmount.text = amount > 1 ? amount.ToString() : "";
+        emptyIndicator.SetActive(false);
     }
 
-    // ✅ 탭이 열려서 패널이 활성화될 때 스스로 데이터 요청
-    private void OnEnable()
+    public virtual void Clear()
     {
-        Refresh();
+        ItemId = -1;
+        StaticData = null;
+        imgIcon.gameObject.SetActive(false);
+        txtAmount.text = "";
+        emptyIndicator.SetActive(true);
+    }
+}
+csharp// InventorySlot: 클릭/호버/드래그 소스 역할
+public class InventorySlot : BaseSlot,
+    IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler,
+    IBeginDragHandler, IDragHandler, IEndDragHandler
+{
+    // Manager가 구독할 이벤트들
+    public event Action<int, Vector2> OnHoverEnter;
+    public event Action              OnHoverExit;
+    public event Action<int, Vector2> OnClicked;    // 클릭 (소비템/재료)
+    public event Action<int>          OnDragBegin;  // 드래그 시작 (장비)
+
+    public void OnPointerEnter(PointerEventData e)
+    {
+        if (!IsEmpty) OnHoverEnter?.Invoke(ItemId, e.position);
+    }
+    public void OnPointerExit(PointerEventData e) => OnHoverExit?.Invoke();
+
+    public void OnPointerClick(PointerEventData e)
+    {
+        if (IsEmpty) return;
+        // 장비는 클릭 무시 (드래그로만 장착)
+        if (StaticData.itemType == ItemType.Equipment) return;
+        OnClicked?.Invoke(ItemId, e.position);
     }
 
-    // ✅ 서버 데이터 갱신 시 외부에서 호출 가능
-    public void Refresh()
+    public void OnBeginDrag(PointerEventData e)
     {
-        if (_dataProvider == null) return;
-
-        // 전체 아이템 중 자신의 타입만 필터링 (targetType 활용)
-        var filteredItems = _dataProvider.Invoke()
-            .Where(item =>
-            {
-                var staticData = GameDataManager.Instance.GetItem(item.itemId);
-                return staticData != null && staticData.itemType == targetType;
-            })
-            .ToList();
-
-        RenderSlots(filteredItems);
+        if (IsEmpty || StaticData.itemType != ItemType.Equipment) return;
+        OnDragBegin?.Invoke(ItemId);
     }
 
-    private void RenderSlots(List<PlayerItemData> items)
+    public void OnDrag(PointerEventData e)
     {
-        // 기존 슬롯 제거
-        foreach (Transform child in contentParent)
-            Destroy(child.gameObject);
-        _slots.Clear();
-
-        foreach (var item in items)
-        {
-            var staticData = GameDataManager.Instance.GetItem(item.itemId);
-            var slot = Instantiate(slotPrefab, contentParent);
-            slot.Setup(item.itemId, staticData.icon, item.amount, OnSlotClickedInternal);
-            _slots.Add(slot);
-        }
-
-        if (_slots.Count > 0)
-            OnSlotClickedInternal(_slots[0].Id);
+        // DragController가 처리
+        DragController.Instance.OnDrag(e.position);
     }
 
-    private void OnSlotClickedInternal(int id)
+    public void OnEndDrag(PointerEventData e)
     {
-        _selectedId = id;
-        RefreshSelection(id);
-        _onItemSelected?.Invoke(id);
+        DragController.Instance.OnEndDrag(e);
+    }
+}
+csharp// EquipmentSlot: 드롭 타겟 + 해제 클릭
+public class EquipmentSlot : BaseSlot, IDropHandler, IPointerClickHandler
+{
+    [SerializeField] public EquipmentSlotType acceptedSlotType;
+
+    public event Action<int, EquipmentSlotType> OnItemDropped;  // 장착 요청
+    public event Action<int>                     OnItemClicked;  // 해제 요청
+
+    public void OnDrop(PointerEventData e)
+    {
+        var dragging = DragController.Instance.DraggingData;
+        if (dragging == null) return;
+
+        var equipData = dragging as EquipmentRawData;
+        if (equipData == null || equipData.slotType != acceptedSlotType) return;
+
+        OnItemDropped?.Invoke(dragging.id, acceptedSlotType);
     }
 
-    public void RefreshSelection(int selectedId)
+    public void OnPointerClick(PointerEventData e)
     {
-        foreach (var slot in _slots)
-            slot.SetSelect(slot.Id == selectedId);
+        if (!IsEmpty) OnItemClicked?.Invoke(ItemId); // 해제
     }
 }
 
-InventoryUIManager.cs
+3. DragController
+캔버스 최상단에 붙는 드래그 아이콘 관리자입니다.
+csharppublic class DragController : MonoBehaviour
+{
+    public static DragController Instance { get; private set; }
+
+    [SerializeField] private Image dragIcon;   // Canvas 최상단 이미지
+    [SerializeField] private Canvas rootCanvas;
+
+    public ItemRawData DraggingData { get; private set; }
+
+    private void Awake()
+    {
+        Instance = this;
+        dragIcon.gameObject.SetActive(false);
+    }
+
+    public void BeginDrag(ItemRawData data)
+    {
+        DraggingData = data;
+        dragIcon.sprite = data.icon;
+        dragIcon.gameObject.SetActive(true);
+    }
+
+    public void OnDrag(Vector2 screenPos)
+    {
+        if (DraggingData == null) return;
+        dragIcon.transform.position = screenPos;
+    }
+
+    public void OnEndDrag(PointerEventData e)
+    {
+        dragIcon.gameObject.SetActive(false);
+        DraggingData = null;
+    }
+}
+
+4. ItemActionPopup
+csharppublic class ItemActionPopup : MonoBehaviour
+{
+    [SerializeField] private Button btnPrefab;
+    [SerializeField] private Transform container;
+
+    private readonly List<Button> _buttons = new();
+
+    public void Show(ItemRawData data, Vector2 position, Action<ItemActionType> onAction)
+    {
+        foreach (var b in _buttons) Destroy(b.gameObject);
+        _buttons.Clear();
+
+        foreach (var action in data.actions)
+        {
+            var btn = Instantiate(btnPrefab, container);
+            btn.GetComponentInChildren<TextMeshProUGUI>().text = action.label;
+
+            var captured = action.type;
+            btn.onClick.AddListener(() =>
+            {
+                onAction?.Invoke(captured);
+                Hide();
+            });
+            _buttons.Add(btn);
+        }
+
+        // 위치 보정 (화면 경계)
+        ApplyPosition(position);
+        gameObject.SetActive(true);
+    }
+
+    public void Hide() => gameObject.SetActive(false);
+
+    private void ApplyPosition(Vector2 pos) { /* ItemInfoPanel과 동일한 경계 체크 */ }
+}
+
+5. InventoryUIManager (조율)
 csharppublic class InventoryUIManager : MonoBehaviour
 {
-    [Header("Sub Managers")]
-    [SerializeField] private CharacterListManager listManager;
-    [SerializeField] private CharacterModelManager modelManager;
-    [SerializeField] private CharacterInfoPanel infoPanel;
-    [SerializeField] private SidebarManager sidebarManager;
+    [SerializeField] private List<InventorySlot>  inventorySlots;
+    [SerializeField] private List<EquipmentSlot>  equipmentSlots;
+    [SerializeField] private ItemInfoPanel        itemInfoPanel;
+    [SerializeField] private ItemActionPopup      actionPopup;
 
-    // ✅ 여러 InventoryUI 인스턴스를 인스펙터에서 연결
-    // 각각 targetType만 다르게 설정된 동일한 컴포넌트
-    [Header("Item Inventory UIs")]
-    [SerializeField] private List<InventoryUI> itemInventoryUIs;
-
-    [Header("Tab Panels")]
-    [SerializeField] private List<TabPanelMapping> panelMappings;
-
-    private List<CharacterUIModel> _characterUIModels = new();
-    private Dictionary<int, TabPanelMapping> _panelDict = new();
-
-    // ✅ 아이템 데이터 원본을 캐싱 (델리게이트가 참조할 대상)
-    private List<PlayerItemData> _cachedItems = new();
+    // 게임 로직 레이어로 올라가는 이벤트
+    public event Action<int>                    OnUseItem;
+    public event Action<int>                    OnDiscardItem;
+    public event Action<int>                    OnOpenTranscendence;
+    public event Action<int, EquipmentSlotType> OnEquipItem;
+    public event Action<int>                    OnUnequipItem;
 
     private void OnEnable()
     {
-        foreach (var mapping in panelMappings)
-            _panelDict[mapping.tabId] = mapping;
-
-        sidebarManager.OnTabChanged += SwitchSubPanel;
-        sidebarManager.Init();
-
-        // ✅ Setup은 여기서 한 번만: 델리게이트 등록
-        // 이 시점에 _cachedItems는 비어있어도 됨 — 실제 호출은 OnEnable 때
-        foreach (var ui in itemInventoryUIs)
+        foreach (var slot in inventorySlots)
         {
-            ui.Setup(
-                dataProvider: () => _cachedItems,  // 람다가 항상 최신 캐시 참조
-                onItemSelected: OnSelectItem
-            );
+            slot.OnHoverEnter += HandleHoverEnter;
+            slot.OnHoverExit  += HandleHoverExit;
+            slot.OnClicked    += HandleSlotClicked;
+            slot.OnDragBegin  += HandleDragBegin;
+        }
+        foreach (var slot in equipmentSlots)
+        {
+            slot.OnItemDropped += HandleEquip;
+            slot.OnItemClicked += HandleUnequip;
         }
     }
 
     private void OnDisable()
     {
-        sidebarManager.OnTabChanged -= SwitchSubPanel;
-    }
-
-    public void InitInventory(IEnumerable<PlayerCharacterData> charDatas, 
-                              IEnumerable<PlayerItemData> itemDatas)
-    {
-        // ✅ 캐시 업데이트만 — 각 UI의 Refresh는 각자가 처리
-        _cachedItems = itemDatas.ToList();
-
-        // 캐릭터 초기화 (기존과 동일)
-        _characterUIModels = charDatas.Select(s =>
-            new CharacterUIModel(s, GameDataManager.Instance.GetCharacter(s.characterId))
-        ).ToList();
-
-        listManager.Init(_characterUIModels, 1, OnSelectCharacter);
-        if (_characterUIModels.Count > 0)
-            OnSelectCharacter(_characterUIModels[0].StaticData.id);
-
-        // ✅ 현재 열려있는 아이템 UI만 즉시 갱신 (나머지는 탭 열릴 때 OnEnable에서 자동)
-        foreach (var ui in itemInventoryUIs)
+        foreach (var slot in inventorySlots)
         {
-            if (ui.gameObject.activeInHierarchy)
-                ui.Refresh();
+            slot.OnHoverEnter -= HandleHoverEnter;
+            slot.OnHoverExit  -= HandleHoverExit;
+            slot.OnClicked    -= HandleSlotClicked;
+            slot.OnDragBegin  -= HandleDragBegin;
+        }
+        foreach (var slot in equipmentSlots)
+        {
+            slot.OnItemDropped -= HandleEquip;
+            slot.OnItemClicked -= HandleUnequip;
         }
     }
 
-    private void SwitchSubPanel(int tabId)
+    // 호버
+    private void HandleHoverEnter(int itemId, Vector2 pos)
     {
-        foreach (var mapping in _panelDict.Values)
-            mapping.panelsToShow.ForEach(p => p.SetActive(false));
+        var data = GameDataManager.Instance.GetItem(itemId);
+        itemInfoPanel.SetData(data, GetAmount(itemId));
+        itemInfoPanel.ShowAt(pos);
+    }
+    private void HandleHoverExit() => itemInfoPanel.Hide();
 
-        if (_panelDict.TryGetValue(tabId, out var target))
-            target.panelsToShow.ForEach(p => p.SetActive(true));
-        // ✅ 탭 전환 → 패널 활성화 → InventoryUI.OnEnable() 자동 발동
-        //    별도 Init 호출 불필요
+    // 클릭 (소비템/재료: 액션팝업, 장비: 무시)
+    private void HandleSlotClicked(int itemId, Vector2 pos)
+    {
+        var data = GameDataManager.Instance.GetItem(itemId);
+        actionPopup.Show(data, pos, actionType => HandleAction(itemId, actionType));
     }
 
-    private void OnSelectCharacter(int id) { /* 기존과 동일 */ }
-    private void OnSelectItem(int itemId)
+    // 액션 분기
+    private void HandleAction(int itemId, ItemActionType actionType)
     {
-        // 아이템 상세 패널 갱신 등
+        switch (actionType)
+        {
+            case ItemActionType.Use:               OnUseItem?.Invoke(itemId);            break;
+            case ItemActionType.Discard:           OnDiscardItem?.Invoke(itemId);        break;
+            case ItemActionType.OpenTranscendence: OnOpenTranscendence?.Invoke(itemId);  break;
+        }
     }
 
-    public void Open()  { gameObject.SetActive(true); }
-    public void Close() { gameObject.SetActive(false); modelManager.ClearAllModels(); }
+    // 드래그 (장비)
+    private void HandleDragBegin(int itemId)
+    {
+        var data = GameDataManager.Instance.GetItem(itemId);
+        DragController.Instance.BeginDrag(data);
+        itemInfoPanel.Hide();
+        actionPopup.Hide();
+    }
+
+    // 장착/해제
+    private void HandleEquip(int itemId, EquipmentSlotType slotType)
+        => OnEquipItem?.Invoke(itemId, slotType);
+
+    private void HandleUnequip(int itemId)
+        => OnUnequipItem?.Invoke(itemId);
 }
 
-최종 흐름 비교
-// ✅ Setup (최초 1회, OnEnable에서)
-InventoryUIManager.OnEnable()
-  └─ 각 InventoryUI.Setup(() => _cachedItems)   // 람다만 등록, 렌더링 없음
+전체 흐름 요약
+소비아이템 클릭 → InventorySlot.OnClicked
+    → InventoryUIManager.HandleSlotClicked
+    → ItemActionPopup.Show (사용/버리기 버튼 동적 생성)
+    → 버튼 클릭 → HandleAction → OnUseItem 이벤트 발생
+    → 외부 시스템(PlayerInventory)에서 처리
 
-// ✅ 탭 전환 시
-SidebarTab 클릭
-  └─ SwitchSubPanel() → EquipmentPanel.SetActive(true)
-       └─ EquipmentInventoryUI.OnEnable()        // Unity가 자동 호출
-            └─ Refresh() → _dataProvider()       // 람다 실행
-                 └─ _cachedItems 필터링 → 슬롯 생성
+장비 드래그 → InventorySlot.OnDragBegin
+    → DragController.BeginDrag (아이콘 따라다님)
+    → EquipmentSlot.OnDrop (slotType 맞는지 검증)
+    → OnEquipItem 이벤트 → 외부 처리
 
-// ✅ 서버 데이터 갱신 시
-PlayerInventory.OnChanged
-  └─ InventoryController.HandleRefresh()
-       └─ InventoryUIManager.InitInventory()
-            └─ _cachedItems 업데이트
-                 └─ 활성화된 UI만 Refresh() 호출
-핵심 포인트:
-
-Setup()은 "어떻게 가져오는지" 만 등록 (1회)
-Refresh()는 "실제로 가져와서 그리기" (필요할 때마다)
-탭 전환은 OnEnable()이 자연스럽게 처리 — 매니저가 신경 쓸 필요 없음
-_cachedItems를 람다로 참조하기 때문에 캐시가 업데이트되면 다음 Refresh() 때 자동으로 최신 데이터 사용
+초월재료 클릭 → ItemActionPopup → OpenTranscendence
+    → OnOpenTranscendence 이벤트 → TranscendenceUI 열기
+InventoryUIManager는 "무슨 버튼이 눌렸는지"만 알고, 실제 게임 데이터 처리는 이벤트로 외부(PlayerInventory, EquipmentSystem 등)에 위임하는 구조입니다. 덕분에 인벤토리 UI는 게임 로직과 완전히 분리됩니다.

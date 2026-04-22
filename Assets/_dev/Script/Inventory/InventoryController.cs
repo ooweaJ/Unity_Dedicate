@@ -53,7 +53,7 @@ public class InventoryController : MonoBehaviour
     private void HandleRefresh()
     {
         // UI가 열려 있을 때만 실시간 갱신을 수행합니다. (닫혀 있을 때는 OpenInventory 시점에 갱신됨)
-        if (uiManager != null && uiManager.IsOpen)
+        if (uiManager != null)
         {
             RefreshUI();
         }

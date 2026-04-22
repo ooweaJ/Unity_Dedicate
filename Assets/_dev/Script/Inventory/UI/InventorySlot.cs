@@ -2,60 +2,71 @@ using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
 using System;
-
 using UnityEngine.EventSystems;
 
-[RequireComponent(typeof(Button))]
-public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
+/// <summary>
+/// 인벤토리 슬롯: 아이템 표시, 클릭(소비/재료), 드래그(장비) 담당
+/// </summary>
+public class InventorySlot : BaseSlot, 
+    IPointerClickHandler, IPointerEnterHandler, IPointerExitHandler,
+    IBeginDragHandler, IDragHandler, IEndDragHandler
 {
-    [Header("UI References")]
-    [SerializeField] private Image iconImage;
-    [SerializeField] private TextMeshProUGUI amountText;
+    [Header("Selection UI")]
     [SerializeField] private Image selectFrameImage;
-    [SerializeField] private Button slotButton;
-
-    [Header("Selection Colors")]
     [SerializeField] private Color selectedColor = new Color(1f, 0.75f, 0f);
-    [SerializeField] private Color unselectedColor = new Color(1f, 1f, 1f, 0f); // 투명
+    [SerializeField] private Color unselectedColor = new Color(1f, 1f, 1f, 0f);
 
-    private int _id;
-    public int Id => _id;
+    // Manager가 구독할 이벤트들
+    public event Action<int, Vector2> OnHoverEnter;
+    public event Action              OnHoverExit;
+    public event Action<int, Vector2> OnClicked;    // 클릭 (소비템/재료)
+    public event Action<int>          OnDragBegin;  // 드래그 시작 (장비)
 
-    private Action<int> _onClicked;
-    private Action<int, Vector2> _onHoverEnter;
-    private Action _onHoverExit;
-
-    private void Awake()
+    public override void SetItem(int itemId, ItemRawData data, int amount)
     {
-        if (slotButton == null) slotButton = GetComponent<Button>();
-        slotButton.onClick.AddListener(OnSlotClick);
-    }
-
-    public void Setup(int id, Sprite icon, int amount, Action<int> onClicked, Action<int, Vector2> onHoverEnter = null, Action onHoverExit = null)
-    {
-        _id = id;
-        _onClicked = onClicked;
-        _onHoverEnter = onHoverEnter;
-        _onHoverExit = onHoverExit;
-
-        if (iconImage != null) iconImage.sprite = icon;
-        if (amountText != null) 
-        {
-            amountText.text = amount > 1 ? amount.ToString() : "";
-        }
-
+        base.SetItem(itemId, data, amount);
         SetSelect(false);
     }
 
-    public void OnPointerEnter(PointerEventData eventData)
+    // --- 이벤트 핸들러 ---
+
+    public void OnPointerEnter(PointerEventData e)
     {
-        _onHoverEnter?.Invoke(_id, transform.position);
+        if (!IsEmpty) OnHoverEnter?.Invoke(ItemId, e.position);
     }
 
-    public void OnPointerExit(PointerEventData eventData)
+    public void OnPointerExit(PointerEventData e) => OnHoverExit?.Invoke();
+
+    public void OnPointerClick(PointerEventData e)
     {
-        _onHoverExit?.Invoke();
+        if (IsEmpty) return;
+        
+        // 장비는 클릭 대신 드래그로 처리할 경우 (advice 기준)
+        if (StaticData.itemType == ItemType.Equipment) return;
+        
+        OnClicked?.Invoke(ItemId, e.position);
     }
+
+    public void OnBeginDrag(PointerEventData e)
+    {
+        if (IsEmpty || StaticData.itemType != ItemType.Equipment) return;
+        
+        OnDragBegin?.Invoke(ItemId);
+    }
+
+    public void OnDrag(PointerEventData e)
+    {
+        if (DragController.Instance != null)
+            DragController.Instance.OnDrag(e.position);
+    }
+
+    public void OnEndDrag(PointerEventData e)
+    {
+        if (DragController.Instance != null)
+            DragController.Instance.OnEndDrag(e);
+    }
+
+    // --- 시각적 효과 ---
 
     public void SetSelect(bool isSelected)
     {
@@ -63,10 +74,5 @@ public class InventorySlot : MonoBehaviour, IPointerEnterHandler, IPointerExitHa
         {
             selectFrameImage.color = isSelected ? selectedColor : unselectedColor;
         }
-    }
-
-    private void OnSlotClick()
-    {
-        _onClicked?.Invoke(_id);
     }
 }

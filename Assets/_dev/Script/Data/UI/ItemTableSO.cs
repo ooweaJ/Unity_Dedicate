@@ -3,21 +3,53 @@ using UnityEngine;
 
 public enum ItemType
 {
-    Equipment,      // 장비
     Consumable,     // 소모품
-    Transcendence   // 초월 재료
+    Equipment,      // 장비
+    Material,       // 재료
+    Transcendence,  // 초월 (기존 유지)
+    TranscendShard  // 초월 조각
+}
+
+public enum EquipmentSlotType 
+{ 
+    Weapon, 
+    Armor, 
+    Accessory, 
+    Ring 
+}
+
+public enum ItemActionType 
+{ 
+    Use, 
+    Discard, 
+    OpenTranscendence 
+}
+
+[System.Serializable]
+public class ItemActionDef
+{
+    public string label;        // "사용", "버리기"
+    public ItemActionType type;
 }
 
 [System.Serializable]
 public class ItemRawData
 {
     public int id;
-    public ItemType itemType; // 아이템 타입 추가
+    public ItemType itemType;
     public string displayName;
     public Sprite icon;
     public int maxStack;
     [TextArea(3, 10)]
     public string description;
+
+    [Header("Actions")]
+    public List<ItemActionDef> actions; // 소모품/재료용 클릭 액션
+
+    [Header("Equipment Stats (Only for Equipment)")]
+    public EquipmentSlotType slotType;
+    public int atkBonus;
+    public int defBonus;
 }
 
 [CreateAssetMenu(fileName = "ItemTable", menuName = "Data/Table/Item")]

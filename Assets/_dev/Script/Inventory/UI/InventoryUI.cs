@@ -20,27 +20,20 @@ public class InventoryUI : MonoBehaviour
     private Func<IEnumerable<PlayerCharacterData>> _charDataProvider; // 초월 재료용
     private Func<int> _selectedCharacterIdProvider;                   // 현재 선택된 캐릭터 확인용
 
-    public event Action<int> OnItemSelected;
+    // Manager로 전달할 이벤트들
+    public event Action<int, Vector2> OnItemClicked;
     public event Action<int, Vector2> OnItemHoverEnter;
     public event Action OnItemHoverExit;
+    public event Action<int> OnItemDragBegin;
 
-    /// <summary>
-    /// 초기 설정: 데이터를 어디서 가져올지 정의합니다.
-    /// </summary>
     public void Setup(
         Func<IEnumerable<PlayerItemData>> itemDataProvider, 
         Func<IEnumerable<PlayerCharacterData>> charDataProvider,
-        Func<int> selectedCharacterIdProvider,
-        Action<int> onItemSelected = null,
-        Action<int, Vector2> onHoverEnter = null,
-        Action onHoverExit = null)
+        Func<int> selectedCharacterIdProvider)
     {
         _itemDataProvider = itemDataProvider;
         _charDataProvider = charDataProvider;
         _selectedCharacterIdProvider = selectedCharacterIdProvider;
-        OnItemSelected = onItemSelected;
-        OnItemHoverEnter = onHoverEnter;
-        OnItemHoverExit = onHoverExit;
     }
 
     private void OnEnable()
@@ -48,15 +41,17 @@ public class InventoryUI : MonoBehaviour
         Refresh();
     }
 
-    /// <summary>
-    /// 실제 슬롯을 생성하고 데이터를 화면에 그립니다.
-    /// </summary>
     public void Refresh()
     {
-        // 1. 기존 슬롯 제거
-        foreach (Transform child in contentParent)
+        // 1. 기존 슬롯 제거 및 이벤트 해제
+        foreach (var slot in _slots)
         {
-            Destroy(child.gameObject);
+            if (slot == null) continue;
+            slot.OnClicked -= HandleSlotClicked;
+            slot.OnHoverEnter -= HandleSlotHoverEnter;
+            slot.OnHoverExit -= HandleSlotHoverExit;
+            slot.OnDragBegin -= HandleSlotDragBegin;
+            Destroy(slot.gameObject);
         }
         _slots.Clear();
 
@@ -69,12 +64,6 @@ public class InventoryUI : MonoBehaviour
         {
             RefreshItemSlots();
         }
-
-        // 3. 초기 선택 처리
-        if (_slots.Count > 0)
-        {
-            OnSlotClickedInternal(_slots[0].Id);
-        }
     }
 
     private void RefreshTranscendenceSlots()
@@ -84,26 +73,13 @@ public class InventoryUI : MonoBehaviour
         int selectedCharId = _selectedCharacterIdProvider.Invoke();
         var allChars = _charDataProvider.Invoke();
         
-        // ✅ 현재 선택된 캐릭터의 데이터만 찾아서 조각 정보를 표시
         var targetChar = allChars.FirstOrDefault(c => c.characterId == selectedCharId);
-        if (targetChar == null) return;
-
-        if (targetChar.shardAmount <= 0) return;
+        if (targetChar == null || targetChar.shardAmount <= 0) return;
 
         var staticData = GameDataManager.Instance.GetCharacter(targetChar.characterId);
         if (staticData == null) return;
 
-        // 조각 슬롯 생성 (ID는 캐릭터 ID를 그대로 사용하거나 별도 규칙 적용 가능)
-        var slot = Instantiate(slotPrefab, contentParent);
-        slot.Setup(
-            targetChar.characterId, 
-            staticData.shardIcon, 
-            targetChar.shardAmount, 
-            OnSlotClickedInternal,
-            OnItemHoverEnter,
-            OnItemHoverExit
-        );
-        _slots.Add(slot);
+        CreateSlot(targetChar.characterId, staticData.shardIcon, targetChar.shardAmount, ItemType.TranscendShard);
     }
 
     private void RefreshItemSlots()
@@ -118,31 +94,43 @@ public class InventoryUI : MonoBehaviour
             var itemData = GameDataManager.Instance.GetItem(item.itemId);
             if (itemData == null || itemData.itemType != targetType) continue;
 
-            var slot = Instantiate(slotPrefab, contentParent);
-            slot.Setup(
-                item.itemId, 
-                itemData.icon, 
-                item.amount, 
-                OnSlotClickedInternal,
-                OnItemHoverEnter,
-                OnItemHoverExit
-            );
-            _slots.Add(slot);
+            CreateSlot(item.itemId, itemData.icon, item.amount, itemData.itemType);
         }
     }
 
-    private void OnSlotClickedInternal(int id)
+    private void CreateSlot(int id, Sprite icon, int amount, ItemType type)
     {
-        _selectedId = id;
-        RefreshSelection(id);
-        OnItemSelected?.Invoke(id);
+        var slot = Instantiate(slotPrefab, contentParent);
+        var staticData = GameDataManager.Instance.GetItem(id); // 기본 아이템 데이터 가져오기
+        
+        // 만약 캐릭터 조각이라면 가상의 ItemRawData 생성 (또는 Table에 조각도 포함되어 있어야 함)
+        if (staticData == null && type == ItemType.TranscendShard)
+        {
+            staticData = new ItemRawData { id = id, icon = icon, itemType = type, displayName = "조각" };
+        }
+
+        slot.SetItem(id, staticData, amount);
+        
+        // 이벤트 연결
+        slot.OnClicked += HandleSlotClicked;
+        slot.OnHoverEnter += HandleSlotHoverEnter;
+        slot.OnHoverExit += HandleSlotHoverExit;
+        slot.OnDragBegin += HandleSlotDragBegin;
+        
+        _slots.Add(slot);
     }
+
+    private void HandleSlotClicked(int id, Vector2 pos) => OnItemClicked?.Invoke(id, pos);
+    private void HandleSlotHoverEnter(int id, Vector2 pos) => OnItemHoverEnter?.Invoke(id, pos);
+    private void HandleSlotHoverExit() => OnItemHoverExit?.Invoke();
+    private void HandleSlotDragBegin(int id) => OnItemDragBegin?.Invoke(id);
 
     public void RefreshSelection(int selectedId)
     {
+        _selectedId = selectedId;
         foreach (var slot in _slots)
         {
-            slot.SetSelect(slot.Id == selectedId);
+            slot.SetSelect(slot.ItemId == selectedId);
         }
     }
 }
