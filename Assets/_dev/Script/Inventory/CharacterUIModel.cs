@@ -17,9 +17,20 @@ public class CharacterUIModel
     public string Name => StaticData.displayName;
     public string LevelText => ServerData.level.ToString() + "/"; // SO에 maxLevel 추가 필요
     public float ExpProgress => (float)ServerData.exp; // SO에 expToNextLevel 추가 필요
-    public string Hp => StaticData.baseHp.ToString(); // 간단하게 기본스탯만. 나중에 서버 스탯+SO스탯 합치기
-    public string Atk => StaticData.baseAtk.ToString();
-    public string Def => StaticData.baseDef.ToString();
+    public string Hp  => StaticData.baseHp.ToString();
+    public string Atk => (StaticData.baseAtk + GetEquipmentBonus(e => e.atkBonus)).ToString();
+    public string Def => (StaticData.baseDef + GetEquipmentBonus(e => e.defBonus)).ToString();
+
+    private int GetEquipmentBonus(System.Func<ItemRawData, int> selector)
+    {
+        int total = 0;
+        foreach (var itemId in ServerData.equippedItems.Values)
+        {
+            var item = GameDataManager.Instance.GetItem(itemId);
+            if (item != null) total += selector(item);
+        }
+        return total;
+    }
     public string TranscendText => $"+{ServerData.enhance}"; // BMP Color Tag 없이 넘기는 방식입니다.
     public Sprite Icon => StaticData.icon;
     public int CharacterId => StaticData.id;

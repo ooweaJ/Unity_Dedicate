@@ -23,6 +23,7 @@ public abstract class BaseSlot : MonoBehaviour
         if (imgIcon != null)
         {
             imgIcon.sprite = data.icon;
+            imgIcon.color = Color.white;
             imgIcon.gameObject.SetActive(true);
         }
         

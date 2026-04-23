@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 
 [System.Serializable]
@@ -8,6 +9,7 @@ public class PlayerCharacterData
     public int exp;
     public int enhance;
     public int shardAmount;
+    public Dictionary<EquipmentSlotType, int> equippedItems = new();
 }
 
 [System.Serializable]

@@ -41,8 +41,8 @@ public class InventoryUIManager : MonoBehaviour
     public event Action<int> OnUseItem;
     public event Action<int> OnDiscardItem;
     public event Action<int> OnOpenTranscendence;
-    public event Action<int, EquipmentSlotType> OnEquipItem;
-    public event Action<int> OnUnequipItem;
+    public event Action<int, int, EquipmentSlotType> OnEquipItem;   // (charId, itemId, slot)
+    public event Action<int, EquipmentSlotType> OnUnequipItem;       // (charId, slot)
 
     private void OnEnable()
     {
@@ -114,8 +114,16 @@ public class InventoryUIManager : MonoBehaviour
 
         listManager.Init(_characterUIModels, 1, OnSelectCharacter);
 
-        if (_characterUIModels.Count > 0)
-            OnSelectCharacter(_characterUIModels[0].StaticData.id);
+        // 이전에 선택한 캐릭터가 있으면 유지, 없으면 첫 번째 캐릭터 선택
+        bool keepSelection = _selectedCharacterId != -1 &&
+            _characterUIModels.Any(m => m.StaticData.id == _selectedCharacterId);
+
+        int idToSelect = keepSelection
+            ? _selectedCharacterId
+            : (_characterUIModels.Count > 0 ? _characterUIModels[0].StaticData.id : -1);
+
+        if (idToSelect != -1)
+            OnSelectCharacter(idToSelect);
 
         RefreshActiveItemUI();
     }
@@ -201,8 +209,37 @@ public class InventoryUIManager : MonoBehaviour
         }
     }
 
-    private void HandleEquip(int itemId, EquipmentSlotType slotType) => OnEquipItem?.Invoke(itemId, slotType);
-    private void HandleUnequip(int itemId) => OnUnequipItem?.Invoke(itemId);
+    private void HandleEquip(int itemId, EquipmentSlotType slotType)
+        => OnEquipItem?.Invoke(_selectedCharacterId, itemId, slotType);
+
+    private void HandleUnequip(int itemId)
+    {
+        var slot = _equipmentSlots.FirstOrDefault(s => s.ItemId == itemId);
+        if (slot != null)
+            OnUnequipItem?.Invoke(_selectedCharacterId, slot.acceptedSlotType);
+    }
+
+    private void RefreshEquipmentSlots(PlayerCharacterData charData)
+    {
+        foreach (var slot in _equipmentSlots)
+        {
+            if (charData.equippedItems.TryGetValue(slot.acceptedSlotType, out int itemId))
+            {
+                var staticData = GameDataManager.Instance.GetItem(itemId);
+                if (staticData == null)
+                {
+                    Debug.LogWarning($"[InventoryUIManager] 장착 아이템 ID {itemId}가 ItemTableSO에 없습니다.");
+                    slot.Clear();
+                    continue;
+                }
+                slot.SetItem(itemId, staticData, 1);
+            }
+            else
+            {
+                slot.Clear();
+            }
+        }
+    }
 
     private void OnSelectCharacter(int id)
     {
@@ -213,6 +250,7 @@ public class InventoryUIManager : MonoBehaviour
         modelManager.ShowModel(selectedModel);
         infoPanel.SetData(selectedModel);
         listManager.RefreshSelection(id);
+        RefreshEquipmentSlots(selectedModel.ServerData);
         RefreshActiveItemUI();
     }
 }

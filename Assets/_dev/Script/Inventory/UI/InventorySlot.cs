@@ -62,8 +62,8 @@ public class InventorySlot : BaseSlot,
 
     public void OnEndDrag(PointerEventData e)
     {
-        if (DragController.Instance != null)
-            DragController.Instance.OnEndDrag(e);
+        // Instance가 null이어도 항상 정리 보장
+        DragController.Instance?.EndDrag();
     }
 
     // --- 시각적 효과 ---

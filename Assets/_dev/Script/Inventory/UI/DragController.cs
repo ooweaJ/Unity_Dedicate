@@ -21,6 +21,7 @@ public class DragController : MonoBehaviour
         if (dragIcon != null)
         {
             dragIcon.sprite = data.icon;
+            dragIcon.raycastTarget = false; // EquipmentSlot이 OnDrop을 받을 수 있도록 반드시 false
             dragIcon.gameObject.SetActive(true);
         }
     }
@@ -33,7 +34,13 @@ public class DragController : MonoBehaviour
 
     public void OnEndDrag(PointerEventData e)
     {
-        if (dragIcon != null) dragIcon.gameObject.SetActive(false);
+        EndDrag();
+    }
+
+    // InventorySlot.OnEndDrag 외부에서도 강제 정리할 수 있도록 public
+    public void EndDrag()
+    {
         DraggingData = null;
+        if (dragIcon != null) dragIcon.gameObject.SetActive(false);
     }
 }
