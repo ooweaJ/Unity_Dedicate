@@ -280,7 +280,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 10876d86c0d0c7948ab7c3f219be6325, type: 3}
+  m_Sprite: {fileID: 0}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -426,9 +426,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 08cd48be20310c445bf99c05b07a32c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::InventorySlot
-  iconImage: {fileID: 5258680740691058903}
-  amountText: {fileID: 1970497019583147096}
+  imgIcon: {fileID: 5258680740691058903}
+  txtAmount: {fileID: 1970497019583147096}
+  emptyIndicator: {fileID: 0}
   selectFrameImage: {fileID: 1864234614080995366}
-  slotButton: {fileID: 948689790678843211}
   selectedColor: {r: 1, g: 0.75, b: 0, a: 1}
   unselectedColor: {r: 1, g: 1, b: 1, a: 0}

@@ -79,7 +79,7 @@ public class InventoryUI : MonoBehaviour
         var staticData = GameDataManager.Instance.GetCharacter(targetChar.characterId);
         if (staticData == null) return;
 
-        CreateSlot(targetChar.characterId, staticData.shardIcon, targetChar.shardAmount, ItemType.TranscendShard);
+        CreateSlot(targetChar.characterId, staticData.shardIcon, targetChar.shardAmount, ItemType.Transcendence);
     }
 
     private void RefreshItemSlots()
@@ -104,7 +104,7 @@ public class InventoryUI : MonoBehaviour
         var staticData = GameDataManager.Instance.GetItem(id); // 기본 아이템 데이터 가져오기
         
         // 만약 캐릭터 조각이라면 가상의 ItemRawData 생성 (또는 Table에 조각도 포함되어 있어야 함)
-        if (staticData == null && type == ItemType.TranscendShard)
+        if (staticData == null && type == ItemType.Transcendence)
         {
             staticData = new ItemRawData { id = id, icon = icon, itemType = type, displayName = "조각" };
         }

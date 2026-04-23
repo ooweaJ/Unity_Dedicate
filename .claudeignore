@@ -1,0 +1,14 @@
+# 1. 모든 것을 무시
+/*
+
+# 2. 내 작업 폴더만 '구멍' 뚫기
+!/Assets/
+!/Assets/_dev/
+!/Assets/_dev/Script/
+
+# 3. 그 안의 모든 파일은 허용
+!/Assets/_dev/Script/**
+
+# 4. (선택) 프로젝트 정보 파일만 추가 허용
+!CONTEXT.md
+!CLAUDE.md

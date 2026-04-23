@@ -592,7 +592,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &76294327
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1424,7 +1424,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 9d7e931295e92b8419dde467e5f709b8, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 2f1eaeeaad36ee5469eff7ff158f37ba, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -1912,7 +1912,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!224 &319723850
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2911,6 +2911,7 @@ GameObject:
   m_Component:
   - component: {fileID: 582846196}
   - component: {fileID: 582846195}
+  - component: {fileID: 582846197}
   m_Layer: 5
   m_Name: ActionPopup
   m_TagString: Untagged
@@ -2930,8 +2931,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 10a8f6245b6ac254ab5fdbc0ec8da47a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::ItemActionPopup
-  btnPrefab: {fileID: 0}
-  container: {fileID: 0}
+  btnPrefab: {fileID: 5485222737969523660, guid: 89dc4d0073c2b1240bc24c22a17f5602, type: 3}
+  container: {fileID: 582846196}
 --- !u!224 &582846196
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2949,8 +2950,34 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: 0, y: 0}
-  m_SizeDelta: {x: 200, y: 200}
+  m_SizeDelta: {x: 150, y: 200}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &582846197
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 582846194}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 59f8146938fff824cb5fd77236b75775, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: UnityEngine.UI::UnityEngine.UI.VerticalLayoutGroup
+  m_Padding:
+    m_Left: 0
+    m_Right: 0
+    m_Top: 0
+    m_Bottom: 0
+  m_ChildAlignment: 1
+  m_Spacing: 0
+  m_ChildForceExpandWidth: 0
+  m_ChildForceExpandHeight: 0
+  m_ChildControlWidth: 0
+  m_ChildControlHeight: 0
+  m_ChildScaleWidth: 0
+  m_ChildScaleHeight: 0
+  m_ReverseArrangement: 0
 --- !u!1001 &605319881
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -3320,7 +3347,7 @@ GameObject:
   - component: {fileID: 607537182}
   - component: {fileID: 607537183}
   m_Layer: 5
-  m_Name: EquipSlot
+  m_Name: ArmorSlot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3343,9 +3370,9 @@ RectTransform:
   - {fileID: 126808577}
   m_Father: {fileID: 1200108961}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 100, y: -100}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 150, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &607537183
@@ -3360,7 +3387,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7763a22f828c62c458631e788724e87a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
-  imgIcon: {fileID: 0}
+  imgIcon: {fileID: 245607456}
   txtAmount: {fileID: 0}
   emptyIndicator: {fileID: 0}
   acceptedSlotType: 1
@@ -4320,7 +4347,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 2f1eaeeaad36ee5469eff7ff158f37ba, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 08d5ec2d201ece949a5e428ba3ea0e63, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -5407,7 +5434,7 @@ GameObject:
   - component: {fileID: 879594981}
   - component: {fileID: 879594982}
   m_Layer: 5
-  m_Name: EquipSlot (2)
+  m_Name: AccesorySlot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -5430,9 +5457,9 @@ RectTransform:
   - {fileID: 146952650}
   m_Father: {fileID: 1200108961}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 100, y: -500}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 150, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &879594982
@@ -5447,7 +5474,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7763a22f828c62c458631e788724e87a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
-  imgIcon: {fileID: 0}
+  imgIcon: {fileID: 1283052613}
   txtAmount: {fileID: 0}
   emptyIndicator: {fileID: 0}
   acceptedSlotType: 2
@@ -6831,7 +6858,7 @@ GameObject:
   - component: {fileID: 1204430105}
   - component: {fileID: 1204430106}
   m_Layer: 5
-  m_Name: EquipSlot (1)
+  m_Name: WeaponSlot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -6854,9 +6881,9 @@ RectTransform:
   - {fileID: 784064186}
   m_Father: {fileID: 1200108961}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 100, y: -300}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 150, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1204430106
@@ -6871,7 +6898,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7763a22f828c62c458631e788724e87a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
-  imgIcon: {fileID: 0}
+  imgIcon: {fileID: 744676579}
   txtAmount: {fileID: 0}
   emptyIndicator: {fileID: 0}
   acceptedSlotType: 0
@@ -7141,7 +7168,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 08d5ec2d201ece949a5e428ba3ea0e63, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 409f9bc68f7fc3646b5386b3fb9e2a3a, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -9951,7 +9978,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3042264063371095723, guid: 6a2c4d4bbbbbc5242a1d857639f7454a, type: 3}
       propertyPath: targetType
-      value: 2
+      value: 3
       objectReference: {fileID: 0}
     - target: {fileID: 7211292914617258195, guid: 6a2c4d4bbbbbc5242a1d857639f7454a, type: 3}
       propertyPath: m_Pivot.x
@@ -10727,7 +10754,7 @@ GameObject:
   - component: {fileID: 1885707258}
   - component: {fileID: 1885707259}
   m_Layer: 5
-  m_Name: EquipSlot (3)
+  m_Name: RingSlot
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -10750,9 +10777,9 @@ RectTransform:
   - {fileID: 1833083816}
   m_Father: {fileID: 1200108961}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
-  m_AnchorMin: {x: 0, y: 1}
-  m_AnchorMax: {x: 0, y: 1}
-  m_AnchoredPosition: {x: 100, y: -700}
+  m_AnchorMin: {x: 0, y: 0}
+  m_AnchorMax: {x: 0, y: 0}
+  m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 150, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1885707259
@@ -10767,7 +10794,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7763a22f828c62c458631e788724e87a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::EquipmentSlot
-  imgIcon: {fileID: 0}
+  imgIcon: {fileID: 1105241083}
   txtAmount: {fileID: 0}
   emptyIndicator: {fileID: 0}
   acceptedSlotType: 3
@@ -11376,6 +11403,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 319723850}
     m_Modifications:
+    - target: {fileID: 3042264063371095723, guid: 6a2c4d4bbbbbc5242a1d857639f7454a, type: 3}
+      propertyPath: targetType
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7211292914617258195, guid: 6a2c4d4bbbbbc5242a1d857639f7454a, type: 3}
       propertyPath: m_Pivot.x
       value: 1
@@ -11944,7 +11975,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 3042264063371095723, guid: 6a2c4d4bbbbbc5242a1d857639f7454a, type: 3}
       propertyPath: targetType
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 7211292914617258195, guid: 6a2c4d4bbbbbc5242a1d857639f7454a, type: 3}
       propertyPath: m_Pivot.x

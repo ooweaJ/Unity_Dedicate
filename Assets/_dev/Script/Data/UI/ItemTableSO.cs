@@ -6,8 +6,7 @@ public enum ItemType
     Consumable,     // 소모품
     Equipment,      // 장비
     Material,       // 재료
-    Transcendence,  // 초월 (기존 유지)
-    TranscendShard  // 초월 조각
+    Transcendence,  // 초월
 }
 
 public enum EquipmentSlotType 
