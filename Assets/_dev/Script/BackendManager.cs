@@ -113,15 +113,13 @@ public static class BackendManager
     // 서버 처리 순서:
     //   1. userId + token 검증
     //   2. 해당 유저가 itemId를 1개 이상 보유하는지 확인
-    //   3. items_table에서 itemId의 effect_type, effect_value 조회
-    //      예) { effect_type: "heal_hp", effect_value: 100 }
-    //   4. effect_type별 분기 처리 (heal_hp → character HP 증가, buff → 버프 DB 기록 등)
+    //   3. 아이템 타입 확인 (EXP 포션, 강화 재료)
+    //   4. 캐릭터의 현재 단계 최대치(Max Cap) 확인 및 효과 적용
     //   5. items 테이블에서 해당 유저의 itemId 수량 1 감소
     //   6. 변경된 전체 user 데이터 반환
-    // 아이템 ID만 넘기는 이유: 효과는 서버 DB가 결정, 클라이언트가 효과를 주장하면 조작 위험
-    public static async Task<string> UseItem(int userId, int itemId)
+    public static async Task<string> UseItem(int userId, int itemId, int characterId)
     {
-        var json = $"{{\"userId\":{userId},\"itemId\":{itemId}}}";
+        var json = $"{{\"userId\":{userId},\"itemId\":{itemId},\"characterId\":{characterId}}}";
         var content = new StringContent(json, Encoding.UTF8, "application/json");
         var res = await client.PostAsync(baseUrl + "/inventory/use", content);
         return await res.Content.ReadAsStringAsync();
