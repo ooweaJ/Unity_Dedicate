@@ -133,12 +133,12 @@ public class InventoryController : MonoBehaviour
     // ─── 아이템 사용 ──────────────────────────────────────────────────
     // 사용 효과(HP 회복 등)는 서버가 DB에서 결정합니다.
     // 클라이언트는 itemId만 전달 → 서버가 effect_type, effect_value를 조회해 처리
-    private async void HandleUseItem(int itemId)
+    private async void HandleUseItem(int characterId, int itemId)
     {
         try
         {
             int userId = PlayerDataManager.Instance.GetUserId();
-            string json = await BackendManager.UseItem(userId, itemId);
+            string json = await BackendManager.UseItem(userId, itemId, characterId);
             ApplyServerResponse(json, "UseItem");
             // ApplyUserData → OnChanged → UI 자동 갱신 (아이템 수량 감소 반영)
         }

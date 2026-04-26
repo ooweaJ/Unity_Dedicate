@@ -38,7 +38,7 @@ public class InventoryUIManager : MonoBehaviour
     private int _selectedCharacterId = -1;
 
     // 외부 게임 로직용 이벤트
-    public event Action<int> OnUseItem;
+    public event Action<int, int> OnUseItem; // (charId, itemId)
     public event Action<int> OnDiscardItem;
     public event Action<int> OnOpenTranscendence;
     public event Action<int, int, EquipmentSlotType> OnEquipItem;   // (charId, itemId, slot)
@@ -203,7 +203,7 @@ public class InventoryUIManager : MonoBehaviour
     {
         switch (actionType)
         {
-            case ItemActionType.Use:               OnUseItem?.Invoke(itemId);            break;
+            case ItemActionType.Use:               OnUseItem?.Invoke(_selectedCharacterId, itemId); break;
             case ItemActionType.Discard:           OnDiscardItem?.Invoke(itemId);        break;
             case ItemActionType.OpenTranscendence: OnOpenTranscendence?.Invoke(itemId);  break;
         }

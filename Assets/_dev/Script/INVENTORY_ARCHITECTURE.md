@@ -115,7 +115,8 @@ InventorySlot.OnPointerClick()
             └─ [Equipment 아닌 타입] ItemActionPopup.Show(data, pos, callback)
                  └─ data.actions 리스트 기반으로 버튼 동적 생성
                       └─ 버튼 클릭 시 → HandleAction(itemId, actionType)
-                           ├─ Use          → OnUseItem(itemId) → InventoryController.HandleUseItem()
+                           ├─ Use          → OnUseItem(charId, itemId) → InventoryController.HandleUseItem()
+
                            ├─ Discard      → OnDiscardItem(itemId) → InventoryController.HandleDiscardItem()
                            └─ Transcendence→ OnOpenTranscendence(itemId) → InventoryController.HandleOpenTranscendence()
 ```
