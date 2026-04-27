@@ -1,5 +1,6 @@
 using Mirror;
 using UnityEngine;
+using System.Linq; // 필수 추가
 
 public class MyAuthenticator : NetworkAuthenticator
 {
@@ -8,7 +9,8 @@ public class MyAuthenticator : NetworkAuthenticator
         public int           userId;
         public string        nickname;
         public int           level;
-        public CharacterType selectedCharacter;  // 로비에서 고른 캐릭터
+        public CharacterType selectedCharacter;
+        public CharacterStatData stats;
     }
 
     public struct AuthResponseMessage : NetworkMessage
@@ -23,7 +25,7 @@ public class MyAuthenticator : NetworkAuthenticator
 
     private void OnAuthRequestMessage(NetworkConnectionToClient conn, AuthRequestMessage msg)
     {
-        Debug.Log($"[SERVER] AuthRequest: {msg.nickname} | 캐릭터: {msg.selectedCharacter}");
+        Debug.Log($"[SERVER] AuthRequest: {msg.nickname} | ATK: {msg.stats.atk}");
         conn.authenticationData = msg;
         ServerAccept(conn);
         conn.Send(new AuthResponseMessage { success = true });
@@ -43,22 +45,49 @@ public class MyAuthenticator : NetworkAuthenticator
         }
     }
 
-    public override void OnServerAuthenticate(NetworkConnectionToClient conn)
-    {
-        Debug.Log("[SERVER] Auth 메시지 대기 중...");
-    }
+    public override void OnServerAuthenticate(NetworkConnectionToClient conn) { }
 
     public override void OnClientAuthenticate()
     {
+        var inventory = PlayerDataManager.Instance.GetInventory();
+        var selectedType = PlayerDataManager.Instance.GetSelectedCharacter();
+        
+        // Find -> FirstOrDefault로 수정
+        var ownedChar = inventory.GetAllCharacters()
+            .FirstOrDefault(c => {
+                var staticData = GameDataManager.Instance.GetCharacter(c.characterId);
+                return staticData != null && staticData.type == selectedType;
+            });
+
+        CharacterStatData finalStats = new CharacterStatData();
+
+        if (ownedChar != null)
+        {
+            var staticData = GameDataManager.Instance.GetCharacter(ownedChar.characterId);
+            finalStats.atk = staticData.baseAtk * (1f + (ownedChar.level - 1) * 0.1f);
+            finalStats.def = staticData.baseDef * (1f + (ownedChar.level - 1) * 0.05f);
+            finalStats.maxHp = staticData.baseHp * (1f + (ownedChar.level - 1) * 0.1f);
+
+            foreach (var itemId in ownedChar.equippedItems.Values)
+            {
+                var item = GameDataManager.Instance.GetItem(itemId);
+                if (item != null)
+                {
+                    finalStats.atk += item.atkBonus;
+                    finalStats.def += item.defBonus;
+                }
+            }
+        }
+
         var msg = new AuthRequestMessage
         {
             userId            = PlayerDataManager.Instance.GetUserId(),
             nickname          = PlayerDataManager.Instance.GetUsername(),
             level             = PlayerDataManager.Instance.GetLevel(),
-            selectedCharacter = PlayerDataManager.Instance.GetSelectedCharacter()
+            selectedCharacter = selectedType,
+            stats             = finalStats
         };
 
-        Debug.Log($"[CLIENT] Auth 전송: {msg.nickname} | 캐릭터: {msg.selectedCharacter}");
         NetworkClient.Send(msg);
     }
 }

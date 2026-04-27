@@ -1,6 +1,7 @@
 using UnityEngine;
 using Newtonsoft.Json.Linq;
 using System.Threading.Tasks;
+using System.Linq;
 
 public class PlayerDataManager : MonoBehaviour
 {
@@ -44,8 +45,36 @@ public class PlayerDataManager : MonoBehaviour
     public void ApplyUserData(JToken data)
     {
         _data.Apply(data);
+        
+        // 보유한 캐릭터가 있는데 현재 선택된 캐릭터가 없거나 무효하다면 첫 번째 캐릭터 자동 선택
+        ValidateSelectedCharacter();
+
         OnDataUpdated?.Invoke();
         Debug.Log($"[PlayerDataManager] Data Applied for: {GetUsername()}");
+    }
+
+    private void ValidateSelectedCharacter()
+    {
+        var ownedChars = _data.inventory.GetAllCharacters().ToList();
+        if (ownedChars.Count == 0) return;
+
+        // 현재 선택된 캐릭터가 보유 목록에 있는지 확인
+        bool isCurrentOwned = ownedChars.Any(c => 
+        {
+            var staticData = GameDataManager.Instance.GetCharacter(c.characterId);
+            return staticData != null && staticData.type == selectedCharacter;
+        });
+
+        // 없으면 첫 번째 보유 캐릭터로 강제 설정
+        if (!isCurrentOwned)
+        {
+            var firstChar = ownedChars[0];
+            var staticData = GameDataManager.Instance.GetCharacter(firstChar.characterId);
+            if (staticData != null)
+            {
+                SelectCharacter(staticData.type);
+            }
+        }
     }
 
     public void ClearData() => _data.Clear();

@@ -1,21 +1,16 @@
 using UnityEngine;
 using Newtonsoft.Json.Linq;
+using System.Linq; // 필수 추가
 
 public class InventoryController : MonoBehaviour
 {
     [SerializeField] private InventoryUIManager uiManager;
-    [SerializeField] private LobbyUI lobbyUI;
 
     private PlayerInventory _inventory;
 
     private void OnEnable()
     {
-        if (PlayerDataManager.Instance == null) return;
-
-        if (lobbyUI != null)
-            lobbyUI.OnInventoryButtonClicked += OpenInventory;
-
-        _inventory = PlayerDataManager.Instance.GetInventory();
+        _inventory = PlayerDataManager.Instance?.GetInventory();
         if (_inventory != null)
         {
             _inventory.OnChanged -= HandleRefresh;
@@ -36,9 +31,6 @@ public class InventoryController : MonoBehaviour
     {
         if (_inventory != null)
             _inventory.OnChanged -= HandleRefresh;
-
-        if (lobbyUI != null)
-            lobbyUI.OnInventoryButtonClicked -= OpenInventory;
 
         if (uiManager != null)
         {
@@ -65,8 +57,22 @@ public class InventoryController : MonoBehaviour
 
     private void RefreshUI()
     {
-        if (_inventory == null || uiManager == null) return;
-        uiManager.InitInventory(_inventory.GetAllCharacters(), _inventory.GetAllItems());
+        if (_inventory == null)
+        {
+            Debug.LogWarning("[InventoryController] _inventory가 null입니다!");
+            return;
+        }
+        if (uiManager == null)
+        {
+            Debug.LogWarning("[InventoryController] uiManager가 null입니다!");
+            return;
+        }
+
+        var chars = _inventory.GetAllCharacters().ToList();
+        var items = _inventory.GetAllItems().ToList();
+        Debug.Log($"[InventoryController] UI 갱신: 캐릭터 {chars.Count}개, 아이템 {items.Count}개");
+
+        uiManager.InitInventory(chars, items);
     }
 
     // ─── 서버 응답 공통 처리 ──────────────────────────────────────────
@@ -79,8 +85,7 @@ public class InventoryController : MonoBehaviour
         var response = JObject.Parse(rawJson);
         if (response["success"] is JToken s && (bool)s)
         {
-            if (response["user"] is JToken user)
-                PlayerDataManager.Instance.ApplyUserData(user);
+            PlayerDataManager.Instance.ApplyUserData(response);
         }
         else
         {

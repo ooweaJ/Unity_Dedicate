@@ -20,8 +20,8 @@ public class CharacterRawData
     public float baseAtk;
     public float baseDef;
 
-    // 필요하다면 캐릭터 타입(속성, 클래스 등)도 추가 가능
-    // public CharacterType type; 
+    [Header("Game Logic")]
+    public CharacterType type; 
 }
 
 [CreateAssetMenu(fileName = "CharacterTable", menuName = "Data/Table/Character")]

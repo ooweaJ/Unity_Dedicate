@@ -31,7 +31,8 @@ public class PlayerInventory
             {
                 foreach (var eq in equippedArray)
                 {
-                    if (System.Enum.TryParse<EquipmentSlotType>((string)eq["slot_type"], out var slotType))
+                    // 서버는 'weapon' (소문자), C# Enum은 'Weapon' (대문자)일 수 있으므로 ignoreCase=true 필수
+                    if (System.Enum.TryParse<EquipmentSlotType>((string)eq["slot_type"], true, out var slotType))
                         data.equippedItems[slotType] = (int)eq["item_id"];
                 }
             }

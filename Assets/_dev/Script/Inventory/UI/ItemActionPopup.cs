@@ -11,7 +11,7 @@ public class ItemActionPopup : MonoBehaviour
 {
     [SerializeField] private Button btnPrefab;
     [SerializeField] private Transform container;
-
+    [SerializeField] private Vector2 offset = new Vector2(75, -100);
     private readonly List<Button> _buttons = new();
 
     public void Show(ItemRawData data, Vector2 position, Action<ItemActionType> onAction)
@@ -45,8 +45,9 @@ public class ItemActionPopup : MonoBehaviour
             _buttons.Add(btn);
         }
 
-        // 위치 설정
-        transform.position = position;
+        // 위치 설정 (마우스 우측 하단으로 살짝 오프셋)
+        transform.position = position + offset;
+        
         gameObject.SetActive(true);
     }
 

@@ -117,7 +117,13 @@ public class CustomNetworkManager : NetworkManager
         if (matchQueue.Contains(player)) return;
         matchQueue.Add(player);
         Debug.Log($"[MATCH] 대기 {matchQueue.Count}명");
-        if (matchQueue.Count >= 2) StartMatch();
+        
+        // 확실히 2명 이상일 때만 매칭 시작
+        if (matchQueue.Count >= 2) 
+        {
+            Debug.Log("[MATCH] 2명 확보, 매칭을 시작합니다.");
+            StartMatch();
+        }
     }
 
     [Server]

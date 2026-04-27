@@ -71,12 +71,17 @@ public class CharacterSpawner : NetworkBehaviour
 
         // CharacterStats는 SyncVar 포함 → 클라이언트 자동 반영
         charStats?.SetData(so);
-        charStats?.SetLevel(battlePlayer.level);
+        
+        // 배틀 플레이어에 저장된 최종 스탯(인증 시 받은 값)을 적용
+        if (battlePlayer != null)
+        {
+            charStats?.ApplyStats(battlePlayer.stats);
+        }
 
         // 서버의 CharacterWeapon Setup (서버 판정용)
         charWeapon?.Setup(so.basicAttack, so.skillAttack);
 
-        Debug.Log($"[SPAWNER] 서버 초기화: {so.characterName} | 레벨: {battlePlayer.level}");
+        Debug.Log($"[SPAWNER] 서버 초기화: {so.characterName} | 최종ATK: {battlePlayer?.stats.atk}");
     }
 
     // ─── 클라이언트: 외형 + 무기 데이터 초기화 ───────────────────────

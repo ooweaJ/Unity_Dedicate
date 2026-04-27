@@ -89,3 +89,83 @@ graph TD
 3. **Loading**: 매칭 성공 시 배틀 서버 주소를 받아 비동기 로딩 시작.
 4. **Battle**: 실시간 전투 수행. 종료 시 결과창 표시와 동시에 로비 씬을 백그라운드에서 사전 로딩(Preload).
 5. **Result**: 확인 버튼 클릭 시 이미 로딩된 로비 씬으로 즉시 전환.
+
+
+  ---                                                                                                                                                                                                                                                            
+  아키텍처 전체 구조                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
+  레이어 구조 (위 → 아래)                                                                                                                                                                                                                                        
+                                                                                                                                                                                                                                                                 
+  [씬 흐름]                                                                                                                                                                                                                                                        Boot → Login → Loading → MainLobby ↔ Gacha(AdditiveScene)                                                                                                                                                                                                                                          ↓                                                                                                                                                                                                                                                          Loading → Battle → Loading → MainLobby                                                                                                                                                                                                                                                                                                                                                                                                                                                                [글로벌 싱글턴 (DontDestroyOnLoad)]                                                                                                                                                                                                                              GameDataManager      → GameDatabase (SO) → ItemTableSO / CharacterTableSO                                                                                                                                                                                        PlayerDataManager    → PlayerData, PlayerInventory                                                                                                                                                                                                               CustomNetworkManager → Mirror 네트워크, LobbyNetworkPlayer, BattleNetworkPlayer                                                                                                                                                                                
+  BackendManager       → HTTP API (static)
+  SceneFlowManager     → LoadRequest (씬 전환 데이터)
+
+  [씬별 컨트롤러]
+  LoginController     → LoginUI ↔ BackendManager → PlayerDataManager
+  LoadingSceneManager → LoadingUI + 서버 연결 시퀀스
+  LobbyController     → LobbyUI, InventoryController, ShopController
+  GachaSceneController→ TimelineController, GachaResultUI, GachaRewardDatabase
+  BattleController    → BattleManager(NetworkBehaviour), SpawnManager
+
+  [게임플레이 레이어 - NetworkBehaviour]
+  PlayerController    → 이동 입력
+  PlayerStats         → HP, IDamageable
+  PlayerCombat        → 공격 입력 진입점
+  CharacterWeapon     → 공격 판정 (Melee/Projectile), AttackDataSO x2
+  CharacterStats      → 스탯 계산, CharacterDataSO
+  CharacterSpawner    → 외형 스폰
+  PlayerAnimationController → SyncVar + Command + ClientRpc
+
+  [데이터 레이어]
+  ScriptableObject: GameDatabase, ItemTableSO, CharacterTableSO
+                    CharacterDataSO, AttackDataSO, GachaRewardDatas
+  Runtime Data:     PlayerData, PlayerInventory, BattleResultData
+
+  [인터페이스]
+  IDamageable     → PlayerStats 구현
+  IScoreService   → MockScoreService 구현
+
+  [추상 클래스]
+  ProjectileBase  → ExplosiveProjectile
+  BaseSlot        → InventorySlot, EquipmentSlot, CharacterSlot
+
+  ---
+  핵심 데이터 흐름 3가지
+
+  1. 로그인 흐름
+  LoginUI → LoginController → BackendManager.Login()
+         → PlayerDataManager.ApplyUserData() → PlayerInventory.OnChanged
+         → SceneFlowManager → LoadingScene → MainLobby
+
+  2. 배틀 판정 흐름
+  Input → PlayerCombat → CharacterWeapon.CmdUseAttack() [서버]
+        → PerformMelee()/PerformProjectile()
+        → IDamageable.TakeDamage() → PlayerStats
+        → BattleManager.RecordDamage/OnPlayerDead()
+        → RpcShowResultAndPreload() [모든 클라이언트]
+
+  3. 뽑기 흐름
+  ShopUI → ShopController → BackendManager.GachaDraw()
+         → GachaContext.PendingResults = results
+         → GachaContext.OnGachaResult.Invoke()
+         → GachaSceneController → TimelineController → GachaResultUI
+
+  ---
+  주요 패턴 요약/compact
+
+  ┌──────────────────┬─────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │       패턴       │                                           사용 클래스                                           │
+  ├──────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Singleton        │ GameDataManager, PlayerDataManager, BattleManager, LobbyController, ShopController 등 11개      │
+  ├──────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ ScriptableObject │ GameDatabase, CharacterDataSO, AttackDataSO, ItemTableSO 등 (Dict로 O(1) 조회)                  │
+  ├──────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Mirror SyncVar   │ PlayerStats.hp, CharacterStats.level, PlayerAnimationController 파라미터                        │
+  ├──────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Action 이벤트    │ PlayerInventory.OnChanged, PlayerDataManager.OnDataUpdated, CharacterSpawner.OnCharacterSpawned │
+  ├──────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Command/RPC      │ CharacterWeapon.CmdUseAttack → RpcPlayAttack                                                    │
+  ├──────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Interface        │ IDamageable, IScoreService                                                                      │
+  ├──────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Abstract         │ ProjectileBase, BaseSlot                                                                        │
+  └──────────────────┴─────────────────────────────────────────────────────────────────────────────────────────────────┘

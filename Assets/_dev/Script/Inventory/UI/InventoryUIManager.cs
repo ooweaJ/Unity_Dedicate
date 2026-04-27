@@ -17,7 +17,7 @@ public class InventoryUIManager : MonoBehaviour
     [Header("Sub Managers")]
     [SerializeField] private CharacterListManager listManager;
     [SerializeField] private CharacterModelManager modelManager;
-    [SerializeField] private CharacterInfoPanel infoPanel;
+    [SerializeField] private List<CharacterInfoPanel> CharacterinfoPanels;
     [SerializeField] private ItemInfoPanel itemInfoPanel;
     [SerializeField] private SidebarManager sidebarManager;
 
@@ -112,8 +112,6 @@ public class InventoryUIManager : MonoBehaviour
             new CharacterUIModel(s, GameDataManager.Instance.GetCharacter(s.characterId))
         ).ToList();
 
-        listManager.Init(_characterUIModels, 1, OnSelectCharacter);
-
         // 이전에 선택한 캐릭터가 있으면 유지, 없으면 첫 번째 캐릭터 선택
         bool keepSelection = _selectedCharacterId != -1 &&
             _characterUIModels.Any(m => m.StaticData.id == _selectedCharacterId);
@@ -121,6 +119,9 @@ public class InventoryUIManager : MonoBehaviour
         int idToSelect = keepSelection
             ? _selectedCharacterId
             : (_characterUIModels.Count > 0 ? _characterUIModels[0].StaticData.id : -1);
+
+        // 하드코딩된 1 대신 idToSelect 사용
+        listManager.Init(_characterUIModels, idToSelect, OnSelectCharacter);
 
         if (idToSelect != -1)
             OnSelectCharacter(idToSelect);
@@ -247,8 +248,17 @@ public class InventoryUIManager : MonoBehaviour
         var selectedModel = _characterUIModels.FirstOrDefault(m => m.StaticData.id == id);
         if (selectedModel == null) return;
 
+        // 선택된 캐릭터를 PlayerDataManager에도 반영 (배틀 진입 시 사용)
+        if (PlayerDataManager.Instance != null)
+        {
+            PlayerDataManager.Instance.SelectCharacter(selectedModel.StaticData.type);
+        }
+
         modelManager.ShowModel(selectedModel);
-        infoPanel.SetData(selectedModel);
+        foreach (var chinfo in CharacterinfoPanels)
+        {
+            chinfo.SetData(selectedModel);
+        }
         listManager.RefreshSelection(id);
         RefreshEquipmentSlots(selectedModel.ServerData);
         RefreshActiveItemUI();

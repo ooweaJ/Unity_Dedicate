@@ -14,7 +14,10 @@ public class BattleNetworkPlayer : NetworkBehaviour
     [SyncVar] public int           userId;
     [SyncVar] public string        nickname;
     [SyncVar] public int           level;
-    [SyncVar] public CharacterType selectedCharacter;   // 로비에서 고른 캐릭터
+    [SyncVar] public CharacterType selectedCharacter;
+    
+    // 최종 스탯 동기화 (SyncVar로 모든 클라이언트가 알 수 있음)
+    [SyncVar] public CharacterStatData stats;
 
     [SyncVar(hook = nameof(OnNicknameChanged))]
     public string nicknameHook;
@@ -33,18 +36,13 @@ public class BattleNetworkPlayer : NetworkBehaviour
     public override void OnStartLocalPlayer()
     {
         base.OnStartLocalPlayer();
-        Debug.Log($"[BATTLE] 로컬 플레이어 준비 | 캐릭터: {selectedCharacter}");
+        Debug.Log($"[BATTLE] 로컬 플레이어 준비 | 캐릭터: {selectedCharacter} | ATK: {stats.atk}");
     }
 
     public override void OnStopClient()
     {
         base.OnStopClient();
         players.Remove(this);
-    }
-
-    private void OnDestroy()
-    {
-        players.Clear();
     }
 
     [Server]
@@ -55,12 +53,12 @@ public class BattleNetworkPlayer : NetworkBehaviour
         nicknameHook      = authData.nickname;
         level             = authData.level;
         selectedCharacter = authData.selectedCharacter;
+        stats             = authData.stats; // 인증 데이터에서 받은 스탯 저장
     }
 
     [TargetRpc]
     public void TargetReturnToLobby(NetworkConnectionToClient conn)
     {
-        Debug.Log("[CLIENT] 로비 복귀 명령 받음");
         CustomNetworkManager.Instance.ReturnToLobby();
     }
 }
