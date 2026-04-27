@@ -5,7 +5,7 @@
 /// </summary>
 public enum CharacterType
 {
-    Swordsman = 0,
-    Mage      = 1,
+    chan = 1,
+    sapphi = 2,
     // 추가 캐릭터는 여기에
 }

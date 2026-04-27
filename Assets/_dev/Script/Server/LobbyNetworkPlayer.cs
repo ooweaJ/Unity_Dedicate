@@ -20,10 +20,22 @@ public class LobbyNetworkPlayer : NetworkBehaviour
         OnPlayerReady?.Invoke(this);
     }
 
+    public override void OnStopServer()
+    {
+        base.OnStopServer();
+        CustomNetworkManager.Instance.CancelMatch(this);
+    }
+
     [Command]
     public void CmdRequestMatch()
     {
         CustomNetworkManager.Instance.RequestMatch(this);
+    }
+
+    [Command]
+    public void CmdCancelMatch()
+    {
+        CustomNetworkManager.Instance.CancelMatch(this);
     }
 
     [Server]

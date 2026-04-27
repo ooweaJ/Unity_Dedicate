@@ -45,12 +45,12 @@ public class PlayerAnimationController : NetworkBehaviour
 
     // ─── Hook : SyncVar 변경 시 자동 호출 ────────────────────────────────
     // (언리얼 UFUNCTION() + RepNotify 조합과 동일)
-    private void OnSyncSpeed(float _, float v) => animator.SetFloat(ParamSpeed, v);
-    private void OnSyncDirection(float _, float v) => animator.SetFloat(ParamDirection, v);
-    private void OnSyncJumpHeight(float _, float v) => animator.SetFloat(ParamJumpHeight, v);
-    private void OnSyncGravityControl(float _, float v) => animator.SetFloat(ParamGravityControl, v);
-    private void OnSyncJump(bool _, bool v) => animator.SetBool(ParamJump, v);
-    private void OnSyncRest(bool _, bool v) => animator.SetBool(ParamRest, v);
+    private void OnSyncSpeed(float _, float v) => animator?.SetFloat(ParamSpeed, v);
+    private void OnSyncDirection(float _, float v) => animator?.SetFloat(ParamDirection, v);
+    private void OnSyncJumpHeight(float _, float v) => animator?.SetFloat(ParamJumpHeight, v);
+    private void OnSyncGravityControl(float _, float v) => animator?.SetFloat(ParamGravityControl, v);
+    private void OnSyncJump(bool _, bool v) => animator?.SetBool(ParamJump, v);
+    private void OnSyncRest(bool _, bool v) => animator?.SetBool(ParamRest, v);
 
     private void Awake()
     {

@@ -1,0 +1,150 @@
+================================================================
+  Unity 멀티플레이어 프로젝트 — 작업 요약 (2026-04-27)
+================================================================
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+1. 인벤토리 데이터 미로딩 버그 수정
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[원인]
+- LobbyController.HandleOnInventory()가 inventoryUI.Open()만 호출 (패널만 열림, 데이터 없음)
+- InventoryController.OpenInventory()가 호출되어야 RefreshUI() → InitInventory() 실행됨
+- InventoryController.OnEnable()에서 PlayerDataManager null 시 전체 이벤트 구독 스킵 문제
+
+[수정]
+- LobbyController의 SerializeField를 InventoryUIManager → InventoryController로 교체
+- HandleOnInventory() → inventoryController.OpenInventory() 직접 호출
+- InventoryController에서 중복 lobbyUI 참조 제거
+
+[추가 수정] ApplyServerResponse 키 오류
+- response["user"] 로 조회했으나 서버는 { success, id, username, ... } spread로 반환
+- response 전체를 ApplyUserData에 전달하도록 수정
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+2. 스탯 계산 단일화 (StatUtils)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[문제]
+- CharacterUIModel: 레벨 스케일링 없이 스탯 계산
+- MyAuthenticator: 인라인으로 별도 계산 (공식 불일치)
+- StatUtils.Calculate()가 있었지만 둘 다 안 쓰고 있었음
+
+[수정]
+- CharacterUIModel: StatUtils.Calculate() 사용으로 교체
+- MyAuthenticator: StatUtils.Calculate() 사용으로 교체
+- 결과: UI 표시 수치 = 서버 전송 수치 일치 보장
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+3. 캐릭터 데이터 구조 분리
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[구조]
+  CharacterRawData (로비/인증 기준)    CharacterDataSO (전투 메카닉 전용)
+  ──────────────────────────────────   ─────────────────────────────────
+  id, name, icon, grade                weaponMeshPrefab
+  baseHp, baseAtk, baseDef             basicAttack (AttackDataSO)
+  atkUpgradeBonus (신규)               skillAttack (AttackDataSO)
+  hpUpgradeBonus  (신규)               moveSpeed
+  defUpgradeBonus (신규)
+  modelPrefab
+  battleData → CharacterDataSO 참조    ← 신규 연결
+
+[제거] CharacterDataSO에서 중복 필드 삭제
+  - baseAttack, baseMaxHp, baseDefense
+  - attackUpgradeBonus, hpUpgradeBonus, defenseUpgradeBonus
+
+[강화배율] StatUtils가 하드코딩 0.1f 대신 CharacterRawData.atkUpgradeBonus 사용
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+4. CharacterSpawner 데이터 테이블 기반으로 교체
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[이전 구조]
+  CharacterSpawner.characterPrefabs[] 배열 → 인덱스로 프리팹 꺼냄
+  → CharacterDefinition 컴포넌트에서 CharacterDataSO 취득
+
+[변경 후 구조]
+  CharacterType
+      ↓
+  GameDataManager.GetCharacterByType()  ← CharacterTableSO._typeMap 신규 추가
+      ↓
+  CharacterRawData
+      ├─ modelPrefab  → 외형 스폰
+      └─ battleData   → CharacterWeapon.Setup()
+
+[변경]
+  - CharacterTableSO: CharacterType 키 딕셔너리(_typeMap) 추가
+  - GameDataManager: GetCharacterByType(CharacterType) 메서드 추가
+  - CharacterSpawner: characterPrefabs[] 배열 제거, GetDefinition() 제거
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+5. 캐릭터 선택 팝업 — 스탯 표시 연결
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[추가]
+- LobbyUI에 CharacterInfoPanel confirmCharInfoPanel 추가
+- 캐릭터 선택 시 confirmCharInfoPanel.SetData(model) 호출
+- 초기 선택 캐릭터도 동일하게 정보 표시
+- 데이터 흐름: CharacterUIModel(StatUtils 내장) → CharacterInfoPanel
+
+[인스펙터] LobbyUI의 Confirm Char Info Panel 슬롯에 프리팹 연결 필요
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+6. 매칭 취소 구현
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[취소 케이스 3가지]
+  버튼         → LobbyController.HandleCancelMatch → CmdCancelMatch()
+  로그아웃      → NetworkManager.StopClient → 연결종료 → OnStopServer()
+  게임 종료    → 프로세스 종료 → Mirror 연결끊김 → OnStopServer()
+
+[추가]
+- CustomNetworkManager.CancelMatch(LobbyNetworkPlayer): matchQueue.Remove()
+- LobbyNetworkPlayer.CmdCancelMatch(): Command로 서버에 취소 요청
+- LobbyNetworkPlayer.OnStopServer(): 연결 끊길 때 자동 큐 제거
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+7. 캐릭터 스폰 버그 수정 — SyncVar 타이밍 이슈
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[버그] 선택한 캐릭터와 무관하게 항상 첫 번째 캐릭터 스폰됨
+
+[원인]
+  Instantiate(player)
+    → AddPlayerForConnection() → OnStartServer() 실행
+         → battlePlayer.selectedCharacter = 0 (기본값, 아직 미설정!)
+    → SetInfo(authData)  ← 너무 늦음
+
+[수정] SetInfo를 AddPlayerForConnection 이전에 호출
+  - Instantiate → SetInfo(authData) → AddPlayerForConnection 순서로 변경
+  - BattleNetworkPlayer.SetInfo()에서 [Server] 속성 제거
+    (스폰 전 호출 시 isServer=false라 경고가 뜨기 때문)
+  - CharacterSpawner에서 characterTypeIndex(별도 SyncVar) 제거
+    → battlePlayer.selectedCharacter를 직접 참조
+
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+8. 기타 버그 수정
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+[PlayerAnimationController NullReferenceException]
+- SyncVar hook(OnSyncSpeed 등)이 스폰 직후 역직렬화 때 호출됨
+- 이 시점에 animator가 아직 null (CharacterSpawner.OnCharacterSpawned 이전)
+- 수정: animator?.SetFloat() — null 조건 연산자 추가
+
+================================================================
+  인스펙터 체크리스트 (작업 후 필수 확인)
+================================================================
+
+□ LobbyController → Inventory Controller 슬롯에 InventoryController 연결
+□ LobbyUI → Confirm Char Info Panel 슬롯에 CharacterInfoPanel 연결
+□ CharacterTableSO → 각 캐릭터의 Battle Data 슬롯에 CharacterDataSO 에셋 연결
+□ CharacterTableSO → 각 캐릭터의 type 필드가 CharacterType enum과 정확히 매칭 확인
+□ CharacterSpawner 프리팹 → characterPrefabs[] 배열 제거 확인
+□ 배틀씬에 GameDataManager 오브젝트 존재 여부 확인 (서버는 부트씬 미실행)

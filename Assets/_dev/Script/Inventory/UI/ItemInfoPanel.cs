@@ -64,7 +64,7 @@ public class ItemInfoPanel : MonoBehaviour
         if (staticData == null) return;
         txtName.text = staticData.displayName;
         txtDescription.text = staticData.description;
-        txtAmount.text = $"보유 수량: {amount}";
+        txtAmount.text = $"보유 수량:\n{amount}";
         if (imgIcon != null) imgIcon.sprite = staticData.icon;
     }
 

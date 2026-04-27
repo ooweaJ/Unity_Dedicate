@@ -13,15 +13,23 @@ public class CharacterRawData
     [TextArea] public string description;
 
     [Header("Visuals")]
-    public GameObject modelPrefab; // 실제 필드/전투에서 소환할 프리팹
+    public GameObject modelPrefab;
+
+    [Header("Battle")]
+    public CharacterDataSO battleData;
 
     [Header("Base Stats")]
     public float baseHp;
     public float baseAtk;
     public float baseDef;
 
+    [Header("Level Scaling (per level)")]
+    public float atkUpgradeBonus  = 0.10f;
+    public float hpUpgradeBonus   = 0.10f;
+    public float defUpgradeBonus  = 0.05f;
+
     [Header("Game Logic")]
-    public CharacterType type; 
+    public CharacterType type;
 }
 
 [CreateAssetMenu(fileName = "CharacterTable", menuName = "Data/Table/Character")]
@@ -31,22 +39,27 @@ public class CharacterTableSO : ScriptableObject, ISerializationCallbackReceiver
     public List<CharacterRawData> characters = new List<CharacterRawData>();
 
     // 2. 실제 코드에서 사용할 고속 검색용 맵
-    private Dictionary<int, CharacterRawData> _characterMap = new();
+    private Dictionary<int, CharacterRawData>          _characterMap = new();
+    private Dictionary<CharacterType, CharacterRawData> _typeMap      = new();
 
-    // ID로 데이터 가져오기 (O(1) 성능)
     public CharacterRawData GetData(int id)
-    {
-        return _characterMap.TryGetValue(id, out var data) ? data : null;
-    }
+        => _characterMap.TryGetValue(id, out var data) ? data : null;
+
+    public CharacterRawData GetDataByType(CharacterType type)
+        => _typeMap.TryGetValue(type, out var data) ? data : null;
 
     // 유니티 로드 시 자동 실행
     public void OnAfterDeserialize()
     {
         _characterMap.Clear();
+        _typeMap.Clear();
         foreach (var c in characters)
         {
-            if (c != null && !_characterMap.ContainsKey(c.id))
+            if (c == null) continue;
+            if (!_characterMap.ContainsKey(c.id))
                 _characterMap.Add(c.id, c);
+            if (!_typeMap.ContainsKey(c.type))
+                _typeMap.Add(c.type, c);
         }
     }
 

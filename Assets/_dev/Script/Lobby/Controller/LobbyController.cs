@@ -14,6 +14,7 @@ public class LobbyController : MonoBehaviour
     [SerializeField] private PlayerInfoUI playerInfoUI;
     [SerializeField] private InventoryController inventoryController;
     [SerializeField] private ShopUI shopUI;
+    [SerializeField] private GameObject SettingPanel;
 
     private void Awake()
     {
@@ -47,6 +48,18 @@ public class LobbyController : MonoBehaviour
         PlayerDataManager.Instance.OnDataUpdated -= UpdateInfoUI;
     }
 
+    public void OnSettingClicked() { SettingPanel.SetActive(true); }
+    public void OffSettingClicked() { SettingPanel.SetActive(false); }
+    public void OnGameQuitClicked()
+    {
+#if UNITY_EDITOR
+        // 에디터에서 실행 중일 때 재생 모드를 종료
+        UnityEditor.EditorApplication.isPlaying = false;
+#else
+        // 실제 빌드된 앱에서 프로그램을 종료
+        Application.Quit();
+#endif
+    }
     private void OnsuccessGacha() { UpdateInfoUI(); }
 
     private void UpdateInfoUI()
@@ -116,6 +129,6 @@ public class LobbyController : MonoBehaviour
 
     void HandleCancelMatch()
     {
-        Debug.Log("매칭 취소됨");
+        LobbyNetworkPlayer.Local?.CmdCancelMatch();
     }
 }

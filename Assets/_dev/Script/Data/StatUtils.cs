@@ -19,9 +19,9 @@ public static class StatUtils
         if (baseData == null) return default;
 
         // 1. 레벨업 보너스 계산 (공식 통일: 1레벨은 보너스 0)
-        float levelBonusAtk = baseData.baseAtk * (level - 1) * 0.1f;
-        float levelBonusDef = baseData.baseDef * (level - 1) * 0.05f;
-        float levelBonusHp  = baseData.baseHp  * (level - 1) * 0.1f;
+        float levelBonusAtk = baseData.baseAtk * (level - 1) * baseData.atkUpgradeBonus;
+        float levelBonusDef = baseData.baseDef * (level - 1) * baseData.defUpgradeBonus;
+        float levelBonusHp  = baseData.baseHp  * (level - 1) * baseData.hpUpgradeBonus;
 
         // 2. 장비 보너스 합산
         float itemBonusAtk = 0;

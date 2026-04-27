@@ -38,4 +38,10 @@ public class GameDataManager : MonoBehaviour
         if (database == null || database.characterTable == null) return null;
         return database.characterTable.GetData(id);
     }
+
+    public CharacterRawData GetCharacterByType(CharacterType type)
+    {
+        if (database == null || database.characterTable == null) return null;
+        return database.characterTable.GetDataByType(type);
+    }
 }

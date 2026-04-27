@@ -78,35 +78,30 @@ public class CustomNetworkManager : NetworkManager
         if (SpawnManager.Instance != null)
             player.transform.position = SpawnManager.Instance.GetNextSpawnPosition();
 
-        NetworkServer.AddPlayerForConnection(conn, player);
-
         var authData = (MyAuthenticator.AuthRequestMessage)conn.authenticationData;
 
         if (serverType == "lobby")
         {
+            // 스폰 전에 SyncVar 세팅 → 초기 스폰 메시지에 올바른 값이 포함됨
             var lobbyPlayer = player.GetComponent<LobbyNetworkPlayer>();
-            if (lobbyPlayer != null)
-            {
-                lobbyPlayer.SetInfo(authData);
-                Debug.Log($"[LOBBY] 입장: {authData.nickname}");
-            }
+            lobbyPlayer?.SetInfo(authData);
+            NetworkServer.AddPlayerForConnection(conn, player);
+            Debug.Log($"[LOBBY] 입장: {authData.nickname}");
         }
         else if (serverType == "battle")
         {
+            // 스폰 전에 SyncVar 세팅 → OnStartServer/OnStartClient에서 올바른 값 사용
             var battlePlayer = player.GetComponent<BattleNetworkPlayer>();
-            if (battlePlayer != null)
+            battlePlayer?.SetInfo(authData);
+            NetworkServer.AddPlayerForConnection(conn, player);
+
+            Debug.Log($"[BATTLE] 입장: {authData.nickname} | 캐릭터: {authData.selectedCharacter}");
+
+            if (numPlayers >= 2)
             {
-                // 1. BattleNetworkPlayer에 유저 정보 저장
-                battlePlayer.SetInfo(authData);
-
-                Debug.Log($"[BATTLE] 입장: {authData.nickname} | 캐릭터: {authData.selectedCharacter}");
-
-                if (numPlayers >= 2)
-                {
-                    Debug.Log("[BATTLE] 2명 모두 접속! 배틀 시작");
-                    BattleManager.Instance?.StartBattle();
-                    StartCoroutine(BattleTimer());
-                }
+                Debug.Log("[BATTLE] 2명 모두 접속! 배틀 시작");
+                BattleManager.Instance?.StartBattle();
+                StartCoroutine(BattleTimer());
             }
         }
     }
@@ -117,13 +112,19 @@ public class CustomNetworkManager : NetworkManager
         if (matchQueue.Contains(player)) return;
         matchQueue.Add(player);
         Debug.Log($"[MATCH] 대기 {matchQueue.Count}명");
-        
-        // 확실히 2명 이상일 때만 매칭 시작
-        if (matchQueue.Count >= 2) 
+
+        if (matchQueue.Count >= 2)
         {
             Debug.Log("[MATCH] 2명 확보, 매칭을 시작합니다.");
             StartMatch();
         }
+    }
+
+    [Server]
+    public void CancelMatch(LobbyNetworkPlayer player)
+    {
+        if (matchQueue.Remove(player))
+            Debug.Log($"[MATCH] 취소: {player.nickname}, 남은 대기 {matchQueue.Count}명");
     }
 
     [Server]

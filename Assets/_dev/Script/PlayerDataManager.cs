@@ -12,7 +12,7 @@ public class PlayerDataManager : MonoBehaviour
     public System.Action OnDataUpdated;
 
     [Header("Session Data")]
-    [SerializeField] private CharacterType selectedCharacter = CharacterType.Swordsman;
+    [SerializeField] private CharacterType selectedCharacter;
 
     private void Awake()
     {

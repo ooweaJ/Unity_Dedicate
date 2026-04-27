@@ -578,7 +578,7 @@ GameObject:
   - component: {fileID: 5973867830201847228}
   - component: {fileID: 4244487790819252944}
   m_Layer: 7
-  m_Name: Sapphi
+  m_Name: PF_SapphiMage
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0

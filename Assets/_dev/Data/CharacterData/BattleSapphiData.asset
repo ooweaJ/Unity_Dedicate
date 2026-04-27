@@ -1,0 +1,19 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bcbcf1abfec4dc4097f0ad07baf155f, type: 3}
+  m_Name: BattleSapphiData
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterDataSO
+  characterName: "\uC18C\uD53C"
+  weaponMeshPrefab: {fileID: 8384663211046332819, guid: f35679122b59888499aef7a69b391c05, type: 3}
+  moveSpeed: 5
+  basicAttack: {fileID: 11400000, guid: b9d4af572287ad64db02f5af51e3667b, type: 2}
+  skillAttack: {fileID: 0}

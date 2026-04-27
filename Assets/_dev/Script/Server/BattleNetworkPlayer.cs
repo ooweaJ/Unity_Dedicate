@@ -45,7 +45,6 @@ public class BattleNetworkPlayer : NetworkBehaviour
         players.Remove(this);
     }
 
-    [Server]
     public void SetInfo(MyAuthenticator.AuthRequestMessage authData)
     {
         userId            = authData.userId;
@@ -53,7 +52,7 @@ public class BattleNetworkPlayer : NetworkBehaviour
         nicknameHook      = authData.nickname;
         level             = authData.level;
         selectedCharacter = authData.selectedCharacter;
-        stats             = authData.stats; // 인증 데이터에서 받은 스탯 저장
+        stats             = authData.stats;
     }
 
     [TargetRpc]

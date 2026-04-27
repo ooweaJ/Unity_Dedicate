@@ -18,6 +18,7 @@ public class LobbyUI : MonoBehaviour
     [SerializeField] private GameObject confirmPanel;
     [SerializeField] private CharacterListManager confirmCharListManager; // 재사용!
     [SerializeField] private TextMeshProUGUI selectedCharName;
+    [SerializeField] private CharacterInfoPanel confirmCharInfoPanel;
 
     [Header("Matching Timer")]
     [SerializeField] private RectTransform timerRect;
@@ -26,7 +27,7 @@ public class LobbyUI : MonoBehaviour
     [SerializeField] private float timerHideY = 100f;
 
     private float _matchStartTime;
-    private bool _isMatching;
+    private bool _isMatching = false;
 
     private void Update()
     {
@@ -49,17 +50,23 @@ public class LobbyUI : MonoBehaviour
         if (confirmCharListManager == null) return;
 
         confirmCharListManager.Init(characters, selectedId, (id) => {
-            // 슬롯 클릭 시 호출될 콜백
             OnCharacterSelectedInPopup?.Invoke(id);
-            
-            // 이름 즉시 갱신
+
             var selected = characters.Find(c => c.CharacterId == id);
-            if (selected != null) selectedCharName.text = selected.Name;
+            if (selected != null)
+            {
+                selectedCharName.text = selected.Name;
+                confirmCharInfoPanel?.SetData(selected);
+            }
         });
 
-        // 초기 이름 설정
+        // 초기 선택 캐릭터 정보 표시
         var initial = characters.Find(c => c.CharacterId == selectedId);
-        if (initial != null) selectedCharName.text = initial.Name;
+        if (initial != null)
+        {
+            selectedCharName.text = initial.Name;
+            confirmCharInfoPanel?.SetData(initial);
+        }
     }
 
     public void InventoryButtonPressed() => OnInventoryButtonClicked?.Invoke();
@@ -69,6 +76,10 @@ public class LobbyUI : MonoBehaviour
     {
         confirmPanel.SetActive(true);
         OnMatchButtonPressed.Invoke();
+    }
+    public void OnClickMatchCancelPressed()
+    {
+        confirmPanel.SetActive(false);
     }
 
     public void OnClickConfirmStartMatch()
@@ -88,7 +99,15 @@ public class LobbyUI : MonoBehaviour
     public void ShowMatchingTimer(bool show)
     {
         _isMatching = show;
-        if (show) _matchStartTime = Time.time;
+        if (show)
+        {
+            timerRect.gameObject.SetActive(true);
+            _matchStartTime = Time.time;
+        }
+        else
+        {
+            timerRect.gameObject.SetActive(false);
+        }
     }
 
     public void Open() => gameObject.SetActive(true);

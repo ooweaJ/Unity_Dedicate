@@ -16,20 +16,12 @@ public class CharacterDataSO : ScriptableObject
     [Tooltip("WeaponRoot에 붙일 무기 메시 프리팹")]
     public GameObject weaponMeshPrefab;
 
-    [Header("기본 스탯")]
-    public float baseAttack  = 20f;
-    public float baseMaxHp   = 100f;
-    public float baseDefense = 5f;
-    public float moveSpeed   = 5f;
+    [Header("이동")]
+    public float moveSpeed = 5f;
 
     [Header("공격 구성")]
     [Tooltip("기본 공격 데이터 (AttackDataSO)")]
     public AttackDataSO basicAttack;
     [Tooltip("스킬 공격 데이터 (AttackDataSO) — 근접이어도 됨, 투사체어도 됨")]
     public AttackDataSO skillAttack;
-
-    [Header("강화 배율 (레벨당 증가율)")]
-    public float attackUpgradeBonus  = 0.10f;   // 10%
-    public float hpUpgradeBonus      = 0.08f;   // 8%
-    public float defenseUpgradeBonus = 0.05f;   // 5%
 }
