@@ -12,26 +12,17 @@ public class CharacterUIModel
         StaticData = staticData;
     }
 
-    // UI에서 접근하기 편하게 가공된 데이터 제공
-    public int StarRating => StaticData.grade; // CharacterSO에 성급 데이터 추가 필요
-    public string Name => StaticData.displayName;
-    public string LevelText => ServerData.level.ToString() + "/"; // SO에 maxLevel 추가 필요
-    public float ExpProgress => (float)ServerData.exp; // SO에 expToNextLevel 추가 필요
-    public string Hp  => StaticData.baseHp.ToString();
-    public string Atk => (StaticData.baseAtk + GetEquipmentBonus(e => e.atkBonus)).ToString();
-    public string Def => (StaticData.baseDef + GetEquipmentBonus(e => e.defBonus)).ToString();
+    private StatUtils.CalculatedStats _stats =>
+        StatUtils.Calculate(StaticData, ServerData.level, ServerData.equippedItems.Values);
 
-    private int GetEquipmentBonus(System.Func<ItemRawData, int> selector)
-    {
-        int total = 0;
-        foreach (var itemId in ServerData.equippedItems.Values)
-        {
-            var item = GameDataManager.Instance.GetItem(itemId);
-            if (item != null) total += selector(item);
-        }
-        return total;
-    }
-    public string TranscendText => $"+{ServerData.enhance}"; // BMP Color Tag 없이 넘기는 방식입니다.
+    public int StarRating => StaticData.grade;
+    public string Name => StaticData.displayName;
+    public string LevelText => ServerData.level.ToString() + "/";
+    public float ExpProgress => (float)ServerData.exp;
+    public string Hp  => ((int)_stats.hp).ToString();
+    public string Atk => ((int)_stats.atk).ToString();
+    public string Def => ((int)_stats.def).ToString();
+    public string TranscendText => $"+{ServerData.enhance}";
     public Sprite Icon => StaticData.icon;
     public int CharacterId => StaticData.id;
 }

@@ -64,19 +64,10 @@ public class MyAuthenticator : NetworkAuthenticator
         if (ownedChar != null)
         {
             var staticData = GameDataManager.Instance.GetCharacter(ownedChar.characterId);
-            finalStats.atk = staticData.baseAtk * (1f + (ownedChar.level - 1) * 0.1f);
-            finalStats.def = staticData.baseDef * (1f + (ownedChar.level - 1) * 0.05f);
-            finalStats.maxHp = staticData.baseHp * (1f + (ownedChar.level - 1) * 0.1f);
-
-            foreach (var itemId in ownedChar.equippedItems.Values)
-            {
-                var item = GameDataManager.Instance.GetItem(itemId);
-                if (item != null)
-                {
-                    finalStats.atk += item.atkBonus;
-                    finalStats.def += item.defBonus;
-                }
-            }
+            var s = StatUtils.Calculate(staticData, ownedChar.level, ownedChar.equippedItems.Values);
+            finalStats.atk   = s.atk;
+            finalStats.def   = s.def;
+            finalStats.maxHp = s.hp;
         }
 
         var msg = new AuthRequestMessage

@@ -85,7 +85,9 @@ public class InventoryController : MonoBehaviour
         var response = JObject.Parse(rawJson);
         if (response["success"] is JToken s && (bool)s)
         {
-            PlayerDataManager.Instance.ApplyUserData(response);
+            if (response["user"] is JToken user)
+                PlayerDataManager.Instance.ApplyUserData(user);
+                //PlayerDataManager.Instance.ApplyUserData(response);
         }
         else
         {
