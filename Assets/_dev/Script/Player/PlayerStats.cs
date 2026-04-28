@@ -41,19 +41,22 @@ public class PlayerStats : NetworkBehaviour, IDamageable
     }
 
     [Server]
-    public void TakeDamage(float damage, GameObject attacker)
+    public void TakeDamage(DamageInfo info)
     {
         if (IsDead) return;
 
         float defense      = charStats != null ? charStats.FinalDefense : 0f;
-        float actualDamage = Mathf.Max(1f, damage - defense);
+        float actualDamage = Mathf.Max(1f, info.Amount - defense);
         currentHp          = Mathf.Max(0f, currentHp - actualDamage);
 
-        var attackerStats = attacker?.GetComponent<PlayerStats>();
+        if (info.Knockback > 0f)
+            GetComponent<Rigidbody>()?.AddForce(info.Direction * info.Knockback, ForceMode.Impulse);
+
+        var attackerStats = info.Attacker?.GetComponent<PlayerStats>();
         if (attackerStats != null)
             BattleManager.Instance?.RecordDamage(attackerStats, actualDamage);
 
-        if (IsDead) RpcOnDeath(attacker);
+        if (IsDead) RpcOnDeath(info.Attacker);
     }
 
     [ClientRpc]

@@ -1,133 +1,212 @@
+using System.Collections;
 using Mirror;
 using UnityEngine;
 
 /// <summary>
-/// 기존 WeaponBase/MeleeWeapon/ProjectileWeapon 통합 대체 컴포넌트
-/// Player 프리팹에 붙임
+/// 전투 판정 핵심 컴포넌트
 ///
-/// SO 구조:
-/// AttackDataSO.attackType == Melee      → OverlapSphere 근접 판정
-/// AttackDataSO.attackType == Projectile → projectilePrefab 서버 Spawn
-///
-/// 검사 기본공격(근접) + 스킬(칼 던지기=투사체)도
-/// AttackDataSO 두 개만 다르게 연결하면 끝
+/// 슬롯: index 0 = basicAttack / 1 = skill1Attack / 2 = skill2Attack
+/// 타입: Melee(OverlapSphere+각도) / Projectile(멀티샷 Spawn) / Dash(돌진+종점피해)
+/// 넉백은 DamageInfo.Knockback을 통해 PlayerStats.TakeDamage에서 처리
 /// </summary>
 public class CharacterWeapon : NetworkBehaviour
 {
-    // CharacterInitializer에서 주입 — 인스펙터 직접 연결도 가능
-    [SerializeField] private AttackDataSO basicAttackData;
-    [SerializeField] private AttackDataSO skillAttackData;
+    [SerializeField] private AttackData basicAttack;
+    [SerializeField] private AttackData skill1Attack;
+    [SerializeField] private AttackData skill2Attack;
 
-    private CharacterStats              stats;
-    private PlayerAnimationController   anim;
+    private CharacterStats            stats;
+    private PlayerAnimationController anim;
+    private PlayerMovement            movement;
 
-    private float lastBasicTime = -99f;
-    private float lastSkillTime = -99f;
+    private float lastBasicTime  = -99f;
+    private float lastSkill1Time = -99f;
+    private float lastSkill2Time = -99f;
+
+    private float svrBasicTime  = -99f;
+    private float svrSkill1Time = -99f;
+    private float svrSkill2Time = -99f;
 
     private void Awake()
     {
-        stats = GetComponent<CharacterStats>();
-        anim  = GetComponent<PlayerAnimationController>();
+        stats    = GetComponent<CharacterStats>();
+        anim     = GetComponent<PlayerAnimationController>();
+        movement = GetComponent<PlayerMovement>();
     }
 
-    // CharacterInitializer에서 런타임 주입
-    public void Setup(AttackDataSO basic, AttackDataSO skill)
+    public void Setup(AttackData basic, AttackData skill1, AttackData skill2)
     {
-        basicAttackData = basic;
-        skillAttackData = skill;
+        basicAttack  = basic;
+        skill1Attack = skill1;
+        skill2Attack = skill2;
     }
 
-    // ─── PlayerCombat에서 호출 ────────────────────────────────────────
+    // ─── 공개 API (PlayerCombat에서 호출) ────────────────────────────────
     public void UseBasicAttack()
     {
-        if (basicAttackData == null) return;
-        if (Time.time - lastBasicTime < basicAttackData.cooldown) return;
-        lastBasicTime = Time.time;
-
-        if (isLocalPlayer)
-            CmdUseAttack(transform.position, transform.forward, isSkill: false);
+        if (!CanUse(basicAttack, ref lastBasicTime)) return;
+        anim?.PlayAttackLocal();
+        CmdUseAttack(transform.position, transform.forward, 0);
     }
 
-    public void UseSkillAttack()
+    public void UseSkill1Attack()
     {
-        if (skillAttackData == null) return;
-        if (Time.time - lastSkillTime < skillAttackData.cooldown) return;
-        lastSkillTime = Time.time;
-
+        if (!CanUse(skill1Attack, ref lastSkill1Time)) return;
         anim?.PlaySkillLocal();
-
-        if (isLocalPlayer)
-            CmdUseAttack(transform.position, transform.forward, isSkill: true);
+        CmdUseAttack(transform.position, transform.forward, 1);
     }
 
-    // ─── 데미지 계산 (HitBox에서도 참조) ─────────────────────────────
-    public float GetFinalDamage(bool isSkill = false)
+    public void UseSkill2Attack()
     {
-        var data = isSkill ? skillAttackData : basicAttackData;
+        if (!CanUse(skill2Attack, ref lastSkill2Time)) return;
+        anim?.PlaySkill2Local();
+        CmdUseAttack(transform.position, transform.forward, 2);
+    }
+
+    private bool CanUse(AttackData data, ref float lastTime)
+    {
+        if (!isLocalPlayer) return false;
+        if (data == null) return false;
+        if (Time.time - lastTime < data.cooldown) return false;
+        lastTime = Time.time;
+        return true;
+    }
+
+    // HitBox에서 참조
+    public float GetFinalDamage(int attackIndex = 0)
+    {
+        var data = GetData(attackIndex);
         if (data == null) return 20f;
         float baseAtk = stats != null ? stats.FinalAttack : 20f;
         return baseAtk * data.damageMultiplier;
     }
 
-    // ─── Command: 클라이언트 → 서버 판정 ─────────────────────────────
+    // ─── Command ──────────────────────────────────────────────────────────
     [Command]
-    private void CmdUseAttack(Vector3 origin, Vector3 dir, bool isSkill)
+    private void CmdUseAttack(Vector3 origin, Vector3 dir, int attackIndex)
     {
-        var data = isSkill ? skillAttackData : basicAttackData;
+        var data = GetData(attackIndex);
         if (data == null) return;
+        if (!ServerCheckCooldown(attackIndex, data)) return;
 
-        float dmg = GetFinalDamage(isSkill);
+        float   dmg  = GetFinalDamage(attackIndex);
+        Vector3 nDir = dir.normalized;
 
-        if (data.attackType == AttackType.Melee)
-            PerformMelee(origin, dir, data, dmg);
-        else
-            PerformProjectile(origin, dir, data, dmg);
+        switch (data.attackType)
+        {
+            case AttackType.Melee:      PerformMelee(origin, nDir, data, dmg);      break;
+            case AttackType.Projectile: PerformProjectile(origin, nDir, data, dmg); break;
+            case AttackType.Dash:       PerformDash(nDir, data, dmg);               break;
+        }
 
-        // 애니메이션 브로드캐스트
-        if (isSkill) anim?.RpcPlaySkill();
-        else         anim?.RpcPlayAttack();
+        BroadcastAnimation(attackIndex);
     }
 
-    // ─── 서버: 근접 판정 ─────────────────────────────────────────────
     [Server]
-    private void PerformMelee(Vector3 origin, Vector3 dir, AttackDataSO data, float dmg)
+    private bool ServerCheckCooldown(int index, AttackData data)
+    {
+        float now  = (float)NetworkTime.time;
+        float last = index == 0 ? svrBasicTime : index == 1 ? svrSkill1Time : svrSkill2Time;
+        if (now - last < data.cooldown) return false;
+
+        switch (index)
+        {
+            case 0: svrBasicTime  = now; break;
+            case 1: svrSkill1Time = now; break;
+            case 2: svrSkill2Time = now; break;
+        }
+        return true;
+    }
+
+    // ─── 근접 ─────────────────────────────────────────────────────────────
+    [Server]
+    private void PerformMelee(Vector3 origin, Vector3 dir, AttackData data, float dmg)
     {
         Vector3    center = origin + dir * (data.meleeRange * 0.5f);
-        Collider[] hits   = Physics.OverlapSphere(
-            center, data.meleeRange * 0.5f, data.targetLayer);
+        Collider[] hits   = Physics.OverlapSphere(center, data.meleeRange * 0.5f, data.targetLayer);
 
         foreach (var hit in hits)
         {
             if (hit.transform.root.gameObject == gameObject) continue;
+            if (Vector3.Angle(dir, (hit.transform.position - origin).normalized) > data.meleeAngle * 0.5f) continue;
 
-            // 부채꼴 각도 체크
-            Vector3 toTarget = (hit.transform.position - origin).normalized;
-            if (Vector3.Angle(dir, toTarget) > data.meleeAngle * 0.5f) continue;
-
-            hit.transform.root.GetComponent<IDamageable>()
-                ?.TakeDamage(dmg, gameObject);
-            hit.transform.root.GetComponent<PlayerAnimationController>()
-                ?.RpcPlayHit();
+            var info = new DamageInfo(dmg, gameObject, dir, data.knockbackForce);
+            hit.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
+            hit.transform.root.GetComponent<PlayerAnimationController>()?.RpcPlayHit();
         }
     }
 
-    // ─── 서버: 투사체 스폰 ───────────────────────────────────────────
+    // ─── 투사체 (멀티샷) ───────────────────────────────────────────────────
     [Server]
-    private void PerformProjectile(Vector3 origin, Vector3 dir, AttackDataSO data, float dmg)
+    private void PerformProjectile(Vector3 origin, Vector3 dir, AttackData data, float dmg)
     {
         if (data.projectilePrefab == null)
         {
-            Debug.LogError($"[WEAPON] {data.attackName}: projectilePrefab이 없습니다!");
+            Debug.LogError($"[WEAPON] {data.attackName}: projectilePrefab 없음");
             return;
         }
 
-        Vector3    spawnPos = origin + Vector3.up * 0.5f + dir * 0.5f;
-        GameObject obj      = Instantiate(
-            data.projectilePrefab, spawnPos, Quaternion.LookRotation(dir));
+        int count = Mathf.Max(1, data.projectileCount);
+        for (int i = 0; i < count; i++)
+        {
+            float   t       = count == 1 ? 0f : (float)i / (count - 1) - 0.5f;
+            Vector3 shotDir = Quaternion.AngleAxis(t * data.spreadAngle, Vector3.up) * dir;
+            Vector3 spawnPos = origin + Vector3.up * 0.5f + shotDir * 0.5f;
 
-        // ProjectileBase를 상속한 어떤 컴포넌트든 Init 호출
-        // → StandardProjectile, ExplosiveProjectile 모두 동작
-        obj.GetComponent<ProjectileBase>()?.Init(dir, gameObject, dmg);
-        NetworkServer.Spawn(obj);
+            GameObject obj = Instantiate(data.projectilePrefab, spawnPos, Quaternion.LookRotation(shotDir));
+            obj.GetComponent<ProjectileBase>()?.Init(shotDir, gameObject, dmg, data.knockbackForce);
+            NetworkServer.Spawn(obj);
+        }
+    }
+
+    // ─── 돌진 ─────────────────────────────────────────────────────────────
+    [Server]
+    private void PerformDash(Vector3 dir, AttackData data, float dmg)
+    {
+        RpcStartDash(dir, data.dashSpeed, data.dashDuration);
+        if (data.dashDamageRadius > 0f)
+            StartCoroutine(DashDamageAfterDelay(dir, data, dmg));
+    }
+
+    private IEnumerator DashDamageAfterDelay(Vector3 dir, AttackData data, float dmg)
+    {
+        yield return new WaitForSeconds(data.dashDuration);
+
+        Collider[] hits = Physics.OverlapSphere(transform.position, data.dashDamageRadius, data.targetLayer);
+        foreach (var hit in hits)
+        {
+            if (hit.transform.root.gameObject == gameObject) continue;
+            var info = new DamageInfo(dmg, gameObject, dir, data.knockbackForce);
+            hit.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
+            hit.transform.root.GetComponent<PlayerAnimationController>()?.RpcPlayHit();
+        }
+    }
+
+    [ClientRpc]
+    private void RpcStartDash(Vector3 dir, float speed, float duration)
+    {
+        if (isLocalPlayer) movement?.StartDash(dir, speed, duration);
+    }
+
+    [Server]
+    private void BroadcastAnimation(int attackIndex)
+    {
+        switch (attackIndex)
+        {
+            case 0: anim?.RpcPlayAttack(); break;
+            case 1: anim?.RpcPlaySkill();  break;
+            case 2: anim?.RpcPlaySkill2(); break;
+        }
+    }
+
+    private AttackData GetData(int index)
+    {
+        switch (index)
+        {
+            case 0:  return basicAttack;
+            case 1:  return skill1Attack;
+            case 2:  return skill2Attack;
+            default: return null;
+        }
     }
 }

@@ -7,9 +7,9 @@ using UnityEngine;
 ///
 /// 프리팹 구조:
 /// Projectile
-/// ├── NetworkIdentity       ← 필수 (NetworkServer.Spawn 동기화)
-/// ├── Rigidbody             ← useGravity: OFF, isKinematic: ON
-/// ├── SphereCollider        ← isTrigger: ON
+/// ├── NetworkIdentity  ← 필수 (NetworkServer.Spawn 동기화)
+/// ├── Rigidbody        ← useGravity: OFF, isKinematic: ON
+/// ├── SphereCollider   ← isTrigger: ON
 /// └── ProjectileBase (or 자식 클래스)
 ///
 /// NetworkManager → Registered Spawnable Prefabs 에 등록 필수
@@ -21,17 +21,16 @@ public class ProjectileBase : NetworkBehaviour
     public float lifeTime = 3f;
 
     protected float      damage;
+    protected float      knockback;
     protected GameObject owner;
-    private   Vector3    direction;
+    protected Vector3    direction;
 
-    /// <summary>
-    /// 서버에서 Spawn 직후 CharacterWeapon.PerformProjectile()이 호출
-    /// </summary>
-    public void Init(Vector3 dir, GameObject ownerObj, float dmg)
+    public void Init(Vector3 dir, GameObject ownerObj, float dmg, float kb = 0f)
     {
         direction = dir.normalized;
         owner     = ownerObj;
         damage    = dmg;
+        knockback = kb;
         Invoke(nameof(DestroySelf), lifeTime);
     }
 
@@ -46,21 +45,15 @@ public class ProjectileBase : NetworkBehaviour
         if (!isServer) return;
         if (owner != null && other.transform.root.gameObject == owner) return;
 
-        OnHit(other);   // 자식 클래스에서 오버라이드
+        OnHit(other);
         DestroySelf();
     }
 
-    /// <summary>
-    /// 기본 동작: 단순 데미지 + 피격 애니
-    /// ExplosiveProjectile 등에서 오버라이드해서 다른 행동 추가
-    /// </summary>
     protected virtual void OnHit(Collider other)
     {
-        other.transform.root.GetComponent<IDamageable>()
-            ?.TakeDamage(damage, owner);
-
-        other.transform.root.GetComponent<PlayerAnimationController>()
-            ?.RpcPlayHit();
+        var info = new DamageInfo(damage, owner, direction, knockback);
+        other.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
+        other.transform.root.GetComponent<PlayerAnimationController>()?.RpcPlayHit();
     }
 
     [Server]

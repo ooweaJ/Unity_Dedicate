@@ -17,8 +17,9 @@ public class PlayerAnimationController : NetworkBehaviour
     private static readonly int ParamRest = Animator.StringToHash("Rest");
     // 몽타주 레이어 트리거 (Layer 1: Action Layer)
     private static readonly int ParamAttack = Animator.StringToHash("Attack");
-    private static readonly int ParamSkill = Animator.StringToHash("Skill");
-    private static readonly int ParamHit = Animator.StringToHash("Hit");
+    private static readonly int ParamSkill  = Animator.StringToHash("Skill");
+    private static readonly int ParamSkill2 = Animator.StringToHash("Skill2");
+    private static readonly int ParamHit    = Animator.StringToHash("Hit");
 
     private Animator animator;
     private CharacterSpawner characterSpawner;
@@ -83,7 +84,7 @@ public class PlayerAnimationController : NetworkBehaviour
                                      bool jump, bool rest)
     {
         // isLocalPlayer 대신 localMode도 같이 체크
-        if (!isLocalPlayer && !GetComponent<PlayerController>().localMode) return;
+        if (!isLocalPlayer && !(GetComponent<PlayerInputHandler>()?.localMode ?? false)) return;
 
         // 로컬 애니메이터 직접 세팅 (서버 불필요)
         animator.SetFloat(ParamSpeed, speed);
@@ -117,24 +118,29 @@ public class PlayerAnimationController : NetworkBehaviour
     [ClientRpc]
     public void RpcPlayAttack()
     {
-        Debug.Log("Rpc어택");
-        animator.SetTrigger(ParamAttack);
+        animator?.SetTrigger(ParamAttack);
     }
 
     [ClientRpc]
     public void RpcPlaySkill()
     {
-        animator.SetTrigger(ParamSkill);
+        animator?.SetTrigger(ParamSkill);
+    }
+
+    [ClientRpc]
+    public void RpcPlaySkill2()
+    {
+        animator?.SetTrigger(ParamSkill2);
     }
 
     [ClientRpc]
     public void RpcPlayHit()
     {
-        animator.SetTrigger(ParamHit);
+        animator?.SetTrigger(ParamHit);
     }
 
     // ─── 로컬 플레이어 선입력 (레이턴시 보상) ────────────────────────────
-    // 공격 입력 시 로컬에서 즉시 애니 재생, 서버 응답으로 다른 클라이언트 반영
-    public void PlayAttackLocal() => animator.SetTrigger(ParamAttack);
-    public void PlaySkillLocal() => animator.SetTrigger(ParamSkill);
+    public void PlayAttackLocal() => animator?.SetTrigger(ParamAttack);
+    public void PlaySkillLocal()  => animator?.SetTrigger(ParamSkill);
+    public void PlaySkill2Local() => animator?.SetTrigger(ParamSkill2);
 }

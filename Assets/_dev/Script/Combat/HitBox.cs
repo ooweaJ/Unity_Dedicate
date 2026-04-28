@@ -3,7 +3,8 @@ using UnityEngine;
 using System.Collections.Generic;
 
 /// <summary>
-/// 무기 오브젝트에 붙이는 히트박스
+/// 무기 오브젝트에 붙이는 히트박스 — 다단히트 근접 공격 전용
+/// PerformMelee(OverlapSphere)로 충분한 경우에는 사용하지 않아도 됨
 ///
 /// 프리팹 구조:
 /// Player
@@ -27,14 +28,12 @@ public class HitBox : NetworkBehaviour
         gameObject.SetActive(false);
     }
 
-    // AnimationEvent: 칼이 앞으로 나오는 프레임
     public void OnAttackStart()
     {
         alreadyHit.Clear();
         gameObject.SetActive(true);
     }
 
-    // AnimationEvent: 칼이 돌아오는 프레임
     public void OnAttackEnd()
     {
         gameObject.SetActive(false);
@@ -48,12 +47,10 @@ public class HitBox : NetworkBehaviour
 
         alreadyHit.Add(other);
 
-        float damage = weapon != null ? weapon.GetFinalDamage() : 20f;
+        float dmg  = weapon != null ? weapon.GetFinalDamage() : 20f;
+        var   info = new DamageInfo(dmg, owner, owner.transform.forward);
 
-        other.transform.root.GetComponent<IDamageable>()
-            ?.TakeDamage(damage, owner);
-
-        other.transform.root.GetComponent<PlayerAnimationController>()
-            ?.RpcPlayHit();
+        other.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
+        other.transform.root.GetComponent<PlayerAnimationController>()?.RpcPlayHit();
     }
 }

@@ -53,6 +53,8 @@ GameObject:
   - component: {fileID: 5006310612942716100}
   - component: {fileID: -8084679952486756348}
   - component: {fileID: 4675389221071769067}
+  - component: {fileID: 5450027281985294688}
+  - component: {fileID: 5353052779405045285}
   m_Layer: 0
   m_Name: Player
   m_TagString: Untagged
@@ -146,6 +148,10 @@ MonoBehaviour:
   nickname: 
   level: 0
   selectedCharacter: 0
+  stats:
+    maxHp: 0
+    atk: 0
+    def: 0
   nicknameHook: 
 --- !u!114 &-2042424806070895686
 MonoBehaviour:
@@ -274,10 +280,6 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  moveSpeed: 5
-  rotateSpeed: 720
-  jumpForce: 6
-  localMode: 0
 --- !u!114 &5006310612942716100
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -316,8 +318,6 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  characterPrefabs:
-  - {fileID: 3491019777765594031, guid: a3748ad20121079418f5f03835e119f8, type: 3}
   characterModelRoot: {fileID: 3472486207733958798}
 --- !u!114 &4675389221071769067
 MonoBehaviour:
@@ -334,8 +334,88 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  basicAttackData: {fileID: 0}
-  skillAttackData: {fileID: 0}
+  basicAttack:
+    attackName: "\uACF5\uACA9"
+    damageMultiplier: 1
+    cooldown: 0.8
+    targetLayer:
+      serializedVersion: 2
+      m_Bits: 0
+    attackType: 0
+    meleeRange: 2.5
+    meleeAngle: 120
+    projectilePrefab: {fileID: 0}
+    projectileCount: 1
+    spreadAngle: 0
+    dashSpeed: 15
+    dashDuration: 0.3
+    dashDamageRadius: 0
+    knockbackForce: 0
+  skill1Attack:
+    attackName: "\uACF5\uACA9"
+    damageMultiplier: 1
+    cooldown: 0.8
+    targetLayer:
+      serializedVersion: 2
+      m_Bits: 0
+    attackType: 0
+    meleeRange: 2.5
+    meleeAngle: 120
+    projectilePrefab: {fileID: 0}
+    projectileCount: 1
+    spreadAngle: 0
+    dashSpeed: 15
+    dashDuration: 0.3
+    dashDamageRadius: 0
+    knockbackForce: 0
+  skill2Attack:
+    attackName: "\uACF5\uACA9"
+    damageMultiplier: 1
+    cooldown: 0.8
+    targetLayer:
+      serializedVersion: 2
+      m_Bits: 0
+    attackType: 0
+    meleeRange: 2.5
+    meleeAngle: 120
+    projectilePrefab: {fileID: 0}
+    projectileCount: 1
+    spreadAngle: 0
+    dashSpeed: 15
+    dashDuration: 0.3
+    dashDamageRadius: 0
+    knockbackForce: 0
+--- !u!114 &5450027281985294688
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6988632536861101562}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 37b9408288e754b4cb811e43b2c7ab68, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerMovement
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  moveSpeed: 5
+  rotateSpeed: 720
+  jumpForce: 6
+--- !u!114 &5353052779405045285
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6988632536861101562}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6a93440b2c2ed4a4fa6f6c1adb599ba5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerInputHandler
+  localMode: 0
 --- !u!1001 &5107495591285288626
 PrefabInstance:
   m_ObjectHideFlags: 0
