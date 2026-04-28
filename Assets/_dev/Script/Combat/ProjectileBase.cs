@@ -20,10 +20,16 @@ public class ProjectileBase : NetworkBehaviour
     public float speed    = 15f;
     public float lifeTime = 3f;
 
+    [Header("이펙트")]
+    public EffectType hitEffect = EffectType.ProjectileHit;
+
     protected float      damage;
     protected float      knockback;
     protected GameObject owner;
-    protected Vector3    direction;
+
+    // 서버에서 설정 → 스폰 메시지에 포함되어 클라이언트에 자동 전달
+    // NetworkTransform 없이 클라이언트가 직접 이동 계산 → 부드러운 움직임
+    [SyncVar] protected Vector3 direction;
 
     public void Init(Vector3 dir, GameObject ownerObj, float dmg, float kb = 0f)
     {
@@ -36,6 +42,7 @@ public class ProjectileBase : NetworkBehaviour
 
     private void Update()
     {
+        if (direction == Vector3.zero) return;
         transform.position += direction * speed * Time.deltaTime;
         transform.rotation  = Quaternion.LookRotation(direction);
     }
@@ -62,7 +69,8 @@ public class ProjectileBase : NetworkBehaviour
     {
         var info = new DamageInfo(damage, owner, direction, knockback);
         other.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
-        other.transform.root.GetComponent<PlayerAnimationController>()?.RpcPlayHit();
+        other.transform.root.GetComponent<PlayerAnimationController>()
+            ?.RpcPlayHit(transform.position, hitEffect);
     }
 
     [Server]

@@ -28,4 +28,8 @@ public class AttackData
 
     [Header("상태이상")]
     public float knockbackForce = 0f;
+
+    [Header("이펙트")]
+    [Tooltip("근접/돌진 피격 시 재생할 이펙트")]
+    public EffectType hitEffect = EffectType.MeleeHit;
 }

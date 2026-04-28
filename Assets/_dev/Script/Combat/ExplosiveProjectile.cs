@@ -13,9 +13,6 @@ public class ExplosiveProjectile : ProjectileBase
     public float     explosionMultiplier = 1.5f;
     public LayerMask explosionTargetLayer;
 
-    [Header("이펙트")]
-    public GameObject explosionFxPrefab;
-
     protected override void OnHit(Collider other)
     {
         Collider[] hits = Physics.OverlapSphere(transform.position, explosionRadius, explosionTargetLayer);
@@ -27,6 +24,8 @@ public class ExplosiveProjectile : ProjectileBase
             Vector3 blastDir = (hit.transform.position - transform.position).normalized;
             var info = new DamageInfo(damage * explosionMultiplier, owner, blastDir, knockback);
             hit.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
+            hit.transform.root.GetComponent<PlayerAnimationController>()
+                ?.RpcPlayHit(hit.transform.position, hitEffect);
         }
 
         RpcExplosionEffect(transform.position);
@@ -35,7 +34,6 @@ public class ExplosiveProjectile : ProjectileBase
     [ClientRpc]
     private void RpcExplosionEffect(Vector3 pos)
     {
-        if (explosionFxPrefab == null) return;
-        Destroy(Instantiate(explosionFxPrefab, pos, Quaternion.identity), 2f);
+        EffectManager.Instance?.Play(EffectType.Explosion, pos);
     }
 }

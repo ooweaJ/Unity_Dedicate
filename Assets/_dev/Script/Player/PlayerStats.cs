@@ -56,14 +56,28 @@ public class PlayerStats : NetworkBehaviour, IDamageable
         if (attackerStats != null)
             BattleManager.Instance?.RecordDamage(attackerStats, actualDamage);
 
-        if (IsDead) RpcOnDeath(info.Attacker);
+        if (IsDead)
+        {
+            // 킬 기록
+            BattleManager.Instance?.RecordKill(attackerStats, this);
+
+            // 시각 효과는 ClientRpc, 게임 판정은 직접 서버에서
+            RpcOnDeath(info.Attacker);
+            BattleManager.Instance?.OnPlayerDead(this);
+        }
     }
 
+    // 클라이언트 전체에 죽음 시각 효과 전달용 (판정 로직 없음)
     [ClientRpc]
     private void RpcOnDeath(GameObject killer)
     {
-        if (isServer) BattleManager.Instance?.OnPlayerDead(this);
+        var data = GetComponent<CharacterSpawner>()
+            ?.GetCharacterData()?.deathEffect ?? EffectType.Death;
+        EffectManager.Instance?.Play(data, transform.position);
     }
+
+    [Server]
+    public void Respawn() => currentHp = GetMaxHp();
 
     private float GetMaxHp() => charStats != null ? charStats.FinalMaxHp : 0f;
 
@@ -71,7 +85,4 @@ public class PlayerStats : NetworkBehaviour, IDamageable
     {
         hpBar?.UpdateHP(newHp, GetMaxHp());
     }
-
-    [Server]
-    public void Respawn() => currentHp = GetMaxHp();
 }

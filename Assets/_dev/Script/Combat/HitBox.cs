@@ -51,6 +51,7 @@ public class HitBox : NetworkBehaviour
         var   info = new DamageInfo(dmg, owner, owner.transform.forward);
 
         other.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
-        other.transform.root.GetComponent<PlayerAnimationController>()?.RpcPlayHit();
+        other.transform.root.GetComponent<PlayerAnimationController>()
+            ?.RpcPlayHit(other.transform.position, EffectType.MeleeHit);
     }
 }

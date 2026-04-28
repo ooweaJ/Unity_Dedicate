@@ -82,6 +82,13 @@ public class CharacterSpawner : NetworkBehaviour
             charWeapon?.Setup(rawData.battleData.basicAttack, rawData.battleData.skill1Attack, rawData.battleData.skill2Attack);
     }
 
+    public CharacterDataSO GetCharacterData()
+    {
+        return GameDataManager.Instance
+            ?.GetCharacterByType(battlePlayer.selectedCharacter)
+            ?.battleData;
+    }
+
     // ─── 내부 유틸 ────────────────────────────────────────────────────────
     private void SpawnVisual(GameObject prefab)
     {

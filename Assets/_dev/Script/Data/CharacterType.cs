@@ -5,7 +5,7 @@
 /// </summary>
 public enum CharacterType
 {
-    chan = 1,
-    sapphi = 2,
+    chan = 0,
+    sapphi = 1,
     // 추가 캐릭터는 여기에
 }

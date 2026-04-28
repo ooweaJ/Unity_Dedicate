@@ -57,7 +57,7 @@ GameObject:
   - component: {fileID: 5353052779405045285}
   m_Layer: 0
   m_Name: Player
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -351,6 +351,7 @@ MonoBehaviour:
     dashDuration: 0.3
     dashDamageRadius: 0
     knockbackForce: 0
+    hitEffect: 1
   skill1Attack:
     attackName: "\uACF5\uACA9"
     damageMultiplier: 1
@@ -368,6 +369,7 @@ MonoBehaviour:
     dashDuration: 0.3
     dashDamageRadius: 0
     knockbackForce: 0
+    hitEffect: 1
   skill2Attack:
     attackName: "\uACF5\uACA9"
     damageMultiplier: 1
@@ -385,6 +387,7 @@ MonoBehaviour:
     dashDuration: 0.3
     dashDamageRadius: 0
     knockbackForce: 0
+    hitEffect: 1
 --- !u!114 &5450027281985294688
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -559,6 +562,10 @@ PrefabInstance:
     - target: {fileID: 8023960165083474376, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8523464846510073093, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
+      propertyPath: m_SortingOrder
+      value: 5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -12,7 +12,8 @@ public class BattleManager : NetworkBehaviour
 
     [Header("Settings")]
     [SerializeField] private float resultDisplayTime = 8f;
-    [SerializeField] private string lobbySceneName = "LobbyScene";
+    [SerializeField] private string lobbySceneName   = "LobbyScene";
+    [SerializeField] private int    requiredPlayers   = 2;
 
     public enum BattleState { WaitingForPlayers, InProgress, Ended }
 
@@ -38,6 +39,9 @@ public class BattleManager : NetworkBehaviour
         if (players.Contains(player)) return;
         players.Add(player);
         resultTracker[player] = new PlayerResultData { playerName = player.gameObject.name };
+
+        if (players.Count >= requiredPlayers)
+            StartBattle();
     }
 
     [Server]

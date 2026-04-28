@@ -65,9 +65,10 @@ public class CharacterWeapon : NetworkBehaviour
 
     private bool CanUse(AttackData data, ref float lastTime)
     {
-        if (!isLocalPlayer) return false;
-        if (data == null) return false;
-        if (Time.time - lastTime < data.cooldown) return false;
+        if (!isLocalPlayer) { Debug.Log("[WEAPON] CanUse 실패: 로컬 플레이어 아님");           return false; }
+        if (data == null)   { Debug.Log("[WEAPON] CanUse 실패: AttackData null (Setup 안됨?)"); return false; }
+        float remain = data.cooldown - (Time.time - lastTime);
+        if (remain > 0f)    { Debug.Log($"[WEAPON] CanUse 실패: 쿨다운 {remain:F2}초 남음");   return false; }
         lastTime = Time.time;
         return true;
     }
@@ -85,12 +86,23 @@ public class CharacterWeapon : NetworkBehaviour
     [Command]
     private void CmdUseAttack(Vector3 origin, Vector3 dir, int attackIndex)
     {
+        if (!ServerCheckCooldown(attackIndex, GetData(attackIndex)))
+        {
+            Debug.Log($"[WEAPON] 서버 쿨다운 차단: index={attackIndex}");
+            return;
+        }
+        RunAttack(origin, dir, attackIndex);
+    }
+
+    private void RunAttack(Vector3 origin, Vector3 dir, int attackIndex)
+    {
         var data = GetData(attackIndex);
-        if (data == null) return;
-        if (!ServerCheckCooldown(attackIndex, data)) return;
+        if (data == null) { Debug.LogError($"[WEAPON] index {attackIndex} AttackData null"); return; }
 
         float   dmg  = GetFinalDamage(attackIndex);
         Vector3 nDir = dir.normalized;
+
+        Debug.Log($"[WEAPON] 공격 실행 | index={attackIndex} type={data.attackType} dmg={dmg:F1}");
 
         switch (data.attackType)
         {
@@ -102,7 +114,6 @@ public class CharacterWeapon : NetworkBehaviour
         BroadcastAnimation(attackIndex);
     }
 
-    [Server]
     private bool ServerCheckCooldown(int index, AttackData data)
     {
         float now  = (float)NetworkTime.time;
@@ -132,7 +143,8 @@ public class CharacterWeapon : NetworkBehaviour
 
             var info = new DamageInfo(dmg, gameObject, dir, data.knockbackForce);
             hit.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
-            hit.transform.root.GetComponent<PlayerAnimationController>()?.RpcPlayHit();
+            hit.transform.root.GetComponent<PlayerAnimationController>()
+                ?.RpcPlayHit(hit.transform.position, data.hitEffect);
         }
     }
 
@@ -142,20 +154,30 @@ public class CharacterWeapon : NetworkBehaviour
     {
         if (data.projectilePrefab == null)
         {
-            Debug.LogError($"[WEAPON] {data.attackName}: projectilePrefab 없음");
+            Debug.LogError($"[WEAPON] {data.attackName}: projectilePrefab이 null — AttackData 인스펙터 확인");
             return;
         }
 
         int count = Mathf.Max(1, data.projectileCount);
+        Debug.Log($"[WEAPON] 투사체 스폰: {count}발 / 퍼짐={data.spreadAngle}°");
+
         for (int i = 0; i < count; i++)
         {
-            float   t       = count == 1 ? 0f : (float)i / (count - 1) - 0.5f;
-            Vector3 shotDir = Quaternion.AngleAxis(t * data.spreadAngle, Vector3.up) * dir;
+            float   t        = count == 1 ? 0f : (float)i / (count - 1) - 0.5f;
+            Vector3 shotDir  = Quaternion.AngleAxis(t * data.spreadAngle, Vector3.up) * dir;
             Vector3 spawnPos = origin + Vector3.up * 0.5f + shotDir * 0.5f;
 
             GameObject obj = Instantiate(data.projectilePrefab, spawnPos, Quaternion.LookRotation(shotDir));
-            obj.GetComponent<ProjectileBase>()?.Init(shotDir, gameObject, dmg, data.knockbackForce);
+            var proj = obj.GetComponent<ProjectileBase>();
+            if (proj == null)
+            {
+                Debug.LogError($"[WEAPON] projectilePrefab '{data.projectilePrefab.name}'에 ProjectileBase 컴포넌트 없음");
+                Destroy(obj);
+                continue;
+            }
+            proj.Init(shotDir, gameObject, dmg, data.knockbackForce);
             NetworkServer.Spawn(obj);
+            Debug.Log($"[WEAPON] 투사체 {i + 1}번 스폰 완료: pos={spawnPos}");
         }
     }
 
@@ -178,7 +200,8 @@ public class CharacterWeapon : NetworkBehaviour
             if (hit.transform.root.gameObject == gameObject) continue;
             var info = new DamageInfo(dmg, gameObject, dir, data.knockbackForce);
             hit.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
-            hit.transform.root.GetComponent<PlayerAnimationController>()?.RpcPlayHit();
+            hit.transform.root.GetComponent<PlayerAnimationController>()
+                ?.RpcPlayHit(hit.transform.position, data.hitEffect);
         }
     }
 

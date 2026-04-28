@@ -14,6 +14,9 @@ public class CharacterDataSO : ScriptableObject
     [Header("이동")]
     public float moveSpeed = 5f;
 
+    [Header("이펙트")]
+    public EffectType deathEffect = EffectType.Death;
+
     [Header("공격")]
     public AttackData basicAttack;
     public AttackData skill1Attack;
