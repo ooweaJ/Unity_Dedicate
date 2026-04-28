@@ -13,9 +13,12 @@ public class BattleResultData
 [System.Serializable]
 public class PlayerResultData
 {
-    public string playerName;
-    public int kills;
-    public int deaths;
-    public float damageDealt;
-    public bool isWinner;
+    public uint   netId;          // Mirror 고유 ID — 로컬 플레이어 식별용
+    public string playerName;     // 닉네임 (표시용)
+    public int    kills;
+    public int    deaths;
+    public float  damageDealt;
+    public bool   isWinner;
+    public int    expGained;
+    public int    rankPointDelta;
 }

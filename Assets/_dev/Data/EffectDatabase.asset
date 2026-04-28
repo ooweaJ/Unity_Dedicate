@@ -17,5 +17,8 @@ MonoBehaviour:
     prefab: {fileID: 100000, guid: bc98890f6028f444eaa7789bde5e2eeb, type: 3}
     lifeTime: 1
   - type: 3
-    prefab: {fileID: 1301651855990048, guid: b1ed2bae6bf3e734aaaef3979fbb9a8e, type: 3}
+    prefab: {fileID: 1301651855990048, guid: 3d2fe17ddd907c744802b5034690c38d, type: 3}
+    lifeTime: 2.5
+  - type: 6
+    prefab: {fileID: 100006, guid: bcaff8fc36e95584bb27cc3cf7c6cb14, type: 3}
     lifeTime: 2.5

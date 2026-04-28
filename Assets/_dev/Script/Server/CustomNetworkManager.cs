@@ -1,7 +1,6 @@
 using Mirror;
 using Newtonsoft.Json.Linq;
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using UnityEngine;
@@ -97,12 +96,8 @@ public class CustomNetworkManager : NetworkManager
 
             Debug.Log($"[BATTLE] 입장: {authData.nickname} | 캐릭터: {authData.selectedCharacter}");
 
-            if (numPlayers >= 2)
-            {
-                Debug.Log("[BATTLE] 2명 모두 접속! 배틀 시작");
-                BattleManager.Instance?.StartBattle();
-                StartCoroutine(BattleTimer());
-            }
+            // StartBattle은 RegisterPlayer(PlayerStats)가 2명 채워질 때 자동 호출됨
+            // BattleTimer 코루틴은 BattleManager.Update()가 대신 처리하므로 중복 불필요
         }
     }
 
@@ -172,31 +167,15 @@ public class CustomNetworkManager : NetworkManager
         });
     }
 
-    [Server]
-    public IEnumerator BattleTimer()
-    {
-        Debug.Log("[BATTLE] 타이머 시작");
-        yield return new WaitForSeconds(180f);
-        EndBattle();
-    }
 
+    // 매치 종료 후 모든 플레이어가 나갔을 때 BattleManager가 호출
+    // 포트를 백엔드에 반환 → 다음 매칭에서 이 포트를 다시 배분 가능
     [Server]
-    private void EndBattle()
+    public async void ReleaseMatchPort()
     {
-        foreach (var conn in NetworkServer.connections.Values)
-        {
-            var player = conn.identity?.GetComponent<BattleNetworkPlayer>();
-            if (player != null) player.TargetReturnToLobby(conn);
-        }
-        ShutdownBattleServer();
-    }
-
-    private async void ShutdownBattleServer()
-    {
-        await Task.Delay(3000);
         int port = GetComponent<kcp2k.KcpTransport>().port;
         await BackendManager.ReleasePort(port);
-        Debug.Log($"[BATTLE] 포트 {port} 반환");
+        Debug.Log($"[BATTLE] 포트 {port} 반환 완료 — 다음 매치 가능");
     }
 
     public void ReturnToLobby()

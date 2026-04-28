@@ -1,7 +1,6 @@
 // BattleManager.cs — 결과창 + 비동기 씬 전환
 using Mirror;
 using UnityEngine;
-using UnityEngine.SceneManagement;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -11,9 +10,8 @@ public class BattleManager : NetworkBehaviour
     public static BattleManager Instance { get; private set; }
 
     [Header("Settings")]
-    [SerializeField] private float resultDisplayTime = 8f;
-    [SerializeField] private string lobbySceneName   = "LobbyScene";
-    [SerializeField] private int    requiredPlayers   = 2;
+    [SerializeField] private float resultDisplayTime = 10f;
+    [SerializeField] private int   requiredPlayers   = 2;
 
     public enum BattleState { WaitingForPlayers, InProgress, Ended }
 
@@ -38,7 +36,12 @@ public class BattleManager : NetworkBehaviour
     {
         if (players.Contains(player)) return;
         players.Add(player);
-        resultTracker[player] = new PlayerResultData { playerName = player.gameObject.name };
+        var bnp = player.GetComponent<BattleNetworkPlayer>();
+        resultTracker[player] = new PlayerResultData
+        {
+            netId      = player.netId,
+            playerName = bnp?.nickname ?? player.gameObject.name
+        };
 
         if (players.Count >= requiredPlayers)
             StartBattle();
@@ -49,15 +52,28 @@ public class BattleManager : NetworkBehaviour
     {
         players.Remove(player);
         resultTracker.Remove(player);
+
+        // 모든 플레이어가 나갔고 매치가 끝난 상태 → 다음 매치를 위해 리셋
+        if (players.Count == 0 && currentState == BattleState.Ended)
+        {
+            currentState = BattleState.WaitingForPlayers;
+            CustomNetworkManager.Instance.ReleaseMatchPort();
+            Debug.Log("[BATTLE] 상태 리셋 — 다음 매치 대기");
+        }
     }
 
     // ─── 시작 ──────────────────────────────────────────────────────────
     [Server]
     public void StartBattle()
     {
-        if (currentState != BattleState.WaitingForPlayers) return;
+        if (currentState != BattleState.WaitingForPlayers)
+        {
+            Debug.LogWarning($"[BATTLE] StartBattle 무시 — currentState={currentState} (이전 매치 서버가 재사용되고 있을 가능성)");
+            return;
+        }
         currentState = BattleState.InProgress;
-        battleTimer = 180f;
+        battleTimer  = 180f;
+        Debug.Log("[BATTLE] 배틀 시작");
     }
 
     private void Update()
@@ -85,7 +101,11 @@ public class BattleManager : NetworkBehaviour
     [Server]
     public void OnPlayerDead(PlayerStats dead)
     {
-        if (currentState != BattleState.InProgress) return;
+        if (currentState != BattleState.InProgress)
+        {
+            Debug.LogWarning($"[BATTLE] OnPlayerDead 무시 — currentState={currentState}");
+            return;
+        }
         var alive = players.Where(p => p != null && !p.IsDead).ToList();
         if (alive.Count == 1) EndBattle(alive[0], isDraw: false);
         else if (alive.Count == 0) EndBattle(null, isDraw: true);
@@ -112,16 +132,22 @@ public class BattleManager : NetworkBehaviour
         _ = scoreService.ReportMatchResult(result);
 
         // 직렬화 가능한 배열로 변환해서 RPC 전송
-        var names = result.playerResults.Select(p => p.playerName).ToArray();
-        var kills = result.playerResults.Select(p => p.kills).ToArray();
-        var deaths = result.playerResults.Select(p => p.deaths).ToArray();
-        var damages = result.playerResults.Select(p => p.damageDealt).ToArray();
-        var isWinner = result.playerResults.Select(p => p.isWinner).ToArray();
+        var netIds     = result.playerResults.Select(p => p.netId).ToArray();
+        var names      = result.playerResults.Select(p => p.playerName).ToArray();
+        var kills      = result.playerResults.Select(p => p.kills).ToArray();
+        var deaths     = result.playerResults.Select(p => p.deaths).ToArray();
+        var damages    = result.playerResults.Select(p => p.damageDealt).ToArray();
+        var isWinner   = result.playerResults.Select(p => p.isWinner).ToArray();
+        var exps       = result.playerResults.Select(p => p.expGained).ToArray();
+        var rankDeltas = result.playerResults.Select(p => p.rankPointDelta).ToArray();
+
+        string winnerNickname = isDraw ? "" :
+            (winner != null ? resultTracker[winner].playerName : "");
 
         RpcShowResultAndPreload(
-            isDraw ? "" : winner?.gameObject.name ?? "",
-            isDraw,
-            names, kills, deaths, damages, isWinner
+            winnerNickname, isDraw,
+            netIds, names, kills, deaths, damages, isWinner,
+            exps, rankDeltas, resultDisplayTime
         );
     }
 
@@ -135,64 +161,42 @@ public class BattleManager : NetworkBehaviour
         };
         foreach (var kvp in resultTracker)
         {
-            kvp.Value.isWinner = !isDraw && kvp.Key == winner;
+            kvp.Value.isWinner       = !isDraw && kvp.Key == winner;
+            kvp.Value.expGained      = ExpCalculator.Calculate(kvp.Value, isDraw);
+            kvp.Value.rankPointDelta = ExpCalculator.RankDelta(kvp.Value.isWinner, isDraw);
             result.playerResults.Add(kvp.Value);
         }
         return result;
     }
 
-    // ─── ClientRpc: 결과창 표시 + 로비 비동기 사전 로딩 ─────────────────
-    // 발로란트와 동일한 방식:
-    // 1. 결과창 즉시 표시 (배틀씬에서)
-    // 2. 백그라운드에서 로비씬 미리 로딩 (LoadSceneAsync)
-    // 3. 플레이어가 버튼 누르면 → 이미 로딩된 씬 즉시 활성화
+    // ─── ClientRpc: 결과창 표시 ─────────────────────────────────────────
     [ClientRpc]
     private void RpcShowResultAndPreload(
         string winnerName, bool isDraw,
-        string[] names, int[] kills, int[] deaths,
-        float[] damages, bool[] isWinner)
+        uint[] netIds, string[] names, int[] kills, int[] deaths,
+        float[] damages, bool[] isWinner,
+        int[] exps, int[] rankDeltas, float autoReturnTime)
     {
-        // 결과창 표시
-        BattleResultUI.Instance?.Show(
+        if (BattleResultUI.Instance == null)
+        {
+            Debug.LogError("[BATTLE] BattleResultUI.Instance가 null — 씬에 BattleResultUI 컴포넌트가 없음");
+            return;
+        }
+
+        BattleResultUI.Instance.Show(
             winnerName, isDraw,
-            names, kills, deaths, damages, isWinner,
-            onConfirm: () => ActivateLobby()  // 버튼 콜백
+            netIds, names, kills, deaths, damages, isWinner,
+            exps, rankDeltas, autoReturnTime,
+            onConfirm: () => ActivateLobby()
         );
 
-        // 백그라운드에서 로비씬 미리 로딩 시작
-        // allowSceneActivation = false → 로딩만 하고 전환은 안 함
-        StartCoroutine(PreloadLobbyScene());
     }
 
-    private AsyncOperation _lobbyLoadOperation;
-
-    private IEnumerator PreloadLobbyScene()
-    {
-        _lobbyLoadOperation = SceneManager.LoadSceneAsync(lobbySceneName);
-        _lobbyLoadOperation.allowSceneActivation = false; // 로딩만, 전환 X
-
-        // 90%까지 로딩됨 (Unity는 allowSceneActivation=false일 때 90%에서 멈춤)
-        while (_lobbyLoadOperation.progress < 0.9f)
-            yield return null;
-
-        Debug.Log("[BATTLE] 로비씬 사전 로딩 완료 — 버튼 대기 중");
-
-        // 자동 전환 옵션: resultDisplayTime 후 자동으로 넘어가게 하려면
-        yield return new WaitForSeconds(resultDisplayTime);
-        ActivateLobby(); // 시간 초과 시 자동 전환
-    }
-
-    // 버튼 누르거나 시간 초과 시 호출
+    // 버튼 누르거나 타이머 만료 시 호출
+    // ReturnToLobby()가 배틀서버 disconnect + 로비서버 재연결을 모두 처리
     public void ActivateLobby()
     {
-        if (_lobbyLoadOperation == null) return;
-
-        // Mirror 서버 연결 해제 (클라이언트)
-        if (!isServer) NetworkClient.Disconnect();
-
-        // 이미 90% 로딩된 씬 즉시 활성화 → 로딩 없는 것처럼 보임
-        _lobbyLoadOperation.allowSceneActivation = true;
-        _lobbyLoadOperation = null;
+        CustomNetworkManager.Instance.ReturnToLobby();
     }
 
     private void OnBattleStateChanged(BattleState _, BattleState newState)
