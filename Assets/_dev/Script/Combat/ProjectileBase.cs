@@ -3,7 +3,7 @@ using UnityEngine;
 
 /// <summary>
 /// 모든 투사체의 공통 기반
-/// OnHit()를 오버라이드해서 폭발/관통 등 다른 행동 구현
+/// HandleTriggerEnter()를 오버라이드해서 반사/관통 등 다른 행동 구현
 ///
 /// 프리팹 구조:
 /// Projectile
@@ -45,6 +45,15 @@ public class ProjectileBase : NetworkBehaviour
         if (!isServer) return;
         if (owner != null && other.transform.root.gameObject == owner) return;
 
+        HandleTriggerEnter(other);
+    }
+
+    /// <summary>
+    /// 충돌 처리 — 자식 클래스에서 오버라이드 가능
+    /// 기본: 데미지 → 소멸
+    /// </summary>
+    protected virtual void HandleTriggerEnter(Collider other)
+    {
         OnHit(other);
         DestroySelf();
     }
