@@ -27,9 +27,16 @@ public class ProjectileBase : NetworkBehaviour
     protected float      knockback;
     protected GameObject owner;
 
+    protected Rigidbody rb;
+
     // 서버에서 설정 → 스폰 메시지에 포함되어 클라이언트에 자동 전달
     // NetworkTransform 없이 클라이언트가 직접 이동 계산 → 부드러운 움직임
     [SyncVar] protected Vector3 direction;
+
+    protected virtual void Awake()
+    {
+        rb = GetComponent<Rigidbody>();
+    }
 
     public void Init(Vector3 dir, GameObject ownerObj, float dmg, float kb = 0f)
     {
@@ -40,11 +47,11 @@ public class ProjectileBase : NetworkBehaviour
         Invoke(nameof(DestroySelf), lifeTime);
     }
 
-    private void Update()
+    protected virtual void FixedUpdate()
     {
         if (direction == Vector3.zero) return;
-        transform.position += direction * speed * Time.deltaTime;
-        transform.rotation  = Quaternion.LookRotation(direction);
+        rb.MovePosition(rb.position + direction * speed * Time.fixedDeltaTime);
+        transform.rotation = Quaternion.LookRotation(direction);
     }
 
     private void OnTriggerEnter(Collider other)

@@ -115,20 +115,19 @@ public class PlayerAnimationController : NetworkBehaviour
     // 언리얼 PlayMontage() → Mirror [ClientRpc] SetTrigger()
     // PlayerCombat에서 서버 판정 후 아래 함수들 호출
 
-    // includeOwner = false : 공격자 본인은 제외 (PlayAttackLocal로 이미 재생)
-    [ClientRpc(includeOwner = false)]
+    [ClientRpc]
     public void RpcPlayAttack()
     {
         animator?.SetTrigger(ParamAttack);
     }
 
-    [ClientRpc(includeOwner = false)]
+    [ClientRpc]
     public void RpcPlaySkill()
     {
         animator?.SetTrigger(ParamSkill);
     }
 
-    [ClientRpc(includeOwner = false)]
+    [ClientRpc]
     public void RpcPlaySkill2()
     {
         animator?.SetTrigger(ParamSkill2);

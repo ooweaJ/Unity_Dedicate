@@ -18,7 +18,7 @@ MonoBehaviour:
   basicAttack:
     attackName: "\uACF5\uACA9"
     damageMultiplier: 1
-    cooldown: 0.8
+    cooldown: 1
     targetLayer:
       serializedVersion: 2
       m_Bits: 64
@@ -34,23 +34,23 @@ MonoBehaviour:
     knockbackForce: 1
     hitEffect: 3
   skill1Attack:
-    attackName: "\uACF5\uACA9"
+    attackName: "\uD295\uAE30\uAE30"
     damageMultiplier: 1
-    cooldown: 0.8
+    cooldown: 4
     targetLayer:
       serializedVersion: 2
-      m_Bits: 0
-    attackType: 0
+      m_Bits: 64
+    attackType: 1
     meleeRange: 2.5
     meleeAngle: 120
-    projectilePrefab: {fileID: 0}
+    projectilePrefab: {fileID: 9169608896275652400, guid: 83d28f304d009d442b6188d7553b56a9, type: 3}
     projectileCount: 1
     spreadAngle: 0
     dashSpeed: 15
     dashDuration: 0.3
     dashDamageRadius: 0
     knockbackForce: 0
-    hitEffect: 1
+    hitEffect: 3
   skill2Attack:
     attackName: "\uACF5\uACA9"
     damageMultiplier: 1

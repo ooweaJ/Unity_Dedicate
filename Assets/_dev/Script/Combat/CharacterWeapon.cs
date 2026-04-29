@@ -45,21 +45,18 @@ public class CharacterWeapon : NetworkBehaviour
     public void UseBasicAttack()
     {
         if (!CanUse(basicAttack, ref lastBasicTime)) return;
-        anim?.PlayAttackLocal();
         CmdUseAttack(transform.position, transform.forward, 0);
     }
 
     public void UseSkill1Attack()
     {
         if (!CanUse(skill1Attack, ref lastSkill1Time)) return;
-        anim?.PlaySkillLocal();
         CmdUseAttack(transform.position, transform.forward, 1);
     }
 
     public void UseSkill2Attack()
     {
         if (!CanUse(skill2Attack, ref lastSkill2Time)) return;
-        anim?.PlaySkill2Local();
         CmdUseAttack(transform.position, transform.forward, 2);
     }
 

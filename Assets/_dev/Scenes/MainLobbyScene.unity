@@ -3684,7 +3684,7 @@ MonoBehaviour:
   remainTimeText: {fileID: 1097260337}
   namePlate: {fileID: 61802298}
   shopUI: {fileID: 2054466624}
-  lobbyUI: {fileID: 0}
+  lobbyUI: {fileID: 287048755}
   lobbyCamera: {fileID: 1483520462}
 --- !u!1 &401394730
 GameObject:
