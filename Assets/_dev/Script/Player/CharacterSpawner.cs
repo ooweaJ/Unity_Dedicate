@@ -112,6 +112,8 @@ public class CharacterSpawner : NetworkBehaviour
         var anim = visual.GetComponentInChildren<Animator>();
         if (anim != null) OnCharacterSpawned?.Invoke(anim);
 
+        GetComponent<PlayerBushState>()?.CacheRenderers(characterModelRoot);
+
         Debug.Log($"[SPAWNER] 외형 부착: {prefab.name}");
     }
 }

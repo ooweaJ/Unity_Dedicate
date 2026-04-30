@@ -108,4 +108,10 @@ public class PlayerHPBar : NetworkBehaviour
             ? Color.Lerp(colorMid, colorFull, (ratio - 0.5f) * 2f)
             : Color.Lerp(colorLow, colorMid, ratio * 2f);
     }
+
+    public void SetBushVisible(bool visible)
+    {
+        if (hpCanvasTransform != null)
+            hpCanvasTransform.gameObject.SetActive(visible);
+    }
 }

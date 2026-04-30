@@ -55,6 +55,7 @@ GameObject:
   - component: {fileID: 4675389221071769067}
   - component: {fileID: 5450027281985294688}
   - component: {fileID: 5353052779405045285}
+  - component: {fileID: 2994282188269406790}
   m_Layer: 0
   m_Name: Player
   m_TagString: Player
@@ -148,6 +149,7 @@ MonoBehaviour:
   nickname: 
   level: 0
   selectedCharacter: 0
+  teamId: 0
   stats:
     maxHp: 0
     atk: 0
@@ -419,6 +421,24 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInputHandler
   localMode: 0
+--- !u!114 &2994282188269406790
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6988632536861101562}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 26d0a3f4575a19941909b885a92c8e9f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerBushState
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  inBush: 0
+  isRevealed: 0
+  currentBushIdentity: {fileID: 0}
 --- !u!1001 &5107495591285288626
 PrefabInstance:
   m_ObjectHideFlags: 0

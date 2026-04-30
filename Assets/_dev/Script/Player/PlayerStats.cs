@@ -52,6 +52,8 @@ public class PlayerStats : NetworkBehaviour, IDamageable
         if (info.Knockback > 0f)
             GetComponent<Rigidbody>()?.AddForce(info.Direction * info.Knockback, ForceMode.Impulse);
 
+        RpcShowDamagePopup(actualDamage, transform.position + Vector3.up * 1.5f);
+
         var attackerStats = info.Attacker?.GetComponent<PlayerStats>();
         if (attackerStats != null)
             BattleManager.Instance?.RecordDamage(attackerStats, actualDamage);
@@ -65,6 +67,12 @@ public class PlayerStats : NetworkBehaviour, IDamageable
             RpcOnDeath(info.Attacker);
             BattleManager.Instance?.OnPlayerDead(this);
         }
+    }
+
+    [ClientRpc]
+    private void RpcShowDamagePopup(float amount, Vector3 worldPos)
+    {
+        DamagePopupManager.Instance?.Show(amount, worldPos);
     }
 
     // 클라이언트 전체에 죽음 시각 효과 전달용 (판정 로직 없음)

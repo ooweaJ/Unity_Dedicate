@@ -15,9 +15,14 @@ public class BattleNetworkPlayer : NetworkBehaviour
     [SyncVar] public string        nickname;
     [SyncVar] public int           level;
     [SyncVar] public CharacterType selectedCharacter;
-    
+    [SyncVar] public int           teamId;
+
     // 최종 스탯 동기화 (SyncVar로 모든 클라이언트가 알 수 있음)
     [SyncVar] public CharacterStatData stats;
+
+    // 매치마다 리셋 — 매치 시작 전 서버에서 호출
+    private static int s_teamCounter;
+    public static void ResetTeamCounter() => s_teamCounter = 0;
 
     [SyncVar(hook = nameof(OnNicknameChanged))]
     public string nicknameHook;
@@ -53,6 +58,7 @@ public class BattleNetworkPlayer : NetworkBehaviour
         level             = authData.level;
         selectedCharacter = authData.selectedCharacter;
         stats             = authData.stats;
+        teamId            = s_teamCounter++;
     }
 
     [TargetRpc]

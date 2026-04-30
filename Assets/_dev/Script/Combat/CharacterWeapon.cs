@@ -130,8 +130,9 @@ public class CharacterWeapon : NetworkBehaviour
     [Server]
     private void PerformMelee(Vector3 origin, Vector3 dir, AttackData data, float dmg)
     {
-        Vector3    center = origin + dir * (data.meleeRange * 0.5f);
-        Collider[] hits   = Physics.OverlapSphere(center, data.meleeRange * 0.5f, data.targetLayer);
+        Vector3    center   = origin + dir * (data.meleeRange * 0.5f);
+        Collider[] hits     = Physics.OverlapSphere(center, data.meleeRange * 0.5f, data.targetLayer);
+        bool       hitEnemy = false;
 
         foreach (var hit in hits)
         {
@@ -142,7 +143,11 @@ public class CharacterWeapon : NetworkBehaviour
             hit.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
             hit.transform.root.GetComponent<PlayerAnimationController>()
                 ?.RpcPlayHit(hit.transform.position, data.hitEffect);
+            hitEnemy = true;
         }
+
+        if (hitEnemy)
+            GetComponent<PlayerBushState>()?.RevealTemporarily();
     }
 
     // ─── 투사체 (멀티샷) ───────────────────────────────────────────────────
@@ -191,7 +196,9 @@ public class CharacterWeapon : NetworkBehaviour
     {
         yield return new WaitForSeconds(data.dashDuration);
 
-        Collider[] hits = Physics.OverlapSphere(transform.position, data.dashDamageRadius, data.targetLayer);
+        Collider[] hits     = Physics.OverlapSphere(transform.position, data.dashDamageRadius, data.targetLayer);
+        bool       hitEnemy = false;
+
         foreach (var hit in hits)
         {
             if (hit.transform.root.gameObject == gameObject) continue;
@@ -199,7 +206,11 @@ public class CharacterWeapon : NetworkBehaviour
             hit.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
             hit.transform.root.GetComponent<PlayerAnimationController>()
                 ?.RpcPlayHit(hit.transform.position, data.hitEffect);
+            hitEnemy = true;
         }
+
+        if (hitEnemy)
+            GetComponent<PlayerBushState>()?.RevealTemporarily();
     }
 
     [ClientRpc]

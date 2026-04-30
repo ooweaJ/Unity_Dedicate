@@ -78,6 +78,8 @@ public class ProjectileBase : NetworkBehaviour
         other.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
         other.transform.root.GetComponent<PlayerAnimationController>()
             ?.RpcPlayHit(transform.position, hitEffect);
+
+        owner?.GetComponent<PlayerBushState>()?.RevealTemporarily();
     }
 
     [Server]
