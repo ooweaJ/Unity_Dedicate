@@ -57,6 +57,7 @@ public class ProjectileBase : NetworkBehaviour
     private void OnTriggerEnter(Collider other)
     {
         if (!isServer) return;
+        if (other.isTrigger) return;  // BushZone 등 Trigger 콜라이더는 통과
         if (owner != null && other.transform.root.gameObject == owner) return;
 
         HandleTriggerEnter(other);

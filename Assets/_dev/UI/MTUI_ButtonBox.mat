@@ -42,7 +42,7 @@ Material:
     m_Ints: []
     m_Floats:
     - _ColorMask: 15
-    - _Hovered: 1
+    - _Hovered: 0
     - _Ratio: 1
     - _Stencil: 0
     - _StencilComp: 8

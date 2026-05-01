@@ -27,11 +27,33 @@ public class CharacterWeapon : NetworkBehaviour
     private float svrSkill1Time = -99f;
     private float svrSkill2Time = -99f;
 
+    // 입력 버퍼: 쿨다운 직전에 누른 입력을 최대 0.15초간 보존 후 재시도
+    private float _bufAttackTime = -99f;
+    private float _bufSkill1Time = -99f;
+    private float _bufSkill2Time = -99f;
+    private const float InputBufferWindow = 0.15f;
+
     private void Awake()
     {
         stats    = GetComponent<CharacterStats>();
         anim     = GetComponent<PlayerAnimationController>();
         movement = GetComponent<PlayerMovement>();
+    }
+
+    private void Update()
+    {
+        if (!isLocalPlayer) return;
+        TryFlushBuffer(ref _bufAttackTime, basicAttack,  ref lastBasicTime,  0);
+        TryFlushBuffer(ref _bufSkill1Time, skill1Attack, ref lastSkill1Time, 1);
+        TryFlushBuffer(ref _bufSkill2Time, skill2Attack, ref lastSkill2Time, 2);
+    }
+
+    private void TryFlushBuffer(ref float bufTime, AttackData data, ref float lastTime, int index)
+    {
+        if (Time.time - bufTime > InputBufferWindow) return;
+        if (!CanUse(data, ref lastTime)) return;
+        bufTime = -99f;
+        CmdUseAttack(transform.position, transform.forward, index);
     }
 
     public void Setup(AttackData basic, AttackData skill1, AttackData skill2)
@@ -44,19 +66,34 @@ public class CharacterWeapon : NetworkBehaviour
     // ─── 공개 API (PlayerCombat에서 호출) ────────────────────────────────
     public void UseBasicAttack()
     {
-        if (!CanUse(basicAttack, ref lastBasicTime)) return;
+        if (!CanUse(basicAttack, ref lastBasicTime))
+        {
+            if (isLocalPlayer && basicAttack != null) _bufAttackTime = Time.time;
+            return;
+        }
+        _bufAttackTime = -99f;
         CmdUseAttack(transform.position, transform.forward, 0);
     }
 
     public void UseSkill1Attack()
     {
-        if (!CanUse(skill1Attack, ref lastSkill1Time)) return;
+        if (!CanUse(skill1Attack, ref lastSkill1Time))
+        {
+            if (isLocalPlayer && skill1Attack != null) _bufSkill1Time = Time.time;
+            return;
+        }
+        _bufSkill1Time = -99f;
         CmdUseAttack(transform.position, transform.forward, 1);
     }
 
     public void UseSkill2Attack()
     {
-        if (!CanUse(skill2Attack, ref lastSkill2Time)) return;
+        if (!CanUse(skill2Attack, ref lastSkill2Time))
+        {
+            if (isLocalPlayer && skill2Attack != null) _bufSkill2Time = Time.time;
+            return;
+        }
+        _bufSkill2Time = -99f;
         CmdUseAttack(transform.position, transform.forward, 2);
     }
 
@@ -167,7 +204,7 @@ public class CharacterWeapon : NetworkBehaviour
         {
             float   t        = count == 1 ? 0f : (float)i / (count - 1) - 0.5f;
             Vector3 shotDir  = Quaternion.AngleAxis(t * data.spreadAngle, Vector3.up) * dir;
-            Vector3 spawnPos = origin + Vector3.up * 0.5f + shotDir * 0.5f;
+            Vector3 spawnPos = origin + Vector3.up * 0.5f;
 
             GameObject obj = Instantiate(data.projectilePrefab, spawnPos, Quaternion.LookRotation(shotDir));
             var proj = obj.GetComponent<ProjectileBase>();
