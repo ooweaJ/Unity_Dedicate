@@ -57,9 +57,14 @@ public class ProjectileBase : NetworkBehaviour
     private void OnTriggerEnter(Collider other)
     {
         if (!isServer) return;
-        if (other.isTrigger) return;  // BushZone 등 Trigger 콜라이더는 통과
-        if (owner != null && other.transform.root.gameObject == owner) return;
 
+        Debug.Log($"[PROJ] OnTriggerEnter | other={other.gameObject.name} root={other.transform.root.name} isTrigger={other.isTrigger} layer={LayerMask.LayerToName(other.gameObject.layer)} hasBushZone={other.GetComponentInParent<BushZone>() != null} isOwner={owner != null && other.transform.root.gameObject == owner}");
+
+        if (other.isTrigger) { Debug.Log("[PROJ] 스킵: isTrigger"); return; }
+        if (other.GetComponentInParent<BushZone>() != null) { Debug.Log("[PROJ] 스킵: BushZone"); return; }
+        if (owner != null && other.transform.root.gameObject == owner) { Debug.Log("[PROJ] 스킵: 자기 자신"); return; }
+
+        Debug.Log($"[PROJ] 충돌 처리 진행 → {other.gameObject.name}");
         HandleTriggerEnter(other);
     }
 

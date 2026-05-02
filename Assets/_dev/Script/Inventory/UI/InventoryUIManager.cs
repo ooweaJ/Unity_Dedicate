@@ -155,55 +155,76 @@ public class InventoryUIManager : MonoBehaviour
 
     // ── 슬롯 이벤트 핸들러 ───────────────────────────────────────────
 
-    private void HandleItemHoverEnter(int id, Vector2 pos)
+    private void HandleItemHoverEnter(int id, Vector2 pos, ItemType sourceType)
     {
-        // 장비 인스턴스 hover
-        var equipData = _cachedEquipmentDatas.FirstOrDefault(e => e.equip_instance_id == id);
-        if (equipData != null)
+        if (sourceType == ItemType.Equipment)
         {
+            var equipData = _cachedEquipmentDatas.FirstOrDefault(e => e.equip_instance_id == id);
+            if (equipData == null) return;
             var staticData = GameDataManager.Instance.GetItem(equipData.itemId);
             if (staticData != null)
             {
-                itemInfoPanel.SetData(staticData, equipData.enhance);
+                itemInfoPanel.SetEquipmentData(staticData, equipData.enhance);
                 itemInfoPanel.ShowAt(pos);
             }
             return;
         }
 
-        // 소모품/재료 hover
+        if (sourceType == ItemType.Transcendence)
+        {
+            var charData = _cachedCharacterDatas.FirstOrDefault(c => c.characterId == id);
+            if (charData == null) return;
+            var staticData = GameDataManager.Instance.GetCharacter(id);
+            if (staticData != null)
+            {
+                itemInfoPanel.SetShardData(staticData, charData.shardAmount);
+                itemInfoPanel.ShowAt(pos);
+            }
+            return;
+        }
+
+        // Consumable / Material
         var itemData = _cachedItemDatas.FirstOrDefault(i => i.itemId == id);
         if (itemData != null)
         {
             var staticData = GameDataManager.Instance.GetItem(id);
             itemInfoPanel.SetData(staticData, itemData.amount);
             itemInfoPanel.ShowAt(pos);
-            return;
-        }
-
-        // 초월 조각 hover
-        var charData = _cachedCharacterDatas.FirstOrDefault(c => c.characterId == id);
-        if (charData != null)
-        {
-            var staticData = GameDataManager.Instance.GetCharacter(id);
-            itemInfoPanel.SetShardData(staticData, charData.shardAmount);
-            itemInfoPanel.ShowAt(pos);
         }
     }
 
     private void HandleItemHoverExit() => itemInfoPanel.Hide();
 
-    private void HandleItemClicked(int id, Vector2 pos)
+    private void HandleItemClicked(int id, Vector2 pos, ItemType sourceType)
     {
-        // 장비 인스턴스 클릭 → 강화 이벤트
-        var equipData = _cachedEquipmentDatas.FirstOrDefault(e => e.equip_instance_id == id);
-        if (equipData != null)
+        if (sourceType == ItemType.Equipment)
         {
-            OnEnhanceEquipment?.Invoke(id);
+            var equipData = _cachedEquipmentDatas.FirstOrDefault(e => e.equip_instance_id == id);
+            if (equipData != null)
+            {
+                var staticData = GameDataManager.Instance.GetItem(equipData.itemId);
+                if (staticData != null)
+                {
+                    var enhanceActions = new ItemRawData
+                    {
+                        displayName = staticData.displayName,
+                        actions = new List<ItemActionDef>
+                        {
+                            new ItemActionDef { label = "강화", type = ItemActionType.Enhance }
+                        }
+                    };
+                    actionPopup.Show(enhanceActions, pos, actionType =>
+                    {
+                        if (actionType == ItemActionType.Enhance)
+                            OnEnhanceEquipment?.Invoke(id);
+                    });
+                }
+            }
             foreach (var ui in _itemInventoryUIs) ui.RefreshSelection(id);
             return;
         }
 
-        // 소모품/재료 클릭 → 액션 팝업
+        // Consumable / Material / Transcendence
         var data = GameDataManager.Instance.GetItem(id);
         if (data == null) return;
 
@@ -211,25 +232,26 @@ public class InventoryUIManager : MonoBehaviour
         foreach (var ui in _itemInventoryUIs) ui.RefreshSelection(id);
     }
 
-    private void HandleItemDragBegin(int id)
+    private void HandleItemDragBegin(int id, ItemType sourceType)
     {
-        // 장비 인스턴스 드래그 → equip_instance_id + ItemRawData 전달
-        var equipData = _cachedEquipmentDatas.FirstOrDefault(e => e.equip_instance_id == id);
-        if (equipData != null)
+        itemInfoPanel.Hide();
+        actionPopup?.Hide();
+
+        if (sourceType == ItemType.Equipment)
         {
-            var staticData = GameDataManager.Instance.GetItem(equipData.itemId);
-            if (staticData != null)
-                DragController.Instance?.BeginDrag(staticData, equipData.equip_instance_id);
-            itemInfoPanel.Hide();
-            actionPopup?.Hide();
+            var equipData = _cachedEquipmentDatas.FirstOrDefault(e => e.equip_instance_id == id);
+            if (equipData != null)
+            {
+                var staticData = GameDataManager.Instance.GetItem(equipData.itemId);
+                if (staticData != null)
+                    DragController.Instance?.BeginDrag(staticData, equipData.equip_instance_id);
+            }
             return;
         }
 
         var data = GameDataManager.Instance.GetItem(id);
         if (data != null)
             DragController.Instance?.BeginDrag(data);
-        itemInfoPanel.Hide();
-        actionPopup?.Hide();
     }
 
     private void HandleAction(int itemId, ItemActionType actionType)

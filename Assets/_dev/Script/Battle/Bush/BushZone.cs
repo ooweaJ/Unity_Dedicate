@@ -6,6 +6,7 @@ using UnityEngine;
 /// <summary>
 /// 부쉬 영역 컴포넌트.
 /// 플레이어 진입/이탈을 서버에서 감지하고 팀별 시야(teamVisionMask)를 동기화한다.
+/// 로컬 플레이어가 진입하면 부쉬 메쉬를 반투명으로 전환한다.
 /// </summary>
 public class BushZone : NetworkBehaviour
 {
@@ -13,13 +14,47 @@ public class BushZone : NetworkBehaviour
     [SyncVar(hook = nameof(OnMaskChanged))]
     public int teamVisionMask;
 
+    [Header("Visual")]
+    [Tooltip("비워두면 자식 Renderer를 자동 탐색합니다.")]
+    [SerializeField] private Renderer[] bushMeshRenderers;
+    [SerializeField] [Range(0f, 1f)] private float bushFadeAlpha = 0.35f;
+
     // 서버 전용: bushState → teamId 매핑
     private readonly Dictionary<PlayerBushState, int> _playerTeams = new();
 
     // 클라이언트: 마스크가 바뀔 때 이 부쉬 안 플레이어들이 구독해서 가시성 재계산
     public event Action OnVisionMaskChanged;
 
+    private Material[][] _bushOriginalMats;
+    private Material[][] _bushFadeMats;
+
     public bool HasTeamVision(int teamId) => (teamVisionMask & (1 << teamId)) != 0;
+
+    // ── 초기화 ───────────────────────────────────────────────────────────────
+
+    private void Start()
+    {
+        if (bushMeshRenderers == null || bushMeshRenderers.Length == 0)
+            bushMeshRenderers = GetComponentsInChildren<Renderer>();
+
+        _bushOriginalMats = new Material[bushMeshRenderers.Length][];
+        _bushFadeMats     = new Material[bushMeshRenderers.Length][];
+
+        for (int i = 0; i < bushMeshRenderers.Length; i++)
+        {
+            _bushOriginalMats[i] = bushMeshRenderers[i].sharedMaterials;
+            _bushFadeMats[i]     = PlayerBushState.CreateFadeMaterialArray(_bushOriginalMats[i], bushFadeAlpha);
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (_bushFadeMats != null)
+            foreach (var arr in _bushFadeMats)
+                if (arr != null)
+                    foreach (var mat in arr)
+                        if (mat != null) Destroy(mat);
+    }
 
     // ── 트리거 ───────────────────────────────────────────────────────────────
 
@@ -68,5 +103,21 @@ public class BushZone : NetworkBehaviour
     private void OnMaskChanged(int _, int __)
     {
         OnVisionMaskChanged?.Invoke();
+    }
+
+    // ── 부쉬 메쉬 반투명 (로컬 플레이어가 진입/이탈 시 호출) ──────────────────
+
+    public void SetLocalPlayerInside(bool inside)
+    {
+        if (bushMeshRenderers == null || _bushFadeMats == null) return;
+
+        for (int i = 0; i < bushMeshRenderers.Length; i++)
+        {
+            var r = bushMeshRenderers[i];
+            if (r == null) continue;
+
+            if (inside) r.materials      = _bushFadeMats[i];
+            else        r.sharedMaterials = _bushOriginalMats[i];
+        }
     }
 }

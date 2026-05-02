@@ -21,10 +21,10 @@ public class InventoryUI : MonoBehaviour
     private Func<IEnumerable<PlayerCharacterData>> _charDataProvider;
     private Func<int>                              _selectedCharacterIdProvider;
 
-    public event Action<int, Vector2> OnItemClicked;
-    public event Action<int, Vector2> OnItemHoverEnter;
-    public event Action               OnItemHoverExit;
-    public event Action<int>          OnItemDragBegin;
+    public event Action<int, Vector2, ItemType> OnItemClicked;
+    public event Action<int, Vector2, ItemType> OnItemHoverEnter;
+    public event Action                         OnItemHoverExit;
+    public event Action<int, ItemType>          OnItemDragBegin;
 
     public void Setup(
         Func<IEnumerable<PlayerItemData>>      itemDataProvider,
@@ -137,10 +137,10 @@ public class InventoryUI : MonoBehaviour
         CreateSlot(id, icon, amount, staticData);
     }
 
-    private void HandleSlotClicked(int id, Vector2 pos)    => OnItemClicked?.Invoke(id, pos);
-    private void HandleSlotHoverEnter(int id, Vector2 pos) => OnItemHoverEnter?.Invoke(id, pos);
+    private void HandleSlotClicked(int id, Vector2 pos)    => OnItemClicked?.Invoke(id, pos, targetType);
+    private void HandleSlotHoverEnter(int id, Vector2 pos) => OnItemHoverEnter?.Invoke(id, pos, targetType);
     private void HandleSlotHoverExit()                      => OnItemHoverExit?.Invoke();
-    private void HandleSlotDragBegin(int id)               => OnItemDragBegin?.Invoke(id);
+    private void HandleSlotDragBegin(int id)               => OnItemDragBegin?.Invoke(id, targetType);
 
     public void RefreshSelection(int selectedId)
     {

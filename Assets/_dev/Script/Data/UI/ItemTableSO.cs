@@ -17,11 +17,12 @@ public enum EquipmentSlotType
     Ring 
 }
 
-public enum ItemActionType 
-{ 
-    Use, 
-    Discard, 
-    OpenTranscendence 
+public enum ItemActionType
+{
+    Use,
+    Discard,
+    OpenTranscendence,
+    Enhance
 }
 
 [System.Serializable]

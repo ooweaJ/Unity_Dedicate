@@ -1,4 +1,5 @@
 using TMPro;
+using System.Text;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -71,9 +72,27 @@ public class ItemInfoPanel : MonoBehaviour
     public void SetShardData(CharacterRawData charData, int amount)
     {
         if (charData == null) return;
-        txtName.text = $"{charData.displayName} 조각";
-        txtDescription.text = $"{charData.displayName}의 초월에 필요한 재료입니다.";
-        txtAmount.text = $"보유 수량: {amount}";
+        txtName.text        = $"{charData.displayName} 조각";
+        txtDescription.text = "";
+        txtAmount.text      = $"보유 수량: {amount}";
         if (imgIcon != null) imgIcon.sprite = charData.shardIcon;
+    }
+
+    public void SetEquipmentData(ItemRawData staticData, int enhance)
+    {
+        if (staticData == null) return;
+        txtName.text = enhance > 0 ? $"{staticData.displayName} +{enhance}" : staticData.displayName;
+        txtDescription.text = staticData.description;
+
+        float mult = 1f + enhance * 0.1f;
+        int atk = Mathf.RoundToInt(staticData.atkBonus * mult);
+        int def = Mathf.RoundToInt(staticData.defBonus * mult);
+
+        var sb = new StringBuilder();
+        if (atk > 0) sb.AppendLine($"공격력 +{atk}");
+        if (def > 0) sb.AppendLine($"방어력 +{def}");
+        txtAmount.text = sb.Length > 0 ? sb.ToString().TrimEnd() : "-";
+
+        if (imgIcon != null) imgIcon.sprite = staticData.icon;
     }
 }
