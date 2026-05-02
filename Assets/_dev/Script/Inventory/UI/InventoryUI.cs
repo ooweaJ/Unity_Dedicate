@@ -6,131 +6,146 @@ using System;
 public class InventoryUI : MonoBehaviour
 {
     [Header("Settings")]
-    [SerializeField] private ItemType targetType; // 인스펙터에서 설정 (Equipment, Consumable, Transcendence 등)
-    
+    [SerializeField] private ItemType targetType;
+
     [Header("UI References")]
     [SerializeField] private InventorySlot slotPrefab;
-    [SerializeField] private Transform contentParent; // ScrollView의 Content 오브젝트
+    [SerializeField] private Transform     contentParent;
 
     private List<InventorySlot> _slots = new();
     private int _selectedId = -1;
 
-    // ✅ 데이터 제공자들
-    private Func<IEnumerable<PlayerItemData>> _itemDataProvider;
-    private Func<IEnumerable<PlayerCharacterData>> _charDataProvider; // 초월 재료용
-    private Func<int> _selectedCharacterIdProvider;                   // 현재 선택된 캐릭터 확인용
+    // 데이터 제공자
+    private Func<IEnumerable<PlayerItemData>>      _itemDataProvider;
+    private Func<IEnumerable<PlayerEquipmentData>> _equipmentDataProvider;
+    private Func<IEnumerable<PlayerCharacterData>> _charDataProvider;
+    private Func<int>                              _selectedCharacterIdProvider;
 
-    // Manager로 전달할 이벤트들
     public event Action<int, Vector2> OnItemClicked;
     public event Action<int, Vector2> OnItemHoverEnter;
-    public event Action OnItemHoverExit;
-    public event Action<int> OnItemDragBegin;
+    public event Action               OnItemHoverExit;
+    public event Action<int>          OnItemDragBegin;
 
     public void Setup(
-        Func<IEnumerable<PlayerItemData>> itemDataProvider, 
+        Func<IEnumerable<PlayerItemData>>      itemDataProvider,
+        Func<IEnumerable<PlayerEquipmentData>> equipmentDataProvider,
         Func<IEnumerable<PlayerCharacterData>> charDataProvider,
-        Func<int> selectedCharacterIdProvider)
+        Func<int>                              selectedCharacterIdProvider)
     {
-        _itemDataProvider = itemDataProvider;
-        _charDataProvider = charDataProvider;
+        _itemDataProvider            = itemDataProvider;
+        _equipmentDataProvider       = equipmentDataProvider;
+        _charDataProvider            = charDataProvider;
         _selectedCharacterIdProvider = selectedCharacterIdProvider;
     }
 
-    private void OnEnable()
-    {
-        Refresh();
-    }
+    private void OnEnable() => Refresh();
 
     public void Refresh()
     {
-        // 1. 기존 슬롯 제거 및 이벤트 해제
         foreach (var slot in _slots)
         {
             if (slot == null) continue;
-            slot.OnClicked -= HandleSlotClicked;
+            slot.OnClicked    -= HandleSlotClicked;
             slot.OnHoverEnter -= HandleSlotHoverEnter;
-            slot.OnHoverExit -= HandleSlotHoverExit;
-            slot.OnDragBegin -= HandleSlotDragBegin;
+            slot.OnHoverExit  -= HandleSlotHoverExit;
+            slot.OnDragBegin  -= HandleSlotDragBegin;
             Destroy(slot.gameObject);
         }
         _slots.Clear();
 
-        // 2. 타입에 따른 데이터 처리
         if (targetType == ItemType.Transcendence)
-        {
             RefreshTranscendenceSlots();
-        }
+        else if (targetType == ItemType.Equipment)
+            RefreshEquipmentInstanceSlots();
         else
-        {
             RefreshItemSlots();
-        }
     }
+
+    // ── 초월 조각 탭 ──────────────────────────────────────────────────
 
     private void RefreshTranscendenceSlots()
     {
         if (_charDataProvider == null || _selectedCharacterIdProvider == null) return;
 
         int selectedCharId = _selectedCharacterIdProvider.Invoke();
-        var allChars = _charDataProvider.Invoke();
-        
-        var targetChar = allChars.FirstOrDefault(c => c.characterId == selectedCharId);
+        var targetChar = _charDataProvider.Invoke()
+            .FirstOrDefault(c => c.characterId == selectedCharId);
+
         if (targetChar == null || targetChar.shardAmount <= 0) return;
 
         var staticData = GameDataManager.Instance.GetCharacter(targetChar.characterId);
         if (staticData == null) return;
 
-        CreateSlot(targetChar.characterId, staticData.shardIcon, targetChar.shardAmount, ItemType.Transcendence);
+        CreateSlot(targetChar.characterId, staticData.shardIcon, targetChar.shardAmount,
+            new ItemRawData { id = targetChar.characterId, icon = staticData.shardIcon,
+                              itemType = ItemType.Transcendence, displayName = "조각" });
     }
+
+    // ── 장비 인스턴스 탭 ──────────────────────────────────────────────
+    // 슬롯 ID = equip_instance_id (강화 수치를 표시하기 위해)
+
+    private void RefreshEquipmentInstanceSlots()
+    {
+        if (_equipmentDataProvider == null) return;
+
+        foreach (var equip in _equipmentDataProvider.Invoke())
+        {
+            var staticData = GameDataManager.Instance.GetItem(equip.itemId);
+            if (staticData == null) continue;
+
+            // amount 자리에 enhance 표시 (슬롯 UI에서 수량 badge에 강화 단계 표시)
+            CreateSlot(equip.equip_instance_id, staticData.icon, equip.enhance, staticData);
+        }
+    }
+
+    // ── 소모품/재료 탭 ────────────────────────────────────────────────
 
     private void RefreshItemSlots()
     {
         if (_itemDataProvider == null) return;
 
-        var allItems = _itemDataProvider.Invoke();
-        if (allItems == null) return;
-
-        foreach (var item in allItems)
+        foreach (var item in _itemDataProvider.Invoke())
         {
             var itemData = GameDataManager.Instance.GetItem(item.itemId);
             if (itemData == null || itemData.itemType != targetType) continue;
 
-            CreateSlot(item.itemId, itemData.icon, item.amount, itemData.itemType);
+            CreateSlot(item.itemId, itemData.icon, item.amount, itemData);
         }
     }
 
-    private void CreateSlot(int id, Sprite icon, int amount, ItemType type)
+    // ── 슬롯 생성 ─────────────────────────────────────────────────────
+
+    private void CreateSlot(int id, Sprite icon, int amount, ItemRawData staticData)
     {
         var slot = Instantiate(slotPrefab, contentParent);
-        var staticData = GameDataManager.Instance.GetItem(id); // 기본 아이템 데이터 가져오기
-        
-        // 만약 캐릭터 조각이라면 가상의 ItemRawData 생성 (또는 Table에 조각도 포함되어 있어야 함)
-        if (staticData == null && type == ItemType.Transcendence)
-        {
-            staticData = new ItemRawData { id = id, icon = icon, itemType = type, displayName = "조각" };
-        }
-
         slot.SetItem(id, staticData, amount);
-        
-        // 이벤트 연결
-        slot.OnClicked += HandleSlotClicked;
+
+        slot.OnClicked    += HandleSlotClicked;
         slot.OnHoverEnter += HandleSlotHoverEnter;
-        slot.OnHoverExit += HandleSlotHoverExit;
-        slot.OnDragBegin += HandleSlotDragBegin;
-        
+        slot.OnHoverExit  += HandleSlotHoverExit;
+        slot.OnDragBegin  += HandleSlotDragBegin;
+
         _slots.Add(slot);
     }
 
-    private void HandleSlotClicked(int id, Vector2 pos) => OnItemClicked?.Invoke(id, pos);
+    // icon 전달 버전 (Transcendence 슬롯 등 staticData가 없을 때)
+    private void CreateSlot(int id, Sprite icon, int amount, ItemType type, ItemRawData explicitData = null)
+    {
+        var staticData = explicitData ?? GameDataManager.Instance.GetItem(id);
+        if (staticData == null)
+            staticData = new ItemRawData { id = id, icon = icon, itemType = type, displayName = "" };
+        CreateSlot(id, icon, amount, staticData);
+    }
+
+    private void HandleSlotClicked(int id, Vector2 pos)    => OnItemClicked?.Invoke(id, pos);
     private void HandleSlotHoverEnter(int id, Vector2 pos) => OnItemHoverEnter?.Invoke(id, pos);
-    private void HandleSlotHoverExit() => OnItemHoverExit?.Invoke();
-    private void HandleSlotDragBegin(int id) => OnItemDragBegin?.Invoke(id);
+    private void HandleSlotHoverExit()                      => OnItemHoverExit?.Invoke();
+    private void HandleSlotDragBegin(int id)               => OnItemDragBegin?.Invoke(id);
 
     public void RefreshSelection(int selectedId)
     {
         _selectedId = selectedId;
         foreach (var slot in _slots)
-        {
             slot.SetSelect(slot.ItemId == selectedId);
-        }
     }
 }

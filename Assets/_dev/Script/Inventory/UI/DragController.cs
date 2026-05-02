@@ -6,8 +6,10 @@ public class DragController : MonoBehaviour
 {
     public static DragController Instance { get; private set; }
 
-    [SerializeField] private Image dragIcon;   // Canvas 최상단 이미지
-    public ItemRawData DraggingData { get; private set; }
+    [SerializeField] private Image dragIcon;
+
+    public ItemRawData DraggingData       { get; private set; }
+    public int         DraggingInstanceId { get; private set; } = -1; // 장비 인스턴스 ID
 
     private void Awake()
     {
@@ -15,13 +17,19 @@ public class DragController : MonoBehaviour
         if (dragIcon != null) dragIcon.gameObject.SetActive(false);
     }
 
-    public void BeginDrag(ItemRawData data)
+    // 일반 아이템 드래그
+    public void BeginDrag(ItemRawData data) => BeginDrag(data, -1);
+
+    // 장비 인스턴스 드래그 (equipInstanceId 포함)
+    public void BeginDrag(ItemRawData data, int equipInstanceId)
     {
-        DraggingData = data;
+        DraggingData       = data;
+        DraggingInstanceId = equipInstanceId;
+
         if (dragIcon != null)
         {
-            dragIcon.sprite = data.icon;
-            dragIcon.raycastTarget = false; // EquipmentSlot이 OnDrop을 받을 수 있도록 반드시 false
+            dragIcon.sprite        = data.icon;
+            dragIcon.raycastTarget = false;
             dragIcon.gameObject.SetActive(true);
         }
     }
@@ -32,15 +40,12 @@ public class DragController : MonoBehaviour
         dragIcon.transform.position = screenPos;
     }
 
-    public void OnEndDrag(PointerEventData e)
-    {
-        EndDrag();
-    }
+    public void OnEndDrag(PointerEventData e) => EndDrag();
 
-    // InventorySlot.OnEndDrag 외부에서도 강제 정리할 수 있도록 public
     public void EndDrag()
     {
-        DraggingData = null;
+        DraggingData       = null;
+        DraggingInstanceId = -1;
         if (dragIcon != null) dragIcon.gameObject.SetActive(false);
     }
 }

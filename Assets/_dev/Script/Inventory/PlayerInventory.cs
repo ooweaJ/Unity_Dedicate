@@ -4,12 +4,14 @@ using Newtonsoft.Json.Linq;
 
 public class PlayerInventory
 {
-    private Dictionary<int, PlayerCharacterData> characters = new();
-    private Dictionary<int, PlayerItemData> items = new();
+    private Dictionary<int, PlayerCharacterData>  characters = new();
+    private Dictionary<int, PlayerEquipmentData>  equipment  = new(); // equip_instance_id → data
+    private Dictionary<int, PlayerItemData>       items      = new();
 
     public event Action OnChanged;
 
-    // 캐릭터 데이터 적용
+    // ── Apply (서버 응답 파싱) ─────────────────────────────────────────
+
     public void ApplyCharacters(JArray charArray)
     {
         characters.Clear();
@@ -26,14 +28,19 @@ public class PlayerInventory
                 shardAmount = (int)token["shardAmount"]
             };
 
-            // 서버에서 내려온 장착 장비 파싱
             if (token["equipped_items"] is JArray equippedArray)
             {
                 foreach (var eq in equippedArray)
                 {
-                    // 서버는 'weapon' (소문자), C# Enum은 'Weapon' (대문자)일 수 있으므로 ignoreCase=true 필수
-                    if (System.Enum.TryParse<EquipmentSlotType>((string)eq["slot_type"], true, out var slotType))
-                        data.equippedItems[slotType] = (int)eq["item_id"];
+                    if (!Enum.TryParse<EquipmentSlotType>((string)eq["slot_type"], true, out var slotType))
+                        continue;
+
+                    data.equippedItems[slotType] = new PlayerEquipmentData
+                    {
+                        equip_instance_id = (int)eq["equip_instance_id"],
+                        itemId            = (int)eq["item_id"],
+                        enhance           = (int)eq["enhance"]
+                    };
                 }
             }
 
@@ -42,7 +49,24 @@ public class PlayerInventory
         OnChanged?.Invoke();
     }
 
-    // 아이템 데이터 적용
+    public void ApplyEquipment(JArray array)
+    {
+        equipment.Clear();
+        if (array == null) return;
+
+        foreach (var token in array)
+        {
+            var data = new PlayerEquipmentData
+            {
+                equip_instance_id = (int)token["equip_instance_id"],
+                itemId            = (int)token["item_id"],
+                enhance           = (int)token["enhance"]
+            };
+            equipment[data.equip_instance_id] = data;
+        }
+        OnChanged?.Invoke();
+    }
+
     public void ApplyItems(JArray itemArray)
     {
         items.Clear();
@@ -60,69 +84,44 @@ public class PlayerInventory
         OnChanged?.Invoke();
     }
 
-    // 데이터 수정/추가 시 호출
+    // ── 장비 장착 / 해제 (낙관적 업데이트용) ─────────────────────────
+
+    public void EquipItem(int characterId, PlayerEquipmentData equipData, EquipmentSlotType slot)
+    {
+        if (!characters.TryGetValue(characterId, out var charData)) return;
+        charData.equippedItems[slot] = equipData;
+        OnChanged?.Invoke();
+    }
+
+    public void UnequipItem(int characterId, EquipmentSlotType slot)
+    {
+        if (!characters.TryGetValue(characterId, out var charData)) return;
+        charData.equippedItems.Remove(slot);
+        OnChanged?.Invoke();
+    }
+
+    // ── 캐릭터 수정 ───────────────────────────────────────────────────
+
     public void AddOrUpdateCharacter(PlayerCharacterData data)
     {
         characters[data.characterId] = data;
         OnChanged?.Invoke();
     }
 
-    // Getter (조회용)
-    public PlayerCharacterData GetCharacter(int id) => characters.GetValueOrDefault(id);
-    public PlayerItemData GetItem(int id) => items.GetValueOrDefault(id);
+    // ── Getter ────────────────────────────────────────────────────────
+
+    public PlayerCharacterData  GetCharacter(int id)        => characters.GetValueOrDefault(id);
+    public PlayerEquipmentData  GetEquipment(int instanceId) => equipment.GetValueOrDefault(instanceId);
+    public PlayerItemData       GetItem(int id)              => items.GetValueOrDefault(id);
 
     public IEnumerable<PlayerCharacterData> GetAllCharacters() => characters.Values;
-    public IEnumerable<PlayerItemData> GetAllItems() => items.Values;
-
-    public void EquipItem(int characterId, int itemId, EquipmentSlotType slot)
-    {
-        if (!characters.TryGetValue(characterId, out var charData)) return;
-
-        // 같은 슬롯에 이미 장착된 아이템이 있으면 인벤토리로 반환
-        if (charData.equippedItems.TryGetValue(slot, out int existingItemId))
-            ReturnItemToInventory(existingItemId);
-
-        charData.equippedItems[slot] = itemId;
-        RemoveItemFromInventory(itemId);
-
-        OnChanged?.Invoke();
-
-        // TODO: 서버 동기화 → BackendManager.EquipItem(characterId, itemId, slot)
-    }
-
-    public void UnequipItem(int characterId, EquipmentSlotType slot)
-    {
-        if (!characters.TryGetValue(characterId, out var charData)) return;
-        if (!charData.equippedItems.TryGetValue(slot, out int itemId)) return;
-
-        charData.equippedItems.Remove(slot);
-        ReturnItemToInventory(itemId);
-
-        OnChanged?.Invoke();
-
-        // TODO: 서버 동기화 → BackendManager.UnequipItem(characterId, slot)
-    }
-
-    private void RemoveItemFromInventory(int itemId)
-    {
-        if (!items.TryGetValue(itemId, out var itemData)) return;
-        if (itemData.amount > 1)
-            itemData.amount--;
-        else
-            items.Remove(itemId);
-    }
-
-    private void ReturnItemToInventory(int itemId)
-    {
-        if (items.TryGetValue(itemId, out var existing))
-            existing.amount++;
-        else
-            items[itemId] = new PlayerItemData { itemId = itemId, amount = 1 };
-    }
+    public IEnumerable<PlayerEquipmentData> GetAllEquipment()  => equipment.Values;
+    public IEnumerable<PlayerItemData>      GetAllItems()      => items.Values;
 
     public void Clear()
     {
         characters.Clear();
+        equipment.Clear();
         items.Clear();
         OnChanged?.Invoke();
     }

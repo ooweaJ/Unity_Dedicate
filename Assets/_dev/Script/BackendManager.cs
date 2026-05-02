@@ -4,20 +4,14 @@ using System.Threading.Tasks;
 using UnityEngine;
 
 // =====================================================================
-// [설계 원칙] 왜 아이템 ID만 서버에 보내는가?
-//
-// 클라이언트는 "어떤 행동을 했다"는 의도만 서버에 전달합니다.
+// [설계 원칙] 클라이언트는 "의도"만 서버에 전달합니다.
 // 실제 효과(HP+100, ATK+50 등)는 서버 DB가 결정합니다.
 //
-// 나쁜 예: client.Send("HP를 100 올려줘") → 패킷 조작으로 9999 올리기 가능
-// 좋은 예: client.Send("아이템 201번 사용") → 서버가 DB에서 201번 효과 조회·적용
+// 모든 인벤토리/성장 API 응답 형식:
+//   성공: { "success": true, "user": { ...전체 유저 데이터... } }
+//   실패: { "success": false, "message": "오류 원인" }
 //
-// 모든 엔드포인트 응답 형식:
-// {
-//   "success": true,
-//   "user": { ...전체 유저 데이터 (PlayerData.Apply() 그대로 넘기면 됨)... }
-// }
-// 실패 시: { "success": false, "message": "오류 원인" }
+// enhance/transcend는 추가 필드(enhanced, transcendStage 등)도 포함합니다.
 // =====================================================================
 
 public static class BackendManager
@@ -25,21 +19,14 @@ public static class BackendManager
     private static readonly HttpClient client = new HttpClient();
     private static string baseUrl = "http://api.jaewoo98.store";
 
-    // ─── 기존 API ─────────────────────────────────────────────────────
+    // ─── 유저 ──────────────────────────────────────────────────────────
 
     // POST /users/login
     public static async Task<string> Login(string username, string password)
     {
-        var json = $"{{\"username\":\"{username}\",\"password\":\"{password}\"}}";
+        var json    = $"{{\"username\":\"{username}\",\"password\":\"{password}\"}}";
         var content = new StringContent(json, Encoding.UTF8, "application/json");
-        HttpResponseMessage res = await client.PostAsync(baseUrl + "/users/login", content);
-        return await res.Content.ReadAsStringAsync();
-    }
-
-    // GET /characters/:userId
-    public static async Task<string> GetCharacters(int userId)
-    {
-        var res = await client.GetAsync(baseUrl + $"/characters/{userId}");
+        var res     = await client.PostAsync(baseUrl + "/users/login", content);
         return await res.Content.ReadAsStringAsync();
     }
 
@@ -50,107 +37,115 @@ public static class BackendManager
         return await res.Content.ReadAsStringAsync();
     }
 
+    // POST /users/:userId/select-character
+    // 캐릭터 선택 시 서버에 저장 → 재접속 시 복원
+    public static async Task<string> SelectCharacter(int userId, int characterId)
+    {
+        var json    = $"{{\"characterId\":{characterId}}}";
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var res     = await client.PostAsync(baseUrl + $"/users/{userId}/select-character", content);
+        return await res.Content.ReadAsStringAsync();
+    }
+
+    // POST /users/:userId/battle-result
+    // 전투 종료 후 획득 경험치 보고
+    public static async Task<string> BattleResult(int userId, int gainedExp)
+    {
+        var json    = $"{{\"gainedExp\":{gainedExp}}}";
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var res     = await client.PostAsync(baseUrl + $"/users/{userId}/battle-result", content);
+        return await res.Content.ReadAsStringAsync();
+    }
+
+    // POST /users/:userId/transcend
+    // 캐릭터 초월 — N초월에 조각 N개 소모, 100% 성공
+    // 응답: { success, transcendStage, newMaxLevel, shardsUsed, user }
+    public static async Task<string> TranscendCharacter(int userId, int characterId)
+    {
+        var json    = $"{{\"characterId\":{characterId}}}";
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var res     = await client.PostAsync(baseUrl + $"/users/{userId}/transcend", content);
+        return await res.Content.ReadAsStringAsync();
+    }
+
+    // ─── 매칭 ──────────────────────────────────────────────────────────
+
     // POST /match/acquire
     public static async Task<string> AcquirePort()
     {
-        HttpResponseMessage res = await client.PostAsync(baseUrl + "/match/acquire", null);
+        var res = await client.PostAsync(baseUrl + "/match/acquire", null);
         return await res.Content.ReadAsStringAsync();
     }
 
     // POST /match/release
     public static async Task<string> ReleasePort(int port)
     {
-        var json = $"{{\"port\":{port}}}";
+        var json    = $"{{\"port\":{port}}}";
         var content = new StringContent(json, Encoding.UTF8, "application/json");
-        HttpResponseMessage res = await client.PostAsync(baseUrl + "/match/release", content);
+        var res     = await client.PostAsync(baseUrl + "/match/release", content);
         return await res.Content.ReadAsStringAsync();
     }
+
+    // ─── 가챠 ──────────────────────────────────────────────────────────
 
     // POST /gacha/draw/:userId
     public static async Task<string> GachaDraw(int userId, int bannerId, int amount)
     {
-        var json = $"{{\"bannerId\":{bannerId},\"amount\":{amount}}}";
+        var json    = $"{{\"bannerId\":{bannerId},\"amount\":{amount}}}";
         var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var res = await client.PostAsync(baseUrl + $"/gacha/draw/{userId}", content);
+        var res     = await client.PostAsync(baseUrl + $"/gacha/draw/{userId}", content);
         return await res.Content.ReadAsStringAsync();
     }
 
-    // ─── 인벤토리 API ─────────────────────────────────────────────────
+    // ─── 인벤토리 ─────────────────────────────────────────────────────
 
     // POST /inventory/equip
-    // 서버 처리 순서:
-    //   1. userId + token 검증
-    //   2. 해당 유저가 itemId 아이템을 보유하는지 DB 확인
-    //   3. 같은 캐릭터·슬롯에 기존 장착 아이템 있으면 인벤토리로 반환
-    //   4. equipped_items 테이블에 (characterId, slotType, itemId) upsert
-    //   5. items 테이블에서 itemId 수량 1 감소 (0이면 레코드 삭제)
-    //   6. 변경된 전체 user 데이터 반환
+    // equipInstanceId: user_items_equipment.id (강화 수치가 붙은 장비 인스턴스 ID)
     // slotType 값: "Weapon" | "Armor" | "Accessory" | "Ring"
-    public static async Task<string> EquipItem(int userId, int characterId, int itemId, EquipmentSlotType slotType)
+    public static async Task<string> EquipItem(int userId, int characterId, int equipInstanceId, EquipmentSlotType slotType)
     {
-        var json = $"{{\"userId\":{userId},\"characterId\":{characterId},\"itemId\":{itemId},\"slotType\":\"{slotType}\"}}";
+        var json    = $"{{\"userId\":{userId},\"characterId\":{characterId},\"equipInstanceId\":{equipInstanceId},\"slotType\":\"{slotType}\"}}";
         var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var res = await client.PostAsync(baseUrl + "/inventory/equip", content);
+        var res     = await client.PostAsync(baseUrl + "/inventory/equip", content);
         return await res.Content.ReadAsStringAsync();
     }
 
     // POST /inventory/unequip
-    // 서버 처리 순서:
-    //   1. userId + token 검증
-    //   2. equipped_items 테이블에서 (characterId, slotType) 레코드 조회 → itemId 획득
-    //   3. 해당 레코드 삭제
-    //   4. items 테이블에 itemId 수량 1 증가 (없으면 insert)
-    //   5. 변경된 전체 user 데이터 반환
     public static async Task<string> UnequipItem(int userId, int characterId, EquipmentSlotType slotType)
     {
-        var json = $"{{\"userId\":{userId},\"characterId\":{characterId},\"slotType\":\"{slotType}\"}}";
+        var json    = $"{{\"userId\":{userId},\"characterId\":{characterId},\"slotType\":\"{slotType}\"}}";
         var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var res = await client.PostAsync(baseUrl + "/inventory/unequip", content);
+        var res     = await client.PostAsync(baseUrl + "/inventory/unequip", content);
         return await res.Content.ReadAsStringAsync();
     }
 
-    // POST /inventory/use
-    // 서버 처리 순서:
-    //   1. userId + token 검증
-    //   2. 해당 유저가 itemId를 1개 이상 보유하는지 확인
-    //   3. 아이템 타입 확인 (EXP 포션, 강화 재료)
-    //   4. 캐릭터의 현재 단계 최대치(Max Cap) 확인 및 효과 적용
-    //   5. items 테이블에서 해당 유저의 itemId 수량 1 감소
-    //   6. 변경된 전체 user 데이터 반환
+    // POST /inventory/use  (exp_potion 등 소모품)
     public static async Task<string> UseItem(int userId, int itemId, int characterId)
     {
-        var json = $"{{\"userId\":{userId},\"itemId\":{itemId},\"characterId\":{characterId}}}";
+        var json    = $"{{\"userId\":{userId},\"itemId\":{itemId},\"characterId\":{characterId}}}";
         var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var res = await client.PostAsync(baseUrl + "/inventory/use", content);
+        var res     = await client.PostAsync(baseUrl + "/inventory/use", content);
         return await res.Content.ReadAsStringAsync();
     }
 
     // POST /inventory/discard
-    // 서버 처리 순서:
-    //   1. userId + token 검증
-    //   2. 해당 유저가 itemId를 amount 개 이상 보유하는지 확인
-    //   3. items 테이블에서 수량 amount 감소 (0이면 레코드 삭제)
-    //   4. 변경된 전체 user 데이터 반환
     public static async Task<string> DiscardItem(int userId, int itemId, int amount = 1)
     {
-        var json = $"{{\"userId\":{userId},\"itemId\":{itemId},\"amount\":{amount}}}";
+        var json    = $"{{\"userId\":{userId},\"itemId\":{itemId},\"amount\":{amount}}}";
         var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var res = await client.PostAsync(baseUrl + "/inventory/discard", content);
+        var res     = await client.PostAsync(baseUrl + "/inventory/discard", content);
         return await res.Content.ReadAsStringAsync();
     }
 
-    // POST /inventory/transcend
-    // 서버 처리 순서:
-    //   1. userId + token 검증
-    //   2. characters 테이블에서 해당 캐릭터의 shard_amount 확인
-    //   3. 초월에 필요한 조각 수 충족 여부 확인 (character_table에서 transcend_cost 조회)
-    //   4. shard_amount 차감, enhance +1 (또는 단계별 처리)
-    //   5. 변경된 전체 user 데이터 반환
-    public static async Task<string> TranscendCharacter(int userId, int characterId)
+    // ─── 장비 강화 ────────────────────────────────────────────────────
+
+    // POST /equipment/:userId/enhance/:equipInstanceId
+    // 골드 소모 + 확률 판정. 실패해도 골드만 소비 (강화 수치 유지)
+    // 응답: { success, enhanced, enhance, goldCost, successRate, user }
+    public static async Task<string> EnhanceEquipment(int userId, int equipInstanceId)
     {
-        var json = $"{{\"userId\":{userId},\"characterId\":{characterId}}}";
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var res = await client.PostAsync(baseUrl + "/inventory/transcend", content);
+        var res = await client.PostAsync(
+            baseUrl + $"/equipment/{userId}/enhance/{equipInstanceId}", null);
         return await res.Content.ReadAsStringAsync();
     }
 }

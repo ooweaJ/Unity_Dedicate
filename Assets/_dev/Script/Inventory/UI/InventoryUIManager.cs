@@ -7,64 +7,65 @@ using UnityEngine;
 public struct TabPanelMapping
 {
     public int tabId;
-    public List<GameObject> panelsToShow; // 켜질 것만 관리
+    public List<GameObject> panelsToShow;
 }
 
 public class InventoryUIManager : MonoBehaviour
 {
     [SerializeField] private GameObject panel;
-    
+
     [Header("Sub Managers")]
-    [SerializeField] private CharacterListManager listManager;
+    [SerializeField] private CharacterListManager  listManager;
     [SerializeField] private CharacterModelManager modelManager;
     [SerializeField] private List<CharacterInfoPanel> CharacterinfoPanels;
-    [SerializeField] private ItemInfoPanel itemInfoPanel;
-    [SerializeField] private SidebarManager sidebarManager;
+    [SerializeField] private ItemInfoPanel         itemInfoPanel;
+    [SerializeField] private SidebarManager        sidebarManager;
 
     [Header("Item UIs & Popups")]
-    [SerializeField] private List<InventoryUI> _itemInventoryUIs;
-    [SerializeField] private List<EquipmentSlot> _equipmentSlots;
-    [SerializeField] private ItemActionPopup actionPopup;
+    [SerializeField] private List<InventoryUI>    _itemInventoryUIs;
+    [SerializeField] private List<EquipmentSlot>  _equipmentSlots;
+    [SerializeField] private ItemActionPopup       actionPopup;
 
     [Header("Tab Panels")]
     [SerializeField] private List<TabPanelMapping> panelMappings;
 
-    private List<CharacterUIModel> _characterUIModels = new();
-    private Dictionary<int, TabPanelMapping> _panelDict = new();
+    private List<CharacterUIModel>    _characterUIModels   = new();
+    private Dictionary<int, TabPanelMapping> _panelDict   = new();
 
     // 데이터 캐시
-    private List<PlayerItemData> _cachedItemDatas = new();
-    private List<PlayerCharacterData> _cachedCharacterDatas = new();
+    private List<PlayerCharacterData>  _cachedCharacterDatas  = new();
+    private List<PlayerEquipmentData>  _cachedEquipmentDatas  = new();
+    private List<PlayerItemData>       _cachedItemDatas       = new();
     private int _selectedCharacterId = -1;
 
-    // 외부 게임 로직용 이벤트
-    public event Action<int, int> OnUseItem; // (charId, itemId)
-    public event Action<int> OnDiscardItem;
-    public event Action<int> OnOpenTranscendence;
-    public event Action<int, int, EquipmentSlotType> OnEquipItem;   // (charId, itemId, slot)
-    public event Action<int, EquipmentSlotType> OnUnequipItem;       // (charId, slot)
+    // ── 이벤트 (InventoryController가 구독) ──────────────────────────
+    public event Action<int, int>                OnUseItem;         // (charId, itemId)
+    public event Action<int>                     OnDiscardItem;
+    public event Action<int>                     OnOpenTranscendence; // (charId)
+    public event Action<int, int, EquipmentSlotType> OnEquipItem;   // (charId, equipInstanceId, slot)
+    public event Action<int, EquipmentSlotType>  OnUnequipItem;     // (charId, slot)
+    public event Action<int>                     OnEnhanceEquipment; // (equipInstanceId)
 
     private void OnEnable()
     {
         foreach (var mapping in panelMappings)
             _panelDict[mapping.tabId] = mapping;
 
-        // 아이템 인벤토리 UI 이벤트 구독
         foreach (var inventoryUI in _itemInventoryUIs)
         {
             inventoryUI.Setup(
-                () => _cachedItemDatas, 
+                () => _cachedItemDatas,
+                () => _cachedEquipmentDatas,
                 () => _cachedCharacterDatas,
                 () => _selectedCharacterId
             );
-            
-            inventoryUI.OnItemClicked += HandleItemClicked;
+
+            inventoryUI.OnItemClicked    += HandleItemClicked;
             inventoryUI.OnItemHoverEnter += HandleItemHoverEnter;
-            inventoryUI.OnItemHoverExit += HandleItemHoverExit;
-            inventoryUI.OnItemDragBegin += HandleItemDragBegin;
+            inventoryUI.OnItemHoverExit  += HandleItemHoverExit;
+            inventoryUI.OnItemDragBegin  += HandleItemDragBegin;
         }
 
-        // 장비 슬롯 이벤트 구독
         foreach (var slot in _equipmentSlots)
         {
             slot.OnItemDropped += HandleEquip;
@@ -79,12 +80,12 @@ public class InventoryUIManager : MonoBehaviour
     {
         foreach (var inventoryUI in _itemInventoryUIs)
         {
-            inventoryUI.OnItemClicked -= HandleItemClicked;
+            inventoryUI.OnItemClicked    -= HandleItemClicked;
             inventoryUI.OnItemHoverEnter -= HandleItemHoverEnter;
-            inventoryUI.OnItemHoverExit -= HandleItemHoverExit;
-            inventoryUI.OnItemDragBegin -= HandleItemDragBegin;
+            inventoryUI.OnItemHoverExit  -= HandleItemHoverExit;
+            inventoryUI.OnItemDragBegin  -= HandleItemDragBegin;
         }
-        
+
         foreach (var slot in _equipmentSlots)
         {
             slot.OnItemDropped -= HandleEquip;
@@ -94,25 +95,30 @@ public class InventoryUIManager : MonoBehaviour
         sidebarManager.OnTabChanged -= SwitchSubPanel;
     }
 
-    public void Open() { panel.SetActive(true); }
-    public void Close() 
-    { 
-        panel.SetActive(false); 
-        modelManager.ClearAllModels(); 
-        itemInfoPanel.Hide(); 
+    public void Open()  => panel.SetActive(true);
+    public void Close()
+    {
+        panel.SetActive(false);
+        modelManager.ClearAllModels();
+        itemInfoPanel.Hide();
         actionPopup?.Hide();
     }
 
-    public void InitInventory(IEnumerable<PlayerCharacterData> charDatas, IEnumerable<PlayerItemData> itemDatas)
+    // ── 초기화 ────────────────────────────────────────────────────────
+
+    public void InitInventory(
+        IEnumerable<PlayerCharacterData> charDatas,
+        IEnumerable<PlayerItemData>      itemDatas,
+        IEnumerable<PlayerEquipmentData> equipmentDatas)
     {
-        _cachedItemDatas = itemDatas != null ? itemDatas.ToList() : new List<PlayerItemData>();
-        _cachedCharacterDatas = charDatas != null ? charDatas.ToList() : new List<PlayerCharacterData>();
+        _cachedCharacterDatas = charDatas      != null ? charDatas.ToList()      : new();
+        _cachedItemDatas      = itemDatas       != null ? itemDatas.ToList()      : new();
+        _cachedEquipmentDatas = equipmentDatas  != null ? equipmentDatas.ToList() : new();
 
-        _characterUIModels = _cachedCharacterDatas.Select(s =>
-            new CharacterUIModel(s, GameDataManager.Instance.GetCharacter(s.characterId))
-        ).ToList();
+        _characterUIModels = _cachedCharacterDatas
+            .Select(s => new CharacterUIModel(s, GameDataManager.Instance.GetCharacter(s.characterId)))
+            .ToList();
 
-        // 이전에 선택한 캐릭터가 있으면 유지, 없으면 첫 번째 캐릭터 선택
         bool keepSelection = _selectedCharacterId != -1 &&
             _characterUIModels.Any(m => m.StaticData.id == _selectedCharacterId);
 
@@ -120,7 +126,6 @@ public class InventoryUIManager : MonoBehaviour
             ? _selectedCharacterId
             : (_characterUIModels.Count > 0 ? _characterUIModels[0].StaticData.id : -1);
 
-        // 하드코딩된 1 대신 idToSelect 사용
         listManager.Init(_characterUIModels, idToSelect, OnSelectCharacter);
 
         if (idToSelect != -1)
@@ -131,11 +136,9 @@ public class InventoryUIManager : MonoBehaviour
 
     private void RefreshActiveItemUI()
     {
-        foreach (var inventoryUI in _itemInventoryUIs)
-        {
-            if (inventoryUI.gameObject.activeInHierarchy)
-                inventoryUI.Refresh();
-        }
+        foreach (var ui in _itemInventoryUIs)
+            if (ui.gameObject.activeInHierarchy)
+                ui.Refresh();
     }
 
     private void SwitchSubPanel(int tabId)
@@ -147,26 +150,41 @@ public class InventoryUIManager : MonoBehaviour
             target.panelsToShow.ForEach(p => p.SetActive(true));
 
         itemInfoPanel.Hide();
-        actionPopup.Hide();
+        actionPopup?.Hide();
     }
 
-    // --- 슬롯 이벤트 핸들러 ---
+    // ── 슬롯 이벤트 핸들러 ───────────────────────────────────────────
 
-    private void HandleItemHoverEnter(int itemId, Vector2 pos)
+    private void HandleItemHoverEnter(int id, Vector2 pos)
     {
-        var itemData = _cachedItemDatas.FirstOrDefault(i => i.itemId == itemId);
+        // 장비 인스턴스 hover
+        var equipData = _cachedEquipmentDatas.FirstOrDefault(e => e.equip_instance_id == id);
+        if (equipData != null)
+        {
+            var staticData = GameDataManager.Instance.GetItem(equipData.itemId);
+            if (staticData != null)
+            {
+                itemInfoPanel.SetData(staticData, equipData.enhance);
+                itemInfoPanel.ShowAt(pos);
+            }
+            return;
+        }
+
+        // 소모품/재료 hover
+        var itemData = _cachedItemDatas.FirstOrDefault(i => i.itemId == id);
         if (itemData != null)
         {
-            var staticData = GameDataManager.Instance.GetItem(itemId);
+            var staticData = GameDataManager.Instance.GetItem(id);
             itemInfoPanel.SetData(staticData, itemData.amount);
             itemInfoPanel.ShowAt(pos);
             return;
         }
 
-        var charData = _cachedCharacterDatas.FirstOrDefault(c => c.characterId == itemId);
+        // 초월 조각 hover
+        var charData = _cachedCharacterDatas.FirstOrDefault(c => c.characterId == id);
         if (charData != null)
         {
-            var staticData = GameDataManager.Instance.GetCharacter(itemId);
+            var staticData = GameDataManager.Instance.GetCharacter(id);
             itemInfoPanel.SetShardData(staticData, charData.shardAmount);
             itemInfoPanel.ShowAt(pos);
         }
@@ -174,30 +192,44 @@ public class InventoryUIManager : MonoBehaviour
 
     private void HandleItemHoverExit() => itemInfoPanel.Hide();
 
-    private void HandleItemClicked(int itemId, Vector2 pos)
+    private void HandleItemClicked(int id, Vector2 pos)
     {
-        var data = GameDataManager.Instance.GetItem(itemId);
+        // 장비 인스턴스 클릭 → 강화 이벤트
+        var equipData = _cachedEquipmentDatas.FirstOrDefault(e => e.equip_instance_id == id);
+        if (equipData != null)
+        {
+            OnEnhanceEquipment?.Invoke(id);
+            foreach (var ui in _itemInventoryUIs) ui.RefreshSelection(id);
+            return;
+        }
+
+        // 소모품/재료 클릭 → 액션 팝업
+        var data = GameDataManager.Instance.GetItem(id);
         if (data == null) return;
 
-        // 소비템/재료는 액션 팝업 표시
-        if (data.itemType != ItemType.Equipment)
-        {
-            actionPopup.Show(data, pos, actionType => HandleAction(itemId, actionType));
-        }
-        
-        // 선택 하이라이트 업데이트
-        foreach (var ui in _itemInventoryUIs) ui.RefreshSelection(itemId);
+        actionPopup.Show(data, pos, actionType => HandleAction(id, actionType));
+        foreach (var ui in _itemInventoryUIs) ui.RefreshSelection(id);
     }
 
-    private void HandleItemDragBegin(int itemId)
+    private void HandleItemDragBegin(int id)
     {
-        var data = GameDataManager.Instance.GetItem(itemId);
-        if (data != null && DragController.Instance != null)
+        // 장비 인스턴스 드래그 → equip_instance_id + ItemRawData 전달
+        var equipData = _cachedEquipmentDatas.FirstOrDefault(e => e.equip_instance_id == id);
+        if (equipData != null)
         {
-            DragController.Instance.BeginDrag(data);
+            var staticData = GameDataManager.Instance.GetItem(equipData.itemId);
+            if (staticData != null)
+                DragController.Instance?.BeginDrag(staticData, equipData.equip_instance_id);
+            itemInfoPanel.Hide();
+            actionPopup?.Hide();
+            return;
         }
+
+        var data = GameDataManager.Instance.GetItem(id);
+        if (data != null)
+            DragController.Instance?.BeginDrag(data);
         itemInfoPanel.Hide();
-        actionPopup.Hide();
+        actionPopup?.Hide();
     }
 
     private void HandleAction(int itemId, ItemActionType actionType)
@@ -205,17 +237,19 @@ public class InventoryUIManager : MonoBehaviour
         switch (actionType)
         {
             case ItemActionType.Use:               OnUseItem?.Invoke(_selectedCharacterId, itemId); break;
-            case ItemActionType.Discard:           OnDiscardItem?.Invoke(itemId);        break;
-            case ItemActionType.OpenTranscendence: OnOpenTranscendence?.Invoke(itemId);  break;
+            case ItemActionType.Discard:           OnDiscardItem?.Invoke(itemId); break;
+            case ItemActionType.OpenTranscendence: OnOpenTranscendence?.Invoke(_selectedCharacterId); break;
         }
     }
 
-    private void HandleEquip(int itemId, EquipmentSlotType slotType)
-        => OnEquipItem?.Invoke(_selectedCharacterId, itemId, slotType);
+    // 드롭 → 장착 (equipInstanceId)
+    private void HandleEquip(int equipInstanceId, EquipmentSlotType slotType)
+        => OnEquipItem?.Invoke(_selectedCharacterId, equipInstanceId, slotType);
 
-    private void HandleUnequip(int itemId)
+    // 장착 슬롯 클릭 → 해제
+    private void HandleUnequip(int equipInstanceId)
     {
-        var slot = _equipmentSlots.FirstOrDefault(s => s.ItemId == itemId);
+        var slot = _equipmentSlots.FirstOrDefault(s => s.ItemId == equipInstanceId);
         if (slot != null)
             OnUnequipItem?.Invoke(_selectedCharacterId, slot.acceptedSlotType);
     }
@@ -224,16 +258,17 @@ public class InventoryUIManager : MonoBehaviour
     {
         foreach (var slot in _equipmentSlots)
         {
-            if (charData.equippedItems.TryGetValue(slot.acceptedSlotType, out int itemId))
+            if (charData.equippedItems.TryGetValue(slot.acceptedSlotType, out var equip))
             {
-                var staticData = GameDataManager.Instance.GetItem(itemId);
+                var staticData = GameDataManager.Instance.GetItem(equip.itemId);
                 if (staticData == null)
                 {
-                    Debug.LogWarning($"[InventoryUIManager] 장착 아이템 ID {itemId}가 ItemTableSO에 없습니다.");
+                    Debug.LogWarning($"[InventoryUIManager] 장착 아이템 ID {equip.itemId}가 ItemTableSO에 없습니다.");
                     slot.Clear();
                     continue;
                 }
-                slot.SetItem(itemId, staticData, 1);
+                // ItemId = equip_instance_id, amount = enhance (강화 표시용)
+                slot.SetItem(equip.equip_instance_id, staticData, equip.enhance);
             }
             else
             {
@@ -248,17 +283,12 @@ public class InventoryUIManager : MonoBehaviour
         var selectedModel = _characterUIModels.FirstOrDefault(m => m.StaticData.id == id);
         if (selectedModel == null) return;
 
-        // 선택된 캐릭터를 PlayerDataManager에도 반영 (배틀 진입 시 사용)
         if (PlayerDataManager.Instance != null)
-        {
             PlayerDataManager.Instance.SelectCharacter(selectedModel.StaticData.type);
-        }
 
         modelManager.ShowModel(selectedModel);
         foreach (var chinfo in CharacterinfoPanels)
-        {
             chinfo.SetData(selectedModel);
-        }
         listManager.RefreshSelection(id);
         RefreshEquipmentSlots(selectedModel.ServerData);
         RefreshActiveItemUI();
