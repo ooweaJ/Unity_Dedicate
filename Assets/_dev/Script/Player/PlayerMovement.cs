@@ -69,9 +69,26 @@ public class PlayerMovement : NetworkBehaviour
 
     private void FixedUpdate()
     {
+        // 넉백/스턴 상태 업데이트 (서버와 로컬 플레이어 모두 수행)
+        if (isServer || isLocalPlayer)
+        {
+            UpdateStatusState();
+        }
+
         if (!IsControllable) return;
         Move();
         SyncAnimation();
+    }
+
+    private void UpdateStatusState()
+    {
+        if (_isKnockedBack)
+        {
+            if (Time.time >= _knockbackEndTime)
+            {
+                _isKnockedBack = false;
+            }
+        }
     }
 
     // ─── 상태이상 세터 (StatusEffectHandler SyncVar 훅에서 호출) ─────────
@@ -94,11 +111,15 @@ public class PlayerMovement : NetworkBehaviour
     [ClientRpc]
     public void RpcApplyKnockback(Vector3 dir, float force)
     {
-        if (!isLocalPlayer) return;
-        Vector3 flat = new Vector3(dir.x, 0f, dir.z).normalized;
-        rb.linearVelocity = new Vector3(flat.x * force, rb.linearVelocity.y, flat.z * force);
-        _isKnockedBack    = true;
-        _knockbackEndTime = Time.time + KnockbackMoveLockDuration;
+        // 서버(물리적 진실)와 로컬 플레이어(즉각적 반응) 모두 물리 적용
+        if (isServer || isLocalPlayer)
+        {
+            Debug.Log($"[PlayerMovement] RpcApplyKnockback: Applying to {gameObject.name}. IsServer={isServer}, IsLocal={isLocalPlayer}, Force={force}");
+            Vector3 flat = new Vector3(dir.x, 0f, dir.z).normalized;
+            rb.linearVelocity = new Vector3(flat.x * force, rb.linearVelocity.y, flat.z * force);
+            _isKnockedBack    = true;
+            _knockbackEndTime = Time.time + KnockbackMoveLockDuration;
+        }
     }
 
     // ─── 이동 ─────────────────────────────────────────────────────────────
@@ -108,8 +129,8 @@ public class PlayerMovement : NetworkBehaviour
 
         if (_isKnockedBack)
         {
-            if (Time.time >= _knockbackEndTime) _isKnockedBack = false;
-            else return;
+            // UpdateStatusState에서 처리하므로 여기서는 리턴만 함
+            return;
         }
 
         Vector3 dir = new Vector3(moveInput.x, 0f, moveInput.y);
@@ -198,6 +219,7 @@ public class PlayerMovement : NetworkBehaviour
     [Command]
     private void CmdNotifyWallHit()
     {
+        Debug.Log("[PlayerMovement] CmdNotifyWallHit: Reporting knockback wall hit to server");
         GetComponent<StatusEffectHandler>()?.OnKnockbackWallHit();
     }
 

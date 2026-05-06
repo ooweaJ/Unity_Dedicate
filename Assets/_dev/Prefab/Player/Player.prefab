@@ -56,6 +56,7 @@ GameObject:
   - component: {fileID: 5450027281985294688}
   - component: {fileID: 5353052779405045285}
   - component: {fileID: 2994282188269406790}
+  - component: {fileID: -6183108332194895443}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -336,60 +337,19 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  basicAttack:
-    attackName: "\uACF5\uACA9"
-    damageMultiplier: 1
+  skills:
+  - skillName: "\uC2A4\uD0AC"
     cooldown: 0.8
-    targetLayer:
-      serializedVersion: 2
-      m_Bits: 0
-    attackType: 0
-    meleeRange: 2.5
-    meleeAngle: 120
-    projectilePrefab: {fileID: 0}
-    projectileCount: 1
-    spreadAngle: 0
-    dashSpeed: 15
-    dashDuration: 0.3
-    dashDamageRadius: 0
-    knockbackForce: 0
-    hitEffect: 1
-  skill1Attack:
-    attackName: "\uACF5\uACA9"
-    damageMultiplier: 1
+    inputType: 0
+    actions: []
+  - skillName: "\uC2A4\uD0AC"
     cooldown: 0.8
-    targetLayer:
-      serializedVersion: 2
-      m_Bits: 0
-    attackType: 0
-    meleeRange: 2.5
-    meleeAngle: 120
-    projectilePrefab: {fileID: 0}
-    projectileCount: 1
-    spreadAngle: 0
-    dashSpeed: 15
-    dashDuration: 0.3
-    dashDamageRadius: 0
-    knockbackForce: 0
-    hitEffect: 1
-  skill2Attack:
-    attackName: "\uACF5\uACA9"
-    damageMultiplier: 1
+    inputType: 0
+    actions: []
+  - skillName: "\uC2A4\uD0AC"
     cooldown: 0.8
-    targetLayer:
-      serializedVersion: 2
-      m_Bits: 0
-    attackType: 0
-    meleeRange: 2.5
-    meleeAngle: 120
-    projectilePrefab: {fileID: 0}
-    projectileCount: 1
-    spreadAngle: 0
-    dashSpeed: 15
-    dashDuration: 0.3
-    dashDamageRadius: 0
-    knockbackForce: 0
-    hitEffect: 1
+    inputType: 0
+    actions: []
 --- !u!114 &5450027281985294688
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -439,6 +399,21 @@ MonoBehaviour:
   inBush: 0
   isRevealed: 0
   currentBushIdentity: {fileID: 0}
+--- !u!114 &-6183108332194895443
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6988632536861101562}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d35202181acccf54eb68e2bd5e0a27aa, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::StatusEffectHandler
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
 --- !u!1001 &5107495591285288626
 PrefabInstance:
   m_ObjectHideFlags: 0

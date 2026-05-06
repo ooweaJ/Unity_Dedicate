@@ -45,7 +45,15 @@ public class StatusEffectHandler : NetworkBehaviour
         {
             case StatusEffectType.Knockback:
                 if (effect.value > 0f)
-                    _movement?.RpcApplyKnockback(direction, effect.value);
+                {
+                    bool hasMovement = _movement != null;
+                    Debug.Log($"[StatusEffectHandler] Applying Knockback to {gameObject.name}: Force={effect.value}, Direction={direction}, HasMovement={hasMovement}, IsLocalPlayer={isLocalPlayer}");
+                    
+                    if (hasMovement)
+                        _movement.RpcApplyKnockback(direction, effect.value);
+                    else
+                        Debug.LogWarning($"[StatusEffectHandler] Cannot apply knockback to {gameObject.name} because PlayerMovement is missing!");
+                }
                 break;
 
             case StatusEffectType.Stun:
@@ -69,6 +77,7 @@ public class StatusEffectHandler : NetworkBehaviour
     [Server]
     public void OnKnockbackWallHit()
     {
+        Debug.Log($"[StatusEffectHandler] OnKnockbackWallHit: Applying stun for {WallStunDuration}s");
         ApplyStun(WallStunDuration);
     }
 
