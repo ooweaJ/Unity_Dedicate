@@ -49,8 +49,7 @@ public class PlayerStats : NetworkBehaviour, IDamageable
         float actualDamage = Mathf.Max(1f, info.Amount - defense);
         currentHp          = Mathf.Max(0f, currentHp - actualDamage);
 
-        if (info.Knockback > 0f)
-            GetComponent<Rigidbody>()?.AddForce(info.Direction * info.Knockback, ForceMode.Impulse);
+        ApplyStatusEffect(info.Effect, info.Direction, info.Attacker);
 
         RpcShowDamagePopup(actualDamage, transform.position + Vector3.up * 1.5f);
 
@@ -60,13 +59,17 @@ public class PlayerStats : NetworkBehaviour, IDamageable
 
         if (IsDead)
         {
-            // 킬 기록
             BattleManager.Instance?.RecordKill(attackerStats, this);
-
-            // 시각 효과는 ClientRpc, 게임 판정은 직접 서버에서
             RpcOnDeath(info.Attacker);
             BattleManager.Instance?.OnPlayerDead(this);
         }
+    }
+
+    [Server]
+    private void ApplyStatusEffect(StatusEffect effect, Vector3 direction, GameObject source)
+    {
+        if (effect.IsNone) return;
+        GetComponent<StatusEffectHandler>()?.Apply(effect, direction, source);
     }
 
     [ClientRpc]

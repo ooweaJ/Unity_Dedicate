@@ -4,8 +4,8 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 
 /// <summary>
-/// 입력 전담 컴포넌트 — InputAction 소유 및 이벤트 발행
-/// PlayerMovement, PlayerCombat 등이 이벤트를 구독해서 처리
+/// PC 입력 전담 — 이벤트 발행
+/// 모바일은 MobileCombatUI가 PlayerCombat을 직접 호출
 /// </summary>
 public class PlayerInputHandler : MonoBehaviour
 {
@@ -14,9 +14,11 @@ public class PlayerInputHandler : MonoBehaviour
 
     public event Action<Vector2> OnMove;
     public event Action          OnJump;
-    public event Action          OnAttack;
-    public event Action          OnSkill1;
-    public event Action          OnSkill2;
+
+    // Vector2 = XZ 평면 조준 방향(normalized), float = magnitude(TargetPoint 거리용, PC는 항상 1)
+    public event Action<Vector2, float> OnAttack;
+    public event Action<Vector2, float> OnSkill1;
+    public event Action<Vector2, float> OnSkill2;
 
     private NetworkIdentity netIdentity;
     private InputAction moveAction, jumpAction, attackAction, skill1Action, skill2Action;
@@ -48,39 +50,49 @@ public class PlayerInputHandler : MonoBehaviour
 
         jumpAction = new InputAction("Jump", InputActionType.Button);
         jumpAction.AddBinding("<Keyboard>/space");
-        jumpAction.AddBinding("<Gamepad>/buttonSouth");
         jumpAction.performed += _ => { if (IsControllable) OnJump?.Invoke(); };
 
         attackAction = new InputAction("Attack", InputActionType.Button);
         attackAction.AddBinding("<Mouse>/leftButton");
-        attackAction.performed += _ => { if (IsControllable) OnAttack?.Invoke(); };
+        attackAction.performed += _ => { if (IsControllable) OnAttack?.Invoke(GetMouseAimDir(), 1f); };
 
         skill1Action = new InputAction("Skill1", InputActionType.Button);
         skill1Action.AddBinding("<Keyboard>/q");
-        skill1Action.AddBinding("<Gamepad>/rightShoulder");
-        skill1Action.performed += _ => { if (IsControllable) OnSkill1?.Invoke(); };
+        skill1Action.performed += _ => { if (IsControllable) OnSkill1?.Invoke(GetMouseAimDir(), 1f); };
 
         skill2Action = new InputAction("Skill2", InputActionType.Button);
         skill2Action.AddBinding("<Keyboard>/e");
-        skill2Action.AddBinding("<Gamepad>/leftShoulder");
-        skill2Action.performed += _ => { if (IsControllable) OnSkill2?.Invoke(); };
+        skill2Action.performed += _ => { if (IsControllable) OnSkill2?.Invoke(GetMouseAimDir(), 1f); };
+    }
+
+    // 마우스 위치 → 캐릭터 기준 XZ 방향
+    private Vector2 GetMouseAimDir()
+    {
+        if (Camera.main == null) return new Vector2(transform.forward.x, transform.forward.z);
+
+        var plane = new Plane(Vector3.up, transform.position);
+        var ray   = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+
+        if (plane.Raycast(ray, out float dist))
+        {
+            Vector3 worldPos = ray.GetPoint(dist);
+            Vector3 dir = worldPos - transform.position;
+            dir.y = 0f;
+            if (dir.sqrMagnitude > 0.01f)
+                return new Vector2(dir.x, dir.z).normalized;
+        }
+        return new Vector2(transform.forward.x, transform.forward.z);
     }
 
     private void OnEnable()
     {
-        moveAction.Enable();
-        jumpAction.Enable();
-        attackAction.Enable();
-        skill1Action.Enable();
-        skill2Action.Enable();
+        moveAction.Enable();  jumpAction.Enable();
+        attackAction.Enable(); skill1Action.Enable(); skill2Action.Enable();
     }
 
     private void OnDisable()
     {
-        moveAction.Disable();
-        jumpAction.Disable();
-        attackAction.Disable();
-        skill1Action.Disable();
-        skill2Action.Disable();
+        moveAction.Disable();  jumpAction.Disable();
+        attackAction.Disable(); skill1Action.Disable(); skill2Action.Disable();
     }
 }

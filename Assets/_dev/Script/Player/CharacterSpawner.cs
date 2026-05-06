@@ -61,7 +61,7 @@ public class CharacterSpawner : NetworkBehaviour
 
         charStats?.SetData(rawData.battleData);
         charStats?.ApplyStats(battlePlayer.stats);
-        charWeapon?.Setup(rawData.battleData.basicAttack, rawData.battleData.skill1Attack, rawData.battleData.skill2Attack);
+        charWeapon?.Setup(rawData.battleData.skills);
 
         Debug.Log($"[SPAWNER] 서버 초기화: {rawData.displayName} | ATK: {battlePlayer.stats.atk}");
     }
@@ -79,7 +79,7 @@ public class CharacterSpawner : NetworkBehaviour
         SpawnVisual(rawData.modelPrefab);
 
         if (rawData.battleData != null)
-            charWeapon?.Setup(rawData.battleData.basicAttack, rawData.battleData.skill1Attack, rawData.battleData.skill2Attack);
+            charWeapon?.Setup(rawData.battleData.skills);
     }
 
     public CharacterDataSO GetCharacterData()

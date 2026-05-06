@@ -3,11 +3,8 @@ using UnityEngine;
 
 /// <summary>
 /// Mediator — 플레이어 컴포넌트 간 연결 배선 담당
-/// "어떤 입력이 어떤 컴포넌트로 가는지"를 여기서만 확인하면 됨
-///
-/// PlayerInputHandler : 입력 발행
-/// PlayerMovement     : 이동/점프/대시 처리
-/// PlayerCombat       : 공격/스킬 처리
+/// PC: PlayerInputHandler → PlayerCombat
+/// 모바일: MobileCombatUI → PlayerCombat (직접 호출, 여기서 관리 안 함)
 /// </summary>
 public class PlayerController : NetworkBehaviour
 {

@@ -2,38 +2,32 @@ using Mirror;
 using UnityEngine;
 
 /// <summary>
-/// 모든 투사체의 공통 기반
-/// HandleTriggerEnter()를 오버라이드해서 반사/관통 등 다른 행동 구현
+/// 모든 투사체의 공통 기반 — 수치와 외형 모두 ProjectileDataSO에서 주입
 ///
-/// 프리팹 구조:
-/// Projectile
-/// ├── NetworkIdentity  ← 필수 (NetworkServer.Spawn 동기화)
-/// ├── Rigidbody        ← useGravity: OFF, isKinematic: ON
-/// ├── SphereCollider   ← isTrigger: ON
-/// └── ProjectileBase (or 자식 클래스)
+/// behavior 프리팹 구조 (NetworkIdentity 필수, Registered Spawnable Prefabs 등록 필수):
+///   ProjectileBehavior
+///   ├── Rigidbody        (isKinematic ON, useGravity OFF)
+///   ├── SphereCollider   (isTrigger ON)
+///   └── ProjectileBase 또는 자식 컴포넌트
 ///
-/// NetworkManager → Registered Spawnable Prefabs 에 등록 필수
+/// 외형 프리팹은 Init 시점에 자식으로 동적 부착 → visualIndex SyncVar로 클라이언트 동기화
 /// </summary>
 public class ProjectileBase : NetworkBehaviour
 {
-    [Header("이동")]
-    public float speed    = 15f;
-    public float lifeTime = 3f;
+    // 외형 프리팹 인덱스 — Init에서 서버가 설정, 훅이 클라이언트에서 비주얼 부착
+    [SyncVar(hook = nameof(OnVisualIndexChanged))]
+    private int visualIndex = -1;
 
-    [Header("충돌 레이어")]
-    [SerializeField] private LayerMask hitLayers = ~0; // 인스펙터에서 Player, Obstacle만 체크
-
-    [Header("이펙트")]
-    public EffectType hitEffect = EffectType.ProjectileHit;
-
-    protected float      damage;
-    protected float      knockback;
-    protected GameObject owner;
+    protected float        speed;
+    protected float        lifeTime;
+    protected LayerMask    hitLayers;
+    protected EffectType   hitEffect;
+    protected float        damage;
+    protected StatusEffect statusEffect;
+    protected GameObject   owner;
 
     protected Rigidbody rb;
 
-    // 서버에서 설정 → 스폰 메시지에 포함되어 클라이언트에 자동 전달
-    // NetworkTransform 없이 클라이언트가 직접 이동 계산 → 부드러운 움직임
     [SyncVar] protected Vector3 direction;
 
     protected virtual void Awake()
@@ -41,13 +35,30 @@ public class ProjectileBase : NetworkBehaviour
         rb = GetComponent<Rigidbody>();
     }
 
-    public void Init(Vector3 dir, GameObject ownerObj, float dmg, float kb = 0f)
+    public virtual void Init(Vector3 dir, GameObject ownerObj, float dmg, ProjectileDataSO data)
     {
-        direction = dir.normalized;
-        owner     = ownerObj;
-        damage    = dmg;
-        knockback = kb;
+        direction    = dir.normalized;
+        owner        = ownerObj;
+        damage       = dmg;
+        speed        = data != null ? data.speed      : 15f;
+        lifeTime     = data != null ? data.lifeTime   : 3f;
+        hitLayers    = data != null ? data.hitLayers  : ~0;
+        hitEffect    = data != null ? data.hitEffect  : EffectType.ProjectileHit;
+        statusEffect = data != null ? data.onHitEffect : StatusEffect.None;
+        visualIndex  = ProjectileManager.Instance?.GetVisualIndex(data?.visualPrefab) ?? -1;
+
         Invoke(nameof(DestroySelf), lifeTime);
+    }
+
+    // SyncVar 훅 — 서버/클라이언트 모두 호출됨 (스폰 시 초기값 포함)
+    private void OnVisualIndexChanged(int _, int newIndex)
+    {
+        var visual = ProjectileManager.Instance?.GetVisual(newIndex);
+        if (visual == null) return;
+
+        var obj = Instantiate(visual, transform);
+        obj.transform.localPosition = Vector3.zero;
+        obj.transform.localRotation = Quaternion.identity;
     }
 
     protected virtual void FixedUpdate()
@@ -67,10 +78,6 @@ public class ProjectileBase : NetworkBehaviour
         HandleTriggerEnter(other);
     }
 
-    /// <summary>
-    /// 충돌 처리 — 자식 클래스에서 오버라이드 가능
-    /// 기본: 데미지 → 소멸
-    /// </summary>
     protected virtual void HandleTriggerEnter(Collider other)
     {
         OnHit(other);
@@ -79,7 +86,7 @@ public class ProjectileBase : NetworkBehaviour
 
     protected virtual void OnHit(Collider other)
     {
-        var info = new DamageInfo(damage, owner, direction, knockback);
+        var info = new DamageInfo(damage, owner, direction, statusEffect);
         other.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
         other.transform.root.GetComponent<PlayerAnimationController>()
             ?.RpcPlayHit(transform.position, hitEffect);

@@ -1,24 +1,21 @@
 using UnityEngine;
 
 [System.Serializable]
-public class AttackData
+public class SkillAction
 {
-    public string    attackName       = "공격";
-    public float     damageMultiplier = 1f;
-    public float     cooldown         = 0.8f;
-    public LayerMask targetLayer;
-    public AttackType attackType = AttackType.Melee;
+    public string          actionName       = "행동";
+    [Tooltip("이전 action 완료 후 대기 시간 (0이면 즉시)")]
+    public float           delay            = 0f;
+    public float           damageMultiplier = 1f;
+    public LayerMask       targetLayer;
+    public SkillActionType actionType = SkillActionType.Melee;
 
     [Header("근접")]
     public float meleeRange = 2.5f;
     public float meleeAngle = 120f;
 
     [Header("투사체")]
-    [Tooltip("행동(폭발/관통)은 프리팹 컴포넌트가 결정")]
-    public GameObject projectilePrefab;
-    public int        projectileCount = 1;
-    [Tooltip("전체 퍼짐 각도 (3발·30도 → 좌15°~우15°)")]
-    public float      spreadAngle     = 0f;
+    public ProjectileDataSO projectileData;
 
     [Header("돌진")]
     public float dashSpeed        = 15f;
@@ -26,10 +23,11 @@ public class AttackData
     [Tooltip("0이면 이동만, 양수면 종점에서 해당 반경 피해")]
     public float dashDamageRadius = 0f;
 
-    [Header("상태이상")]
-    public float knockbackForce = 0f;
+    [Header("상태이상 (근접/돌진)")]
+    [Tooltip("투사체는 ProjectileDataSO.onHitEffect 사용")]
+    public StatusEffect onHitEffect;
 
-    [Header("이펙트")]
-    [Tooltip("근접/돌진 피격 시 재생할 이펙트")]
+    [Header("이펙트 (근접/돌진)")]
+    [Tooltip("투사체는 ProjectileDataSO.hitEffect 사용")]
     public EffectType hitEffect = EffectType.MeleeHit;
 }

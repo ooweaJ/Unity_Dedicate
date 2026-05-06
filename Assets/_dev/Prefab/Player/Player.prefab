@@ -9,7 +9,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 3472486207733958798}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: 'CharacterModelRoot '
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -56,7 +56,7 @@ GameObject:
   - component: {fileID: 5450027281985294688}
   - component: {fileID: 5353052779405045285}
   - component: {fileID: 2994282188269406790}
-  m_Layer: 0
+  m_Layer: 6
   m_Name: Player
   m_TagString: Player
   m_Icon: {fileID: 0}
@@ -529,11 +529,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1984058379432112700, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_Layer
-      value: 0
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 1992448107970781536, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_Layer
-      value: 0
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 3419455506226768407, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_PresetInfoIsWorld
@@ -545,23 +545,23 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 3459339935210948148, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_Layer
-      value: 0
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 3726765837038382677, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_Layer
-      value: 0
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 5343023629321985158, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_Layer
-      value: 0
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 6288420852950507400, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_Layer
-      value: 0
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 7693279284980797842, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_Layer
-      value: 0
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 7790097510283850154, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_AnchorMax.x
@@ -573,7 +573,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7838438859927746327, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_Layer
-      value: 0
+      value: 6
       objectReference: {fileID: 0}
     - target: {fileID: 8023960165083474376, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_AnchorMax.x

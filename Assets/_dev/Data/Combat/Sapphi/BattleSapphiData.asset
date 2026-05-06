@@ -1,0 +1,102 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9bcbcf1abfec4dc4097f0ad07baf155f, type: 3}
+  m_Name: BattleSapphiData
+  m_EditorClassIdentifier: Assembly-CSharp::CharacterDataSO
+  weaponMeshPrefab: {fileID: 8384663211046332819, guid: f35679122b59888499aef7a69b391c05, type: 3}
+  moveSpeed: 5
+  deathEffect: 6
+  skills:
+  - skillName: "\uBC1C\uCC28\uAE30"
+    cooldown: 1
+    inputType: 0
+    actions:
+    - actionName: "\uBC1C\uCC28\uAE30"
+      delay: 0
+      damageMultiplier: 1
+      targetLayer:
+        serializedVersion: 2
+        m_Bits: 64
+      actionType: 0
+      meleeRange: 2
+      meleeAngle: 120
+      projectileData: {fileID: 0}
+      dashSpeed: 0
+      dashDuration: 0
+      dashDamageRadius: 0
+      onHitEffect:
+        type: 0
+        value: 0
+        duration: 0
+      hitEffect: 1
+  - skillName: "\uC704\uB85C \uC62C\uB824\uCC28\uAE30"
+    cooldown: 4
+    inputType: 0
+    actions:
+    - actionName: "\uC62C\uB824\uCC28\uAE30"
+      delay: 0
+      damageMultiplier: 1
+      targetLayer:
+        serializedVersion: 2
+        m_Bits: 64
+      actionType: 0
+      meleeRange: 2
+      meleeAngle: 120
+      projectileData: {fileID: 0}
+      dashSpeed: 0
+      dashDuration: 0
+      dashDamageRadius: 0
+      onHitEffect:
+        type: 1
+        value: 10
+        duration: 3
+      hitEffect: 2
+  - skillName: "\uB300\uC26C \uBC1C\uCC28\uAE30"
+    cooldown: 8
+    inputType: 0
+    actions:
+    - actionName: "\uB300\uC26C"
+      delay: 0
+      damageMultiplier: 0.5
+      targetLayer:
+        serializedVersion: 2
+        m_Bits: 64
+      actionType: 2
+      meleeRange: 0
+      meleeAngle: 0
+      projectileData: {fileID: 0}
+      dashSpeed: 10
+      dashDuration: 1
+      dashDamageRadius: 90
+      onHitEffect:
+        type: 0
+        value: 0
+        duration: 0
+      hitEffect: 1
+    - actionName: "\uBC1C\uCC28\uAE30"
+      delay: 1
+      damageMultiplier: 1
+      targetLayer:
+        serializedVersion: 2
+        m_Bits: 64
+      actionType: 0
+      meleeRange: 2
+      meleeAngle: 120
+      projectileData: {fileID: 0}
+      dashSpeed: 10
+      dashDuration: 1
+      dashDamageRadius: 90
+      onHitEffect:
+        type: 0
+        value: 0
+        duration: 0
+      hitEffect: 1

@@ -1,7 +1,7 @@
 using UnityEngine;
 
 /// <summary>
-/// 캐릭터 고유 전투 데이터 — 외형, 이동, 공격 3슬롯
+/// 캐릭터 고유 전투 데이터 — 외형, 이동, 스킬 3슬롯 (0=기본공격, 1=스킬1, 2=스킬2)
 /// Project 우클릭 → Create → Game/Character Data
 /// </summary>
 [CreateAssetMenu(fileName = "NewCharacter", menuName = "Game/Character Data")]
@@ -17,8 +17,6 @@ public class CharacterDataSO : ScriptableObject
     [Header("이펙트")]
     public EffectType deathEffect = EffectType.Death;
 
-    [Header("공격")]
-    public AttackData basicAttack;
-    public AttackData skill1Attack;
-    public AttackData skill2Attack;
+    [Header("스킬 (0=기본공격  1=스킬1  2=스킬2)")]
+    public SkillData[] skills = new SkillData[3];
 }

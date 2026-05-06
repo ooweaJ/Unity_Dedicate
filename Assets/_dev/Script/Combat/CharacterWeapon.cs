@@ -5,15 +5,13 @@ using UnityEngine;
 /// <summary>
 /// 전투 판정 핵심 컴포넌트
 ///
-/// 슬롯: index 0 = basicAttack / 1 = skill1Attack / 2 = skill2Attack
-/// 타입: Melee(OverlapSphere+각도) / Projectile(멀티샷 Spawn) / Dash(돌진+종점피해)
-/// 넉백은 DamageInfo.Knockback을 통해 PlayerStats.TakeDamage에서 처리
+/// 슬롯: index 0 = 기본공격 / 1 = 스킬1 / 2 = 스킬2
+/// 각 슬롯은 SkillData(cooldown + List&lt;SkillAction&gt;)로 정의되며,
+/// action이 순서대로 실행됨 (Dash→Melee 조합 등 자유롭게 구성 가능)
 /// </summary>
 public class CharacterWeapon : NetworkBehaviour
 {
-    [SerializeField] private AttackData basicAttack;
-    [SerializeField] private AttackData skill1Attack;
-    [SerializeField] private AttackData skill2Attack;
+    [SerializeField] private SkillData[] skills = new SkillData[3];
 
     private CharacterStats            stats;
     private PlayerAnimationController anim;
@@ -27,133 +25,195 @@ public class CharacterWeapon : NetworkBehaviour
     private float svrSkill1Time = -99f;
     private float svrSkill2Time = -99f;
 
-    // 입력 버퍼: 쿨다운 직전에 누른 입력을 최대 0.15초간 보존 후 재시도
-    private float _bufAttackTime = -99f;
-    private float _bufSkill1Time = -99f;
-    private float _bufSkill2Time = -99f;
+    // 입력 버퍼 — 쿨다운 직전 입력을 0.15초 보존 후 재시도 (조준 방향도 함께 저장)
+    private float   _bufAttackTime = -99f;
+    private float   _bufSkill1Time = -99f;
+    private float   _bufSkill2Time = -99f;
+    private Vector3 _bufAttackDir  = Vector3.forward;
+    private Vector3 _bufSkill1Dir  = Vector3.forward;
+    private Vector3 _bufSkill2Dir  = Vector3.forward;
+    private Vector3 _bufAttackTarget;
+    private Vector3 _bufSkill1Target;
+    private Vector3 _bufSkill2Target;
     private const float InputBufferWindow = 0.15f;
+
+    private StatusEffectHandler effectHandler;
 
     private void Awake()
     {
-        stats    = GetComponent<CharacterStats>();
-        anim     = GetComponent<PlayerAnimationController>();
-        movement = GetComponent<PlayerMovement>();
+        stats         = GetComponent<CharacterStats>();
+        anim          = GetComponent<PlayerAnimationController>();
+        movement      = GetComponent<PlayerMovement>();
+        effectHandler = GetComponent<StatusEffectHandler>();
     }
 
     private void Update()
     {
         if (!isLocalPlayer) return;
-        TryFlushBuffer(ref _bufAttackTime, basicAttack,  ref lastBasicTime,  0);
-        TryFlushBuffer(ref _bufSkill1Time, skill1Attack, ref lastSkill1Time, 1);
-        TryFlushBuffer(ref _bufSkill2Time, skill2Attack, ref lastSkill2Time, 2);
+        TryFlushBuffer(ref _bufAttackTime, ref _bufAttackDir, ref _bufAttackTarget, 0, ref lastBasicTime);
+        TryFlushBuffer(ref _bufSkill1Time, ref _bufSkill1Dir, ref _bufSkill1Target, 1, ref lastSkill1Time);
+        TryFlushBuffer(ref _bufSkill2Time, ref _bufSkill2Dir, ref _bufSkill2Target, 2, ref lastSkill2Time);
     }
 
-    private void TryFlushBuffer(ref float bufTime, AttackData data, ref float lastTime, int index)
+    private void TryFlushBuffer(ref float bufTime, ref Vector3 bufDir, ref Vector3 bufTarget,
+                                 int skillIndex, ref float lastTime)
     {
         if (Time.time - bufTime > InputBufferWindow) return;
-        if (!CanUse(data, ref lastTime)) return;
+        if (!CanUse(skillIndex, ref lastTime)) return;
         bufTime = -99f;
-        CmdUseAttack(transform.position, transform.forward, index);
+        CmdUseAttack(transform.position, bufDir, bufTarget, skillIndex);
     }
 
-    public void Setup(AttackData basic, AttackData skill1, AttackData skill2)
+    public void Setup(SkillData[] skillData)
     {
-        basicAttack  = basic;
-        skill1Attack = skill1;
-        skill2Attack = skill2;
+        skills = skillData;
     }
 
     // ─── 공개 API (PlayerCombat에서 호출) ────────────────────────────────
-    public void UseBasicAttack()
+    public void UseBasicAttack(Vector3 aimDir, float magnitude = 1f)
     {
-        if (!CanUse(basicAttack, ref lastBasicTime))
+        if (!CanUse(0, ref lastBasicTime))
         {
-            if (isLocalPlayer && basicAttack != null) _bufAttackTime = Time.time;
+            if (isLocalPlayer && GetSkill(0) != null)
+            {
+                _bufAttackTime   = Time.time;
+                _bufAttackDir    = aimDir;
+                _bufAttackTarget = ComputeTargetPos(0, aimDir, magnitude);
+            }
             return;
         }
         _bufAttackTime = -99f;
-        CmdUseAttack(transform.position, transform.forward, 0);
+        CmdUseAttack(transform.position, aimDir, ComputeTargetPos(0, aimDir, magnitude), 0);
     }
 
-    public void UseSkill1Attack()
+    public void UseSkill1Attack(Vector3 aimDir, float magnitude = 1f)
     {
-        if (!CanUse(skill1Attack, ref lastSkill1Time))
+        if (!CanUse(1, ref lastSkill1Time))
         {
-            if (isLocalPlayer && skill1Attack != null) _bufSkill1Time = Time.time;
+            if (isLocalPlayer && GetSkill(1) != null)
+            {
+                _bufSkill1Time   = Time.time;
+                _bufSkill1Dir    = aimDir;
+                _bufSkill1Target = ComputeTargetPos(1, aimDir, magnitude);
+            }
             return;
         }
         _bufSkill1Time = -99f;
-        CmdUseAttack(transform.position, transform.forward, 1);
+        CmdUseAttack(transform.position, aimDir, ComputeTargetPos(1, aimDir, magnitude), 1);
     }
 
-    public void UseSkill2Attack()
+    public void UseSkill2Attack(Vector3 aimDir, float magnitude = 1f)
     {
-        if (!CanUse(skill2Attack, ref lastSkill2Time))
+        if (!CanUse(2, ref lastSkill2Time))
         {
-            if (isLocalPlayer && skill2Attack != null) _bufSkill2Time = Time.time;
+            if (isLocalPlayer && GetSkill(2) != null)
+            {
+                _bufSkill2Time   = Time.time;
+                _bufSkill2Dir    = aimDir;
+                _bufSkill2Target = ComputeTargetPos(2, aimDir, magnitude);
+            }
             return;
         }
         _bufSkill2Time = -99f;
-        CmdUseAttack(transform.position, transform.forward, 2);
+        CmdUseAttack(transform.position, aimDir, ComputeTargetPos(2, aimDir, magnitude), 2);
     }
 
-    private bool CanUse(AttackData data, ref float lastTime)
+    // TargetPoint 스킬: 조이스틱 magnitude로 착탄거리 결정
+    private Vector3 ComputeTargetPos(int skillIndex, Vector3 aimDir, float magnitude)
     {
-        if (!isLocalPlayer) { Debug.Log("[WEAPON] CanUse 실패: 로컬 플레이어 아님");           return false; }
-        if (data == null)   { Debug.Log("[WEAPON] CanUse 실패: AttackData null (Setup 안됨?)"); return false; }
-        float remain = data.cooldown - (Time.time - lastTime);
-        if (remain > 0f)    { Debug.Log($"[WEAPON] CanUse 실패: 쿨다운 {remain:F2}초 남음");   return false; }
+        var skill = GetSkill(skillIndex);
+        if (skill == null || skill.inputType != SkillInputType.TargetPoint)
+            return Vector3.zero;
+
+        float maxDist = 10f;
+        if (skill.actions != null)
+        {
+            foreach (var action in skill.actions)
+            {
+                if (action.actionType == SkillActionType.Projectile &&
+                    action.projectileData is ExplosiveProjectileDataSO expData)
+                {
+                    maxDist = expData.maxDistance;
+                    break;
+                }
+            }
+        }
+        return transform.position + aimDir * (maxDist * Mathf.Clamp01(magnitude));
+    }
+
+    private bool CanUse(int skillIndex, ref float lastTime)
+    {
+        if (!isLocalPlayer)                          { Debug.Log("[WEAPON] CanUse 실패: 로컬 플레이어 아님");             return false; }
+        if (effectHandler != null && effectHandler.IsStunned) { Debug.Log("[WEAPON] CanUse 실패: 스턴 상태");                  return false; }
+        var skill = GetSkill(skillIndex);
+        if (skill == null)                           { Debug.Log("[WEAPON] CanUse 실패: SkillData null (Setup 안됨?)"); return false; }
+        float remain = skill.cooldown - (Time.time - lastTime);
+        if (remain > 0f)                             { Debug.Log($"[WEAPON] CanUse 실패: 쿨다운 {remain:F2}초 남음");   return false; }
         lastTime = Time.time;
         return true;
     }
 
-    // HitBox에서 참조
-    public float GetFinalDamage(int attackIndex = 0)
+    // 쿨다운 비율 반환 (0=준비완료, 1=가득참) — MobileCombatUI 쿨타임 UI용
+    public float GetCooldownRatio(int skillIndex)
     {
-        var data = GetData(attackIndex);
-        if (data == null) return 20f;
+        var skill = GetSkill(skillIndex);
+        if (skill == null || skill.cooldown <= 0f) return 0f;
+        float lastTime = skillIndex == 0 ? lastBasicTime : skillIndex == 1 ? lastSkill1Time : lastSkill2Time;
+        return 1f - Mathf.Clamp01((Time.time - lastTime) / skill.cooldown);
+    }
+
+    // HitBox에서 참조
+    public float GetFinalDamage(int skillIndex = 0)
+    {
+        var skill = GetSkill(skillIndex);
+        if (skill == null || skill.actions == null || skill.actions.Count == 0) return 20f;
         float baseAtk = stats != null ? stats.FinalAttack : 20f;
-        return baseAtk * data.damageMultiplier;
+        return baseAtk * skill.actions[0].damageMultiplier;
     }
 
     // ─── Command ──────────────────────────────────────────────────────────
     [Command]
-    private void CmdUseAttack(Vector3 origin, Vector3 dir, int attackIndex)
+    private void CmdUseAttack(Vector3 origin, Vector3 aimDir, Vector3 targetPos, int skillIndex)
     {
-        if (!ServerCheckCooldown(attackIndex, GetData(attackIndex)))
+        if (!ServerCheckCooldown(skillIndex, GetSkill(skillIndex)))
         {
-            Debug.Log($"[WEAPON] 서버 쿨다운 차단: index={attackIndex}");
+            Debug.Log($"[WEAPON] 서버 쿨다운 차단: index={skillIndex}");
             return;
         }
-        RunAttack(origin, dir, attackIndex);
+        BroadcastAnimation(skillIndex);
+        StartCoroutine(ExecuteSkill(origin, aimDir, targetPos, skillIndex));
     }
 
-    private void RunAttack(Vector3 origin, Vector3 dir, int attackIndex)
+    [Server]
+    private IEnumerator ExecuteSkill(Vector3 origin, Vector3 aimDir, Vector3 targetPos, int skillIndex)
     {
-        var data = GetData(attackIndex);
-        if (data == null) { Debug.LogError($"[WEAPON] index {attackIndex} AttackData null"); return; }
+        var skill = GetSkill(skillIndex);
+        if (skill?.actions == null) yield break;
 
-        float   dmg  = GetFinalDamage(attackIndex);
-        Vector3 nDir = dir.normalized;
+        Vector3 nDir = aimDir.normalized;
 
-        Debug.Log($"[WEAPON] 공격 실행 | index={attackIndex} type={data.attackType} dmg={dmg:F1}");
-
-        switch (data.attackType)
+        foreach (var action in skill.actions)
         {
-            case AttackType.Melee:      PerformMelee(origin, nDir, data, dmg);      break;
-            case AttackType.Projectile: PerformProjectile(origin, nDir, data, dmg); break;
-            case AttackType.Dash:       PerformDash(nDir, data, dmg);               break;
-        }
+            if (action.delay > 0f) yield return new WaitForSeconds(action.delay);
 
-        BroadcastAnimation(attackIndex);
+            float dmg = (stats != null ? stats.FinalAttack : 20f) * action.damageMultiplier;
+            Debug.Log($"[WEAPON] action 실행 | skill={skillIndex} type={action.actionType} dmg={dmg:F1}");
+
+            switch (action.actionType)
+            {
+                case SkillActionType.Melee:      PerformMelee(origin, nDir, action, dmg);            break;
+                case SkillActionType.Projectile: PerformProjectile(origin, nDir, targetPos, action, dmg); break;
+                case SkillActionType.Dash:       PerformDash(nDir, action, dmg);                     break;
+            }
+        }
     }
 
-    private bool ServerCheckCooldown(int index, AttackData data)
+    private bool ServerCheckCooldown(int index, SkillData skill)
     {
+        if (skill == null) return false;
         float now  = (float)NetworkTime.time;
         float last = index == 0 ? svrBasicTime : index == 1 ? svrSkill1Time : svrSkill2Time;
-        if (now - last < data.cooldown) return false;
-
+        if (now - last < skill.cooldown) return false;
         switch (index)
         {
             case 0: svrBasicTime  = now; break;
@@ -165,40 +225,47 @@ public class CharacterWeapon : NetworkBehaviour
 
     // ─── 근접 ─────────────────────────────────────────────────────────────
     [Server]
-    private void PerformMelee(Vector3 origin, Vector3 dir, AttackData data, float dmg)
+    private void PerformMelee(Vector3 origin, Vector3 dir, SkillAction action, float dmg)
     {
-        Vector3    center   = origin + dir * (data.meleeRange * 0.5f);
-        Collider[] hits     = Physics.OverlapSphere(center, data.meleeRange * 0.5f, data.targetLayer);
+        Vector3    center   = origin + dir * (action.meleeRange * 0.5f);
+        Collider[] hits     = Physics.OverlapSphere(center, action.meleeRange * 0.5f, action.targetLayer);
         bool       hitEnemy = false;
 
         foreach (var hit in hits)
         {
             if (hit.transform.root.gameObject == gameObject) continue;
-            if (Vector3.Angle(dir, (hit.transform.position - origin).normalized) > data.meleeAngle * 0.5f) continue;
+            if (Vector3.Angle(dir, (hit.transform.position - origin).normalized) > action.meleeAngle * 0.5f) continue;
 
-            var info = new DamageInfo(dmg, gameObject, dir, data.knockbackForce);
+            var info = new DamageInfo(dmg, gameObject, dir, action.onHitEffect);
             hit.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
             hit.transform.root.GetComponent<PlayerAnimationController>()
-                ?.RpcPlayHit(hit.transform.position, data.hitEffect);
+                ?.RpcPlayHit(hit.transform.position, action.hitEffect);
             hitEnemy = true;
         }
 
-        if (hitEnemy)
-            GetComponent<PlayerBushState>()?.RevealTemporarily();
+        if (hitEnemy) GetComponent<PlayerBushState>()?.RevealTemporarily();
     }
 
-    // ─── 투사체 (멀티샷) ───────────────────────────────────────────────────
+    // ─── 투사체 ───────────────────────────────────────────────────────────
     [Server]
-    private void PerformProjectile(Vector3 origin, Vector3 dir, AttackData data, float dmg)
+    private void PerformProjectile(Vector3 origin, Vector3 dir, Vector3 targetPos,
+                                    SkillAction action, float dmg)
     {
-        if (data.projectilePrefab == null)
+        var data = action.projectileData;
+        if (data == null || data.visualPrefab == null)
         {
-            Debug.LogError($"[WEAPON] {data.attackName}: projectilePrefab이 null — AttackData 인스펙터 확인");
+            Debug.LogError($"[WEAPON] {action.actionName}: ProjectileDataSO 또는 prefab 미연결");
             return;
         }
 
-        int count = Mathf.Max(1, data.projectileCount);
-        Debug.Log($"[WEAPON] 투사체 스폰: {count}발 / 퍼짐={data.spreadAngle}°");
+        var behaviorPrefab = ProjectileManager.Instance?.GetBehaviorPrefab(data.projectileType);
+        if (behaviorPrefab == null)
+        {
+            Debug.LogError($"[WEAPON] ProjectileManager에 {data.projectileType} 프리팹 미등록");
+            return;
+        }
+
+        int count = Mathf.Max(1, data.count);
 
         for (int i = 0; i < count; i++)
         {
@@ -206,48 +273,42 @@ public class CharacterWeapon : NetworkBehaviour
             Vector3 shotDir  = Quaternion.AngleAxis(t * data.spreadAngle, Vector3.up) * dir;
             Vector3 spawnPos = origin + Vector3.up * 0.5f;
 
-            GameObject obj = Instantiate(data.projectilePrefab, spawnPos, Quaternion.LookRotation(shotDir));
-            var proj = obj.GetComponent<ProjectileBase>();
-            if (proj == null)
-            {
-                Debug.LogError($"[WEAPON] projectilePrefab '{data.projectilePrefab.name}'에 ProjectileBase 컴포넌트 없음");
-                Destroy(obj);
-                continue;
-            }
-            proj.Init(shotDir, gameObject, dmg, data.knockbackForce);
+            GameObject obj  = Instantiate(behaviorPrefab, spawnPos, Quaternion.LookRotation(shotDir));
+            var        proj = obj.GetComponent<ProjectileBase>();
+            if (proj == null) { Destroy(obj); continue; }
+
+            proj.Init(shotDir, gameObject, dmg, data);
             NetworkServer.Spawn(obj);
-            Debug.Log($"[WEAPON] 투사체 {i + 1}번 스폰 완료: pos={spawnPos}");
         }
     }
 
     // ─── 돌진 ─────────────────────────────────────────────────────────────
     [Server]
-    private void PerformDash(Vector3 dir, AttackData data, float dmg)
+    private void PerformDash(Vector3 dir, SkillAction action, float dmg)
     {
-        RpcStartDash(dir, data.dashSpeed, data.dashDuration);
-        if (data.dashDamageRadius > 0f)
-            StartCoroutine(DashDamageAfterDelay(dir, data, dmg));
+        RpcStartDash(dir, action.dashSpeed, action.dashDuration);
+        if (action.dashDamageRadius > 0f)
+            StartCoroutine(DashDamageAfterDelay(dir, action, dmg));
     }
 
-    private IEnumerator DashDamageAfterDelay(Vector3 dir, AttackData data, float dmg)
+    private IEnumerator DashDamageAfterDelay(Vector3 dir, SkillAction action, float dmg)
     {
-        yield return new WaitForSeconds(data.dashDuration);
+        yield return new WaitForSeconds(action.dashDuration);
 
-        Collider[] hits     = Physics.OverlapSphere(transform.position, data.dashDamageRadius, data.targetLayer);
+        Collider[] hits     = Physics.OverlapSphere(transform.position, action.dashDamageRadius, action.targetLayer);
         bool       hitEnemy = false;
 
         foreach (var hit in hits)
         {
             if (hit.transform.root.gameObject == gameObject) continue;
-            var info = new DamageInfo(dmg, gameObject, dir, data.knockbackForce);
+            var info = new DamageInfo(dmg, gameObject, dir, action.onHitEffect);
             hit.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
             hit.transform.root.GetComponent<PlayerAnimationController>()
-                ?.RpcPlayHit(hit.transform.position, data.hitEffect);
+                ?.RpcPlayHit(hit.transform.position, action.hitEffect);
             hitEnemy = true;
         }
 
-        if (hitEnemy)
-            GetComponent<PlayerBushState>()?.RevealTemporarily();
+        if (hitEnemy) GetComponent<PlayerBushState>()?.RevealTemporarily();
     }
 
     [ClientRpc]
@@ -257,9 +318,9 @@ public class CharacterWeapon : NetworkBehaviour
     }
 
     [Server]
-    private void BroadcastAnimation(int attackIndex)
+    private void BroadcastAnimation(int skillIndex)
     {
-        switch (attackIndex)
+        switch (skillIndex)
         {
             case 0: anim?.RpcPlayAttack(); break;
             case 1: anim?.RpcPlaySkill();  break;
@@ -267,14 +328,9 @@ public class CharacterWeapon : NetworkBehaviour
         }
     }
 
-    private AttackData GetData(int index)
+    private SkillData GetSkill(int index)
     {
-        switch (index)
-        {
-            case 0:  return basicAttack;
-            case 1:  return skill1Attack;
-            case 2:  return skill2Attack;
-            default: return null;
-        }
+        if (skills == null || index < 0 || index >= skills.Length) return null;
+        return skills[index];
     }
 }

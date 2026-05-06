@@ -3,8 +3,8 @@ using Mirror;
 using UnityEngine;
 
 /// <summary>
-/// 물리 이동 전담 컴포넌트 — 이동/점프/대시
-/// 이벤트 구독은 PlayerController(Mediator)가 담당
+/// 물리 이동 전담 컴포넌트 — 이동/점프/대시/상태이상 반영
+/// 상태이상(스턴·슬로우·넉백) 상태에서의 이동 차단은 이 컴포넌트가 담당
 /// </summary>
 [RequireComponent(typeof(Rigidbody))]
 [RequireComponent(typeof(CapsuleCollider))]
@@ -27,6 +27,15 @@ public class PlayerMovement : NetworkBehaviour
     private bool    isJumping     = false;
     private int     groundContact = 0;
 
+    // 넉백 상태 — RpcApplyKnockback에서 설정, Move()에서 체크
+    private bool  _isKnockedBack    = false;
+    private float _knockbackEndTime = 0f;
+    private const float KnockbackMoveLockDuration = 0.3f;
+
+    // 스턴·슬로우 — StatusEffectHandler SyncVar 훅에서 설정
+    private bool  _isStunned      = false;
+    private float _slowMultiplier = 1f;
+
     private const float MaxGroundAngle = 45f;
 
     private bool IsControllable => isLocalPlayer || (input != null && input.localMode);
@@ -46,7 +55,7 @@ public class PlayerMovement : NetworkBehaviour
 
     public void HandleJump()
     {
-        if (!IsControllable) return;
+        if (!IsControllable || _isStunned) return;
         if (!isGrounded || isJumping) return;
 
         isJumping  = true;
@@ -65,9 +74,43 @@ public class PlayerMovement : NetworkBehaviour
         SyncAnimation();
     }
 
+    // ─── 상태이상 세터 (StatusEffectHandler SyncVar 훅에서 호출) ─────────
+    public void SetStunned(bool stunned)
+    {
+        _isStunned = stunned;
+        if (stunned)
+        {
+            _isKnockedBack    = false;
+            rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
+        }
+    }
+
+    public void SetSlowMultiplier(float multiplier)
+    {
+        _slowMultiplier = Mathf.Clamp(multiplier, 0f, 1f);
+    }
+
+    // ─── 넉백 RPC ─────────────────────────────────────────────────────────
+    [ClientRpc]
+    public void RpcApplyKnockback(Vector3 dir, float force)
+    {
+        if (!isLocalPlayer) return;
+        Vector3 flat = new Vector3(dir.x, 0f, dir.z).normalized;
+        rb.linearVelocity = new Vector3(flat.x * force, rb.linearVelocity.y, flat.z * force);
+        _isKnockedBack    = true;
+        _knockbackEndTime = Time.time + KnockbackMoveLockDuration;
+    }
+
+    // ─── 이동 ─────────────────────────────────────────────────────────────
     private void Move()
     {
-        if (isDashing) return;
+        if (isDashing || _isStunned) return;
+
+        if (_isKnockedBack)
+        {
+            if (Time.time >= _knockbackEndTime) _isKnockedBack = false;
+            else return;
+        }
 
         Vector3 dir = new Vector3(moveInput.x, 0f, moveInput.y);
 
@@ -77,11 +120,13 @@ public class PlayerMovement : NetworkBehaviour
             return;
         }
 
-        rb.linearVelocity = new Vector3(dir.x * moveSpeed, rb.linearVelocity.y, dir.z * moveSpeed);
+        float speed = moveSpeed * _slowMultiplier;
+        rb.linearVelocity = new Vector3(dir.x * speed, rb.linearVelocity.y, dir.z * speed);
         transform.rotation = Quaternion.RotateTowards(
             transform.rotation, Quaternion.LookRotation(dir), rotateSpeed * Time.fixedDeltaTime);
     }
 
+    // ─── 대시 ─────────────────────────────────────────────────────────────
     public void StartDash(Vector3 dir, float speed, float duration)
     {
         StartCoroutine(DashCoroutine(dir, speed, duration));
@@ -103,35 +148,31 @@ public class PlayerMovement : NetworkBehaviour
         isDashing = false;
     }
 
-    private void SyncAnimation()
-    {
-        if (anim == null) return;
-
-        float speed    = moveInput.magnitude;
-        float dir      = CalculateDirection();
-        float jumpH    = isGrounded ? 0f : Mathf.Max(0f, rb.linearVelocity.y);
-        float gravCtrl = isGrounded ? 0f : rb.linearVelocity.y;
-
-        anim.UpdateMovementParams(speed, dir, jumpH, gravCtrl, !isGrounded, speed < 0.05f && isGrounded);
-    }
-
-    private float CalculateDirection()
-    {
-        if (moveInput.magnitude < 0.1f) return 0f;
-        Vector3 dir   = new Vector3(moveInput.x, 0f, moveInput.y);
-        float   angle = Vector3.SignedAngle(transform.forward, dir, Vector3.up);
-        return Mathf.Clamp(angle / 180f, -1f, 1f);
-    }
-
-    // ─── 지면 판정 ───────────────────────────────────────────────────────
+    // ─── 충돌 판정 ────────────────────────────────────────────────────────
     private void OnCollisionEnter(Collision col)
     {
+        bool touchedGround = false;
+        bool touchedWall   = false;
+
         foreach (ContactPoint c in col.contacts)
         {
-            if (Vector3.Angle(c.normal, Vector3.up) > MaxGroundAngle) continue;
+            if (Vector3.Angle(c.normal, Vector3.up) <= MaxGroundAngle)
+                touchedGround = true;
+            else
+                touchedWall = true;
+        }
+
+        if (touchedGround)
+        {
             groundContact++;
             if (rb.linearVelocity.y <= 0.1f) isJumping = false;
-            return;
+        }
+
+        // 넉백 중 벽 충돌 → 서버에 기절 요청
+        if (touchedWall && _isKnockedBack && isLocalPlayer)
+        {
+            _isKnockedBack = false;
+            CmdNotifyWallHit();
         }
     }
 
@@ -152,5 +193,32 @@ public class PlayerMovement : NetworkBehaviour
     {
         groundContact = Mathf.Max(0, groundContact - 1);
         if (groundContact == 0) isGrounded = false;
+    }
+
+    [Command]
+    private void CmdNotifyWallHit()
+    {
+        GetComponent<StatusEffectHandler>()?.OnKnockbackWallHit();
+    }
+
+    // ─── 애니메이션 동기화 ────────────────────────────────────────────────
+    private void SyncAnimation()
+    {
+        if (anim == null) return;
+
+        float speed    = _isStunned ? 0f : moveInput.magnitude;
+        float dir      = CalculateDirection();
+        float jumpH    = isGrounded ? 0f : Mathf.Max(0f, rb.linearVelocity.y);
+        float gravCtrl = isGrounded ? 0f : rb.linearVelocity.y;
+
+        anim.UpdateMovementParams(speed, dir, jumpH, gravCtrl, !isGrounded, speed < 0.05f && isGrounded);
+    }
+
+    private float CalculateDirection()
+    {
+        if (moveInput.magnitude < 0.1f) return 0f;
+        Vector3 dir   = new Vector3(moveInput.x, 0f, moveInput.y);
+        float   angle = Vector3.SignedAngle(transform.forward, dir, Vector3.up);
+        return Mathf.Clamp(angle / 180f, -1f, 1f);
     }
 }

@@ -22,3 +22,6 @@ MonoBehaviour:
   - type: 6
     prefab: {fileID: 100006, guid: bcaff8fc36e95584bb27cc3cf7c6cb14, type: 3}
     lifeTime: 2.5
+  - type: 4
+    prefab: {fileID: 1301651855990048, guid: b1ed2bae6bf3e734aaaef3979fbb9a8e, type: 3}
+    lifeTime: 2.5
