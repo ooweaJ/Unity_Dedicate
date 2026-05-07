@@ -37,6 +37,7 @@ MonoBehaviour:
         type: 0
         value: 0
         duration: 0
+        interval: 0
       hitEffect: 1
   - skillName: "\uC704\uB85C \uC62C\uB824\uCC28\uAE30"
     cooldown: 4
@@ -59,7 +60,8 @@ MonoBehaviour:
         type: 1
         value: 10
         duration: 3
-      hitEffect: 2
+        interval: 0
+      hitEffect: 1
   - skillName: "\uB300\uC26C \uBC1C\uCC28\uAE30"
     cooldown: 8
     inputType: 0
@@ -74,13 +76,14 @@ MonoBehaviour:
       meleeRange: 0
       meleeAngle: 0
       projectileData: {fileID: 0}
-      dashSpeed: 10
-      dashDuration: 1
-      dashDamageRadius: 90
+      dashSpeed: 5
+      dashDuration: 0.5
+      dashDamageRadius: 10
       onHitEffect:
-        type: 0
-        value: 0
-        duration: 0
+        type: 1
+        value: 1
+        duration: 0.5
+        interval: 0
       hitEffect: 1
     - actionName: "\uBC1C\uCC28\uAE30"
       delay: 1
@@ -90,13 +93,14 @@ MonoBehaviour:
         m_Bits: 64
       actionType: 0
       meleeRange: 2
-      meleeAngle: 120
+      meleeAngle: 90
       projectileData: {fileID: 0}
-      dashSpeed: 10
-      dashDuration: 1
-      dashDamageRadius: 90
+      dashSpeed: 0
+      dashDuration: 0
+      dashDamageRadius: 0
       onHitEffect:
-        type: 0
-        value: 0
-        duration: 0
+        type: 1
+        value: 5
+        duration: 0.5
+        interval: 0
       hitEffect: 1

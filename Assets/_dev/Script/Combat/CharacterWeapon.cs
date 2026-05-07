@@ -180,8 +180,22 @@ public class CharacterWeapon : NetworkBehaviour
             Debug.Log($"[WEAPON] 서버 쿨다운 차단: index={skillIndex}");
             return;
         }
+
+        Vector3 flatDir = new Vector3(aimDir.x, 0f, aimDir.z).normalized;
+        if (flatDir != Vector3.zero)
+        {
+            transform.rotation = Quaternion.LookRotation(flatDir);
+            RpcFaceDirection(flatDir);
+        }
+
         BroadcastAnimation(skillIndex);
         StartCoroutine(ExecuteSkill(origin, aimDir, targetPos, skillIndex));
+    }
+
+    [ClientRpc]
+    private void RpcFaceDirection(Vector3 dir)
+    {
+        transform.rotation = Quaternion.LookRotation(dir);
     }
 
     [Server]
@@ -265,19 +279,44 @@ public class CharacterWeapon : NetworkBehaviour
             return;
         }
 
+        bool isTargetReached = data is ExplosiveProjectileDataSO expSOCheck &&
+                               expSOCheck.trigger == ExplosionTrigger.OnTargetReached;
+
         int count = Mathf.Max(1, data.count);
 
         for (int i = 0; i < count; i++)
         {
             float   t        = count == 1 ? 0f : (float)i / (count - 1) - 0.5f;
-            Vector3 shotDir  = Quaternion.AngleAxis(t * data.spreadAngle, Vector3.up) * dir;
             Vector3 spawnPos = origin + Vector3.up * 0.5f;
+
+            Vector3 shotDir;
+            Vector3 clampedTarget = targetPos;
+
+            if (isTargetReached && targetPos != Vector3.zero && data is ExplosiveProjectileDataSO expSO)
+            {
+                // XZ 거리로 최대 사거리 클램프
+                Vector3 toTarget = new Vector3(targetPos.x - spawnPos.x, 0f, targetPos.z - spawnPos.z);
+                if (toTarget.magnitude > expSO.maxDistance)
+                    clampedTarget = spawnPos + toTarget.normalized * expSO.maxDistance;
+                clampedTarget.y = spawnPos.y;
+
+                shotDir = new Vector3(clampedTarget.x - spawnPos.x, 0f, clampedTarget.z - spawnPos.z).normalized;
+            }
+            else
+            {
+                shotDir = Quaternion.AngleAxis(t * data.spreadAngle, Vector3.up) * dir;
+            }
 
             GameObject obj  = Instantiate(behaviorPrefab, spawnPos, Quaternion.LookRotation(shotDir));
             var        proj = obj.GetComponent<ProjectileBase>();
             if (proj == null) { Destroy(obj); continue; }
 
             proj.Init(shotDir, gameObject, dmg, data);
+
+            // SetTargetPosition은 NetworkServer.Spawn 이전에 호출 — 초기 SyncVar 값으로 클라이언트에 전달
+            if (isTargetReached && proj is ExplosiveProjectile expProj)
+                expProj.SetTargetPosition(clampedTarget);
+
             NetworkServer.Spawn(obj);
         }
     }

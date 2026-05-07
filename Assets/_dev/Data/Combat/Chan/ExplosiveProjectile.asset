@@ -13,22 +13,26 @@ MonoBehaviour:
   m_Name: ExplosiveProjectile
   m_EditorClassIdentifier: Assembly-CSharp::ExplosiveProjectileDataSO
   projectileType: 0
-  visualPrefab: {fileID: 0}
+  visualPrefab: {fileID: 3342188441488164344, guid: b66ab4b1254c1874a90bcf2f2d5d9987, type: 3}
   speed: 15
   lifeTime: 3
   count: 1
   spreadAngle: 0
   hitLayers:
     serializedVersion: 2
-    m_Bits: 0
+    m_Bits: 320
   onHitEffect:
     type: 0
     value: 0
     duration: 0
-  hitEffect: 3
+    interval: 0
+  hitEffect: 0
+  trigger: 0
+  maxDistance: 10
   explosionRadius: 3
   explosionInnerRadius: 0
   explosionMultiplier: 1.5
   explosionTargetLayer:
     serializedVersion: 2
     m_Bits: 0
+  explosionEffect: 4

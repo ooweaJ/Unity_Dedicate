@@ -53,6 +53,8 @@ public class PlayerBushState : NetworkBehaviour
             _fadeMats[i]     = CreateFadeMaterialArray(_originalMats[i], InBushAlpha);
         }
 
+        // 렌더러 캐싱 이후 SyncVar가 이미 바뀐 상태일 수 있으므로 즉시 재계산
+        _visibilityDirty = false;
         UpdateVisibility();
     }
 
@@ -113,33 +115,37 @@ public class PlayerBushState : NetworkBehaviour
 
     // ── SyncVar Hooks (클라이언트) ────────────────────────────────────────────
 
-    private void OnInBushChanged(bool _, bool __)       => UpdateVisibility();
-    private void OnIsRevealedChanged(bool _, bool __)   => UpdateVisibility();
+    // SyncVar가 같은 프레임에 여러 개 바뀔 수 있으므로 dirty 플래그만 세우고
+    // LateUpdate에서 한 번만 계산 → 중간 상태로 깜빡이는 현상 방지
+    private bool _visibilityDirty;
+
+    private void OnInBushChanged(bool _, bool __)       => _visibilityDirty = true;
+    private void OnIsRevealedChanged(bool _, bool __)   => _visibilityDirty = true;
 
     private void OnCurrentBushChanged(NetworkIdentity oldBush, NetworkIdentity newBush)
     {
-        // 기존 부쉬 이벤트 구독 해제
         if (_subscribedBush != null)
         {
-            _subscribedBush.OnVisionMaskChanged -= UpdateVisibility;
+            _subscribedBush.OnVisionMaskChanged -= MarkDirty;
             _subscribedBush = null;
         }
 
-        // 새 부쉬 이벤트 구독
         if (newBush != null)
         {
             _subscribedBush = newBush.GetComponent<BushZone>();
             if (_subscribedBush != null)
-                _subscribedBush.OnVisionMaskChanged += UpdateVisibility;
+                _subscribedBush.OnVisionMaskChanged += MarkDirty;
         }
 
-        // 로컬 플레이어: 부쉬 메쉬 반투명 전환
-        if (isLocalPlayer)
-        {
-            oldBush?.GetComponent<BushZone>()?.SetLocalPlayerInside(false);
-            newBush?.GetComponent<BushZone>()?.SetLocalPlayerInside(true);
-        }
+        _visibilityDirty = true;
+    }
 
+    private void MarkDirty() => _visibilityDirty = true;
+
+    private void LateUpdate()
+    {
+        if (!_visibilityDirty) return;
+        _visibilityDirty = false;
         UpdateVisibility();
     }
 
@@ -181,6 +187,8 @@ public class PlayerBushState : NetworkBehaviour
 
     private void SetVisible(bool visible)
     {
+        // 부쉬 안에 있으면 본인 포함 반투명 → "숨어있음" 시각 피드백
+        // 적에게는 어차피 visible=false라서 이 분기에 도달하지 않음
         bool fade = visible && inBush;
 
         if (_renderers != null)
@@ -245,6 +253,10 @@ public class PlayerBushState : NetworkBehaviour
         {
             var c = mat.color; c.a = alpha; mat.color = c;
         }
+
+        // 부쉬 메쉬의 깊이 버퍼에 가려지지 않도록 ZTest를 항상 통과로 설정
+        // 탑다운 오픈맵 기준 문제없음 — 밀폐 실내 공간 생기면 Renderer Feature 방식으로 전환
+        mat.SetInt("_ZTest", (int)UnityEngine.Rendering.CompareFunction.Always);
 
         return mat;
     }

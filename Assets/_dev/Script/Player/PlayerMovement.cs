@@ -107,19 +107,28 @@ public class PlayerMovement : NetworkBehaviour
         _slowMultiplier = Mathf.Clamp(multiplier, 0f, 1f);
     }
 
-    // ─── 넉백 RPC ─────────────────────────────────────────────────────────
-    [ClientRpc]
-    public void RpcApplyKnockback(Vector3 dir, float force)
+    // ─── 넉백 ─────────────────────────────────────────────────────────────
+    [Server]
+    public void ServerApplyKnockback(Vector3 dir, float force)
     {
-        // 서버(물리적 진실)와 로컬 플레이어(즉각적 반응) 모두 물리 적용
-        if (isServer || isLocalPlayer)
-        {
-            Debug.Log($"[PlayerMovement] RpcApplyKnockback: Applying to {gameObject.name}. IsServer={isServer}, IsLocal={isLocalPlayer}, Force={force}");
-            Vector3 flat = new Vector3(dir.x, 0f, dir.z).normalized;
-            rb.linearVelocity = new Vector3(flat.x * force, rb.linearVelocity.y, flat.z * force);
-            _isKnockedBack    = true;
-            _knockbackEndTime = Time.time + KnockbackMoveLockDuration;
-        }
+        ApplyKnockbackPhysics(dir, force);
+        RpcApplyKnockback(dir, force);
+    }
+
+    [ClientRpc]
+    private void RpcApplyKnockback(Vector3 dir, float force)
+    {
+        if (!isLocalPlayer) return;
+        ApplyKnockbackPhysics(dir, force);
+    }
+
+    private void ApplyKnockbackPhysics(Vector3 dir, float force)
+    {
+        Debug.Log($"[PlayerMovement] ApplyKnockback: {gameObject.name} IsServer={isServer} IsLocal={isLocalPlayer} Force={force}");
+        Vector3 flat = new Vector3(dir.x, 0f, dir.z).normalized;
+        rb.linearVelocity = new Vector3(flat.x * force, rb.linearVelocity.y, flat.z * force);
+        _isKnockedBack    = true;
+        _knockbackEndTime = Time.time + KnockbackMoveLockDuration;
     }
 
     // ─── 이동 ─────────────────────────────────────────────────────────────

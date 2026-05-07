@@ -2,8 +2,9 @@ using UnityEngine;
 
 public enum ExplosionTrigger
 {
-    OnImpact,       // 벽/플레이어 충돌 즉시 폭발
-    OnMaxDistance,  // 최대 거리 비행 후 자동 폭발 (충돌 무시)
+    OnImpact,        // 벽/플레이어 충돌 즉시 폭발
+    OnMaxDistance,   // 최대 거리 비행 후 자동 폭발 (충돌 무시)
+    OnTargetReached, // 지정 착탄점 도달 시 폭발 (벽 통과, 수류탄형)
 }
 
 /// <summary>

@@ -13,4 +13,5 @@ public enum EffectType
 
     // 상태
     Death,
+    Stun,
 }

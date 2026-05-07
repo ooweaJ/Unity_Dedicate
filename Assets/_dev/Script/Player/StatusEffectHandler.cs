@@ -50,7 +50,7 @@ public class StatusEffectHandler : NetworkBehaviour
                     Debug.Log($"[StatusEffectHandler] Applying Knockback to {gameObject.name}: Force={effect.value}, Direction={direction}, HasMovement={hasMovement}, IsLocalPlayer={isLocalPlayer}");
                     
                     if (hasMovement)
-                        _movement.RpcApplyKnockback(direction, effect.value);
+                        _movement.ServerApplyKnockback(direction, effect.value);
                     else
                         Debug.LogWarning($"[StatusEffectHandler] Cannot apply knockback to {gameObject.name} because PlayerMovement is missing!");
                 }
@@ -128,6 +128,8 @@ public class StatusEffectHandler : NetworkBehaviour
     private void OnStunnedChanged(bool _, bool stunned)
     {
         GetComponent<PlayerMovement>()?.SetStunned(stunned);
+        if (stunned)
+            EffectManager.Instance?.Play(EffectType.Stun, transform.position + Vector3.up * 1.5f);
     }
 
     private void OnSlowChanged(float _, float multiplier)

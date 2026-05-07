@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::EffectDatabase
   entries:
   - type: 1
-    prefab: {fileID: 100000, guid: bc98890f6028f444eaa7789bde5e2eeb, type: 3}
+    prefab: {fileID: 6213619859274339249, guid: a91e28b1b0a4d894b807f161a6177b65, type: 3}
     lifeTime: 1
   - type: 3
     prefab: {fileID: 1301651855990048, guid: 3d2fe17ddd907c744802b5034690c38d, type: 3}
@@ -24,4 +24,7 @@ MonoBehaviour:
     lifeTime: 2.5
   - type: 4
     prefab: {fileID: 1301651855990048, guid: b1ed2bae6bf3e734aaaef3979fbb9a8e, type: 3}
+    lifeTime: 2.5
+  - type: 7
+    prefab: {fileID: 1968443221699178, guid: 94e1ecc85765342439e968f742fc9f6e, type: 3}
     lifeTime: 2.5

@@ -63,6 +63,8 @@ public class ProjectileBase : NetworkBehaviour
 
     protected virtual void FixedUpdate()
     {
+        // 이동은 서버만 담당 — 클라이언트는 NetworkTransform이 위치를 동기화
+        if (!isServer) return;
         if (direction == Vector3.zero) return;
         rb.MovePosition(rb.position + direction * speed * Time.fixedDeltaTime);
         transform.rotation = Quaternion.LookRotation(direction);
