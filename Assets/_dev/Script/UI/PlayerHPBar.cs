@@ -20,8 +20,12 @@ public class PlayerHPBar : NetworkBehaviour
     [SerializeField] private Color colorMid = Color.yellow;
     [SerializeField] private Color colorLow = Color.red;
 
-    private Image hpFillImage;
-    private Transform camTransform;
+    [Header("Bush Fade")]
+    [SerializeField] [Range(0f, 1f)] private float bushAlpha = 0.4f;
+
+    private Image       hpFillImage;
+    private CanvasGroup _canvasGroup;
+    private Transform   camTransform;
     private float targetRatio = 1f;
     private float delayTimer = 0f;
 
@@ -32,6 +36,10 @@ public class PlayerHPBar : NetworkBehaviour
         // → Player 자식에 Camera 없으므로 항상 null이었음
         if (Camera.main != null)
             camTransform = Camera.main.transform;
+
+        if (hpCanvasTransform != null)
+            _canvasGroup = hpCanvasTransform.GetComponent<CanvasGroup>()
+                        ?? hpCanvasTransform.gameObject.AddComponent<CanvasGroup>();
 
         if (hpSlider != null && hpSlider.fillRect != null)
             hpFillImage = hpSlider.fillRect.GetComponent<Image>();
@@ -109,9 +117,12 @@ public class PlayerHPBar : NetworkBehaviour
             : Color.Lerp(colorLow, colorMid, ratio * 2f);
     }
 
-    public void SetBushVisible(bool visible)
+    public void SetBushVisible(bool visible, bool fade = false)
     {
         if (hpCanvasTransform != null)
             hpCanvasTransform.gameObject.SetActive(visible);
+
+        if (_canvasGroup != null)
+            _canvasGroup.alpha = (visible && fade) ? bushAlpha : 1f;
     }
 }

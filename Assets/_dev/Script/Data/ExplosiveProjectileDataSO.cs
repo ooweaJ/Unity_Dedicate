@@ -16,8 +16,10 @@ public class ExplosiveProjectileDataSO : ProjectileDataSO
 {
     [Header("폭발 트리거")]
     public ExplosionTrigger trigger     = ExplosionTrigger.OnImpact;
-    [Tooltip("OnMaxDistance 전용 — 이 거리에 도달하면 자동 폭발")]
+    [Tooltip("OnMaxDistance / OnTargetReached 전용 — 최대 사거리")]
     public float            maxDistance = 10f;
+    [Tooltip("OnTargetReached 전용 — 포물선 정점 높이")]
+    public float            arcHeight   = 3f;
 
     [Header("폭발 범위")]
     public float     explosionRadius      = 3f;

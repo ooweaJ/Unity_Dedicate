@@ -5,8 +5,8 @@ using UnityEngine;
 /// 폭발 투사체
 ///
 /// OnImpact:        충돌 즉시 폭발
-/// OnMaxDistance:   최대 거리 비행 후 자동 폭발 (경로상 충돌 무시)
-/// OnTargetReached: 지정 착탄점 도달 시 폭발 (벽 통과, 수류탄형)
+/// OnMaxDistance:   최대 거리 직선 비행 후 자동 폭발 (경로상 충돌 무시)
+/// OnTargetReached: 지정 착탄점까지 포물선(수류탄) 비행 후 폭발 (벽 통과)
 ///                  CharacterWeapon.PerformProjectile에서 SetTargetPosition() 호출 필요
 /// </summary>
 public class ExplosiveProjectile : ProjectileBase
@@ -15,9 +15,11 @@ public class ExplosiveProjectile : ProjectileBase
     private float            maxDistance;
     private float            traveledDistance;
 
-    // OnTargetReached 전용 — 스폰 후 SetTargetPosition()으로 설정
+    // OnTargetReached 전용
     [SyncVar] private Vector3 _targetPos;
+    private Vector3           _spawnPos;
     private float             _targetDist;
+    private float             _arcHeight;
 
     private float     explosionRadius;
     private float     explosionInnerRadius;
@@ -38,6 +40,7 @@ public class ExplosiveProjectile : ProjectileBase
             explosionMultiplier  = expData.explosionMultiplier;
             explosionTargetLayer = expData.explosionTargetLayer;
             explosionEffect      = expData.explosionEffect;
+            _arcHeight           = expData.arcHeight;
         }
     }
 
@@ -47,49 +50,68 @@ public class ExplosiveProjectile : ProjectileBase
     [Server]
     public void SetTargetPosition(Vector3 worldPos)
     {
+        _spawnPos  = transform.position;
         _targetPos = worldPos;
 
-        // Y를 무시한 XZ 거리로 도달 판정 (투사체는 수평 이동)
-        Vector3 sp = transform.position;
         _targetDist = Vector3.Distance(
-            new Vector3(sp.x,        0f, sp.z),
+            new Vector3(_spawnPos.x, 0f, _spawnPos.z),
             new Vector3(worldPos.x,  0f, worldPos.z));
     }
 
-    // ─── 이동 및 도달 판정 ────────────────────────────────────────────────
+    // ─── 이동 ─────────────────────────────────────────────────────────────
     protected override void FixedUpdate()
     {
-        base.FixedUpdate(); // 서버 전용 rb.MovePosition
-
         if (!isServer) return;
 
-        switch (trigger)
+        if (trigger == ExplosionTrigger.OnTargetReached)
         {
-            case ExplosionTrigger.OnMaxDistance:
-                traveledDistance += speed * Time.fixedDeltaTime;
-                if (traveledDistance >= maxDistance)
-                {
-                    Explode();
-                    DestroySelf();
-                }
-                break;
+            MoveArc();
+            return;
+        }
 
-            case ExplosionTrigger.OnTargetReached:
-                if (_targetPos == Vector3.zero) break;
-                traveledDistance += speed * Time.fixedDeltaTime;
-                if (traveledDistance >= _targetDist)
-                {
-                    Explode();
-                    DestroySelf();
-                }
-                break;
+        base.FixedUpdate();
+
+        if (trigger == ExplosionTrigger.OnMaxDistance)
+        {
+            traveledDistance += speed * Time.fixedDeltaTime;
+            if (traveledDistance >= maxDistance)
+            {
+                Explode();
+                DestroySelf();
+            }
+        }
+    }
+
+    // 포물선 이동 — 수평 속도 일정, Y는 4t(1-t) 포물선
+    private void MoveArc()
+    {
+        if (_targetPos == Vector3.zero) return;
+
+        traveledDistance += speed * Time.fixedDeltaTime;
+        float t = _targetDist > 0f ? Mathf.Clamp01(traveledDistance / _targetDist) : 1f;
+
+        Vector3 flatPos = Vector3.Lerp(
+            new Vector3(_spawnPos.x, 0f, _spawnPos.z),
+            new Vector3(_targetPos.x, 0f, _targetPos.z), t);
+        float   arcY    = _arcHeight * 4f * t * (1f - t);
+        Vector3 nextPos = new Vector3(flatPos.x, _spawnPos.y + arcY, flatPos.z);
+
+        Vector3 moveDir = nextPos - rb.position;
+        if (moveDir != Vector3.zero)
+            transform.rotation = Quaternion.LookRotation(moveDir);
+        rb.MovePosition(nextPos);
+
+        if (t >= 1f)
+        {
+            Explode();
+            DestroySelf();
         }
     }
 
     // ─── 충돌 처리 ────────────────────────────────────────────────────────
     protected override void HandleTriggerEnter(Collider other)
     {
-        // 거리/착탄점 모드는 벽 통과 — hitLayers를 적 레이어만으로 설정해야 함
+        // 거리/착탄점 모드는 충돌 무시 (벽 통과)
         if (trigger == ExplosionTrigger.OnMaxDistance ||
             trigger == ExplosionTrigger.OnTargetReached) return;
 

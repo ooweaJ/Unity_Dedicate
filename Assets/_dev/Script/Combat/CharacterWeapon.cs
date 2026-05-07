@@ -17,6 +17,8 @@ public class CharacterWeapon : NetworkBehaviour
     private PlayerAnimationController anim;
     private PlayerMovement            movement;
 
+    [SyncVar] private bool _isActing;
+
     private float lastBasicTime  = -99f;
     private float lastSkill1Time = -99f;
     private float lastSkill2Time = -99f;
@@ -144,6 +146,7 @@ public class CharacterWeapon : NetworkBehaviour
     private bool CanUse(int skillIndex, ref float lastTime)
     {
         if (!isLocalPlayer)                          { Debug.Log("[WEAPON] CanUse 실패: 로컬 플레이어 아님");             return false; }
+        if (_isActing)                               { Debug.Log("[WEAPON] CanUse 실패: 액션 중");                        return false; }
         if (effectHandler != null && effectHandler.IsStunned) { Debug.Log("[WEAPON] CanUse 실패: 스턴 상태");                  return false; }
         var skill = GetSkill(skillIndex);
         if (skill == null)                           { Debug.Log("[WEAPON] CanUse 실패: SkillData null (Setup 안됨?)"); return false; }
@@ -175,6 +178,11 @@ public class CharacterWeapon : NetworkBehaviour
     [Command]
     private void CmdUseAttack(Vector3 origin, Vector3 aimDir, Vector3 targetPos, int skillIndex)
     {
+        if (_isActing)
+        {
+            Debug.Log("[WEAPON] 서버 액션 락: 이전 액션 실행 중");
+            return;
+        }
         if (!ServerCheckCooldown(skillIndex, GetSkill(skillIndex)))
         {
             Debug.Log($"[WEAPON] 서버 쿨다운 차단: index={skillIndex}");
@@ -204,6 +212,8 @@ public class CharacterWeapon : NetworkBehaviour
         var skill = GetSkill(skillIndex);
         if (skill?.actions == null) yield break;
 
+        _isActing = true;
+
         Vector3 nDir = aimDir.normalized;
 
         foreach (var action in skill.actions)
@@ -215,11 +225,13 @@ public class CharacterWeapon : NetworkBehaviour
 
             switch (action.actionType)
             {
-                case SkillActionType.Melee:      PerformMelee(origin, nDir, action, dmg);            break;
+                case SkillActionType.Melee:      PerformMelee(origin, nDir, action, dmg);                break;
                 case SkillActionType.Projectile: PerformProjectile(origin, nDir, targetPos, action, dmg); break;
-                case SkillActionType.Dash:       PerformDash(nDir, action, dmg);                     break;
+                case SkillActionType.Dash:       PerformDash(nDir, action, dmg);                         break;
             }
         }
+
+        _isActing = false;
     }
 
     private bool ServerCheckCooldown(int index, SkillData skill)

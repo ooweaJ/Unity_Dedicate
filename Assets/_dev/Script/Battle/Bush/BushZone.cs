@@ -60,6 +60,14 @@ public class BushZone : NetworkBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        // 클라이언트: 로컬 플레이어 진입 시 부쉬 즉시 반투명 (서버 딜레이 없이)
+        if (isClient)
+        {
+            var localBushState = other.transform.root.GetComponent<PlayerBushState>();
+            if (localBushState != null && localBushState.isLocalPlayer)
+                SetLocalPlayerInside(true);
+        }
+
         if (!isServer) return;
 
         var bushState = other.transform.root.GetComponent<PlayerBushState>();
@@ -78,6 +86,14 @@ public class BushZone : NetworkBehaviour
 
     private void OnTriggerExit(Collider other)
     {
+        // 클라이언트: 로컬 플레이어 이탈 시 즉시 복원
+        if (isClient)
+        {
+            var localBushState = other.transform.root.GetComponent<PlayerBushState>();
+            if (localBushState != null && localBushState.isLocalPlayer)
+                SetLocalPlayerInside(false);
+        }
+
         if (!isServer) return;
 
         var bushState = other.transform.root.GetComponent<PlayerBushState>();
@@ -109,6 +125,7 @@ public class BushZone : NetworkBehaviour
 
     public void SetLocalPlayerInside(bool inside)
     {
+        Debug.Log($"[BushDebug] SetLocalPlayerInside | inside={inside} renderers={bushMeshRenderers?.Length ?? 0} fadeMats={(  _bushFadeMats != null ? "ready" : "null")}");
         if (bushMeshRenderers == null || _bushFadeMats == null) return;
 
         for (int i = 0; i < bushMeshRenderers.Length; i++)
