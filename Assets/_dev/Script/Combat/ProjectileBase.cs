@@ -93,7 +93,14 @@ public class ProjectileBase : NetworkBehaviour
         other.transform.root.GetComponent<PlayerAnimationController>()
             ?.RpcPlayHit(transform.position, hitEffect);
 
-        owner?.GetComponent<PlayerBushState>()?.RevealTemporarily();
+        // 공격자가 부쉬 안, 피격자가 부쉬 밖 → 공격자 노출
+        var ownerBushState  = owner?.GetComponent<PlayerBushState>();
+        if (ownerBushState != null && ownerBushState.inBush)
+        {
+            var victimBushState = other.transform.root.GetComponent<PlayerBushState>();
+            if (victimBushState == null || !victimBushState.inBush)
+                ownerBushState.RevealTemporarily();
+        }
     }
 
     [Server]

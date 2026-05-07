@@ -18,6 +18,7 @@ MonoBehaviour:
   skills:
   - skillName: "\uBD88\uB369\uC774 \uBC1C\uC0AC"
     cooldown: 2
+    lockDuration: 1
     inputType: 0
     actions:
     - actionName: "\uBD88\uB369\uC774 \uBC1C\uC0AC"
@@ -41,6 +42,7 @@ MonoBehaviour:
       hitEffect: 3
   - skillName: "\uD295\uAE30\uB294 \uBD88\uB369\uC774"
     cooldown: 4
+    lockDuration: 1
     inputType: 0
     actions:
     - actionName: "\uD295\uAE30\uB294 \uBD88\uB369\uC774"
@@ -64,6 +66,7 @@ MonoBehaviour:
       hitEffect: 5
   - skillName: "\uD3ED\uD314 \uBD88\uB369\uC774"
     cooldown: 8
+    lockDuration: 1
     inputType: 0
     actions:
     - actionName: "\uD3ED\uD314 \uBD88\uB369\uC774"

@@ -17,7 +17,14 @@ public class CharacterWeapon : NetworkBehaviour
     private PlayerAnimationController anim;
     private PlayerMovement            movement;
 
-    [SyncVar] private bool _isActing;
+    // 서버: 스킬 실행 중 중복 실행 방지
+    private bool _isActing;
+
+    // 클라이언트: 로컬 입력 차단 타이머 (SyncVar 왕복 지연 없이 즉시 차단)
+    private float _lockUntil = -1f;
+
+    // PlayerMovement가 공격 중 이동/회전을 억제하기 위해 참조
+    public bool IsActing => isLocalPlayer && Time.time < _lockUntil;
 
     private float lastBasicTime  = -99f;
     private float lastSkill1Time = -99f;
@@ -62,7 +69,8 @@ public class CharacterWeapon : NetworkBehaviour
     {
         if (Time.time - bufTime > InputBufferWindow) return;
         if (!CanUse(skillIndex, ref lastTime)) return;
-        bufTime = -99f;
+        bufTime    = -99f;
+        _lockUntil = Time.time + (GetSkill(skillIndex)?.lockDuration ?? 0f);
         CmdUseAttack(transform.position, bufDir, bufTarget, skillIndex);
     }
 
@@ -85,6 +93,7 @@ public class CharacterWeapon : NetworkBehaviour
             return;
         }
         _bufAttackTime = -99f;
+        _lockUntil     = Time.time + (GetSkill(0)?.lockDuration ?? 0f);
         CmdUseAttack(transform.position, aimDir, ComputeTargetPos(0, aimDir, magnitude), 0);
     }
 
@@ -101,6 +110,7 @@ public class CharacterWeapon : NetworkBehaviour
             return;
         }
         _bufSkill1Time = -99f;
+        _lockUntil     = Time.time + (GetSkill(1)?.lockDuration ?? 0f);
         CmdUseAttack(transform.position, aimDir, ComputeTargetPos(1, aimDir, magnitude), 1);
     }
 
@@ -117,6 +127,7 @@ public class CharacterWeapon : NetworkBehaviour
             return;
         }
         _bufSkill2Time = -99f;
+        _lockUntil     = Time.time + (GetSkill(2)?.lockDuration ?? 0f);
         CmdUseAttack(transform.position, aimDir, ComputeTargetPos(2, aimDir, magnitude), 2);
     }
 
@@ -145,13 +156,12 @@ public class CharacterWeapon : NetworkBehaviour
 
     private bool CanUse(int skillIndex, ref float lastTime)
     {
-        if (!isLocalPlayer)                          { Debug.Log("[WEAPON] CanUse 실패: 로컬 플레이어 아님");             return false; }
-        if (_isActing)                               { Debug.Log("[WEAPON] CanUse 실패: 액션 중");                        return false; }
-        if (effectHandler != null && effectHandler.IsStunned) { Debug.Log("[WEAPON] CanUse 실패: 스턴 상태");                  return false; }
+        if (!isLocalPlayer)                                          return false;
+        if (Time.time < _lockUntil)                                  return false;
+        if (effectHandler != null && effectHandler.IsStunned)        return false;
         var skill = GetSkill(skillIndex);
-        if (skill == null)                           { Debug.Log("[WEAPON] CanUse 실패: SkillData null (Setup 안됨?)"); return false; }
-        float remain = skill.cooldown - (Time.time - lastTime);
-        if (remain > 0f)                             { Debug.Log($"[WEAPON] CanUse 실패: 쿨다운 {remain:F2}초 남음");   return false; }
+        if (skill == null)                                           return false;
+        if (skill.cooldown - (Time.time - lastTime) > 0f)           return false;
         lastTime = Time.time;
         return true;
     }
@@ -178,16 +188,8 @@ public class CharacterWeapon : NetworkBehaviour
     [Command]
     private void CmdUseAttack(Vector3 origin, Vector3 aimDir, Vector3 targetPos, int skillIndex)
     {
-        if (_isActing)
-        {
-            Debug.Log("[WEAPON] 서버 액션 락: 이전 액션 실행 중");
-            return;
-        }
-        if (!ServerCheckCooldown(skillIndex, GetSkill(skillIndex)))
-        {
-            Debug.Log($"[WEAPON] 서버 쿨다운 차단: index={skillIndex}");
-            return;
-        }
+        if (_isActing) return;
+        if (!ServerCheckCooldown(skillIndex, GetSkill(skillIndex))) return;
 
         Vector3 flatDir = new Vector3(aimDir.x, 0f, aimDir.z).normalized;
         if (flatDir != Vector3.zero)
@@ -221,7 +223,6 @@ public class CharacterWeapon : NetworkBehaviour
             if (action.delay > 0f) yield return new WaitForSeconds(action.delay);
 
             float dmg = (stats != null ? stats.FinalAttack : 20f) * action.damageMultiplier;
-            Debug.Log($"[WEAPON] action 실행 | skill={skillIndex} type={action.actionType} dmg={dmg:F1}");
 
             switch (action.actionType)
             {
@@ -253,9 +254,11 @@ public class CharacterWeapon : NetworkBehaviour
     [Server]
     private void PerformMelee(Vector3 origin, Vector3 dir, SkillAction action, float dmg)
     {
-        Vector3    center   = origin + dir * (action.meleeRange * 0.5f);
-        Collider[] hits     = Physics.OverlapSphere(center, action.meleeRange * 0.5f, action.targetLayer);
-        bool       hitEnemy = false;
+        Vector3    center = origin + dir * (action.meleeRange * 0.5f);
+        Collider[] hits   = Physics.OverlapSphere(center, action.meleeRange * 0.5f, action.targetLayer);
+
+        var myBushState  = GetComponent<PlayerBushState>();
+        bool revealedSelf = false;
 
         foreach (var hit in hits)
         {
@@ -266,10 +269,18 @@ public class CharacterWeapon : NetworkBehaviour
             hit.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
             hit.transform.root.GetComponent<PlayerAnimationController>()
                 ?.RpcPlayHit(hit.transform.position, action.hitEffect);
-            hitEnemy = true;
-        }
 
-        if (hitEnemy) GetComponent<PlayerBushState>()?.RevealTemporarily();
+            // 공격자가 부쉬 안, 피격자가 부쉬 밖 → 공격자 노출
+            if (!revealedSelf && myBushState != null && myBushState.inBush)
+            {
+                var victimBushState = hit.transform.root.GetComponent<PlayerBushState>();
+                if (victimBushState == null || !victimBushState.inBush)
+                {
+                    myBushState.RevealTemporarily();
+                    revealedSelf = true;
+                }
+            }
+        }
     }
 
     // ─── 투사체 ───────────────────────────────────────────────────────────
@@ -306,7 +317,6 @@ public class CharacterWeapon : NetworkBehaviour
 
             if (isTargetReached && targetPos != Vector3.zero && data is ExplosiveProjectileDataSO expSO)
             {
-                // XZ 거리로 최대 사거리 클램프
                 Vector3 toTarget = new Vector3(targetPos.x - spawnPos.x, 0f, targetPos.z - spawnPos.z);
                 if (toTarget.magnitude > expSO.maxDistance)
                     clampedTarget = spawnPos + toTarget.normalized * expSO.maxDistance;
@@ -325,7 +335,6 @@ public class CharacterWeapon : NetworkBehaviour
 
             proj.Init(shotDir, gameObject, dmg, data);
 
-            // SetTargetPosition은 NetworkServer.Spawn 이전에 호출 — 초기 SyncVar 값으로 클라이언트에 전달
             if (isTargetReached && proj is ExplosiveProjectile expProj)
                 expProj.SetTargetPosition(clampedTarget);
 
@@ -346,8 +355,9 @@ public class CharacterWeapon : NetworkBehaviour
     {
         yield return new WaitForSeconds(action.dashDuration);
 
-        Collider[] hits     = Physics.OverlapSphere(transform.position, action.dashDamageRadius, action.targetLayer);
-        bool       hitEnemy = false;
+        Collider[] hits        = Physics.OverlapSphere(transform.position, action.dashDamageRadius, action.targetLayer);
+        var        myBushState = GetComponent<PlayerBushState>();
+        bool       revealedSelf = false;
 
         foreach (var hit in hits)
         {
@@ -356,10 +366,17 @@ public class CharacterWeapon : NetworkBehaviour
             hit.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
             hit.transform.root.GetComponent<PlayerAnimationController>()
                 ?.RpcPlayHit(hit.transform.position, action.hitEffect);
-            hitEnemy = true;
-        }
 
-        if (hitEnemy) GetComponent<PlayerBushState>()?.RevealTemporarily();
+            if (!revealedSelf && myBushState != null && myBushState.inBush)
+            {
+                var victimBushState = hit.transform.root.GetComponent<PlayerBushState>();
+                if (victimBushState == null || !victimBushState.inBush)
+                {
+                    myBushState.RevealTemporarily();
+                    revealedSelf = true;
+                }
+            }
+        }
     }
 
     [ClientRpc]

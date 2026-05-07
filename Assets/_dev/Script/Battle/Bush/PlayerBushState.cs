@@ -10,7 +10,7 @@ using UnityEngine;
 /// </summary>
 public class PlayerBushState : NetworkBehaviour
 {
-    private const float EntryDelay     = 0.5f;
+    private const float EntryDelay     = 0.1f;
     private const float RevealDuration = 1.0f;
     private const float InBushAlpha    = 0.4f;
 
@@ -46,25 +46,8 @@ public class PlayerBushState : NetworkBehaviour
     public void CacheRenderers(Transform modelRoot)
     {
         _fadeProfile  = modelRoot.GetComponentInChildren<CharacterVisualConfig>()?.fadeProfile;
-
-        Debug.Log($"[BushDebug] CacheRenderers | object={gameObject.name} profile={(_fadeProfile != null ? _fadeProfile.name : "null(Auto)")}");
-
         _renderers    = modelRoot.GetComponentsInChildren<Renderer>(true);
 
-        // 셰이더 프로퍼티 덤프 — 확인 후 삭제
-        foreach (var r in _renderers)
-        {
-            foreach (var mat in r.sharedMaterials)
-            {
-                if (mat == null) continue;
-                int count = mat.shader.GetPropertyCount();
-                var sb = new System.Text.StringBuilder();
-                sb.Append($"[BushDebug] shader={mat.shader.name} properties: ");
-                for (int pi = 0; pi < count; pi++)
-                    sb.Append($"{mat.shader.GetPropertyName(pi)}({mat.shader.GetPropertyType(pi)}) ");
-                Debug.Log(sb.ToString());
-            }
-        }
         _originalMats = new Material[_renderers.Length][];
         _fadeMats     = new Material[_renderers.Length][];
 
@@ -73,8 +56,6 @@ public class PlayerBushState : NetworkBehaviour
             _originalMats[i] = _renderers[i].sharedMaterials;
             _fadeMats[i]     = CreateFadeMaterialArray(_originalMats[i], InBushAlpha, _fadeProfile);
         }
-
-        Debug.Log($"[BushDebug] CacheRenderers 완료 | renderer={_renderers.Length}개");
 
         // 렌더러 캐싱 이후 SyncVar가 이미 바뀐 상태일 수 있으므로 즉시 재계산
         _visibilityDirty = false;
@@ -118,7 +99,7 @@ public class PlayerBushState : NetworkBehaviour
         _entryCoroutine     = null;
     }
 
-    // ── 공격 성공 시 노출 (서버) ──────────────────────────────────────────────
+    // ── 외부에서 부쉬 안 플레이어 노출 (서버) ────────────────────────────────
 
     [Server]
     public void RevealTemporarily()
@@ -179,7 +160,7 @@ public class PlayerBushState : NetworkBehaviour
     private void OnDestroy()
     {
         if (_subscribedBush != null)
-            _subscribedBush.OnVisionMaskChanged -= UpdateVisibility;
+            _subscribedBush.OnVisionMaskChanged -= MarkDirty;
 
         if (_fadeMats != null)
             foreach (var arr in _fadeMats)
@@ -215,7 +196,6 @@ public class PlayerBushState : NetworkBehaviour
     private void SetVisible(bool visible)
     {
         bool fade = visible && inBush;
-        Debug.Log($"[BushDebug] SetVisible | visible={visible} inBush={inBush} fade={fade} renderers={_renderers?.Length ?? 0} fadeMats={(_fadeMats != null ? "ready" : "NULL")} originalMats={(_originalMats != null ? "ready" : "NULL")}");
 
         if (_renderers != null)
         {
@@ -226,16 +206,10 @@ public class PlayerBushState : NetworkBehaviour
                 r.enabled = visible;
                 if (visible && _fadeMats != null && _originalMats != null)
                 {
-                    if (fade)
-                    {
-                        if (_fadeMats[i] != null)
-                        {
-                            r.materials = _fadeMats[i];
-                            if (i == 0) Debug.Log($"[BushDebug] 머티리얼 스왑 → fade | shader={_fadeMats[i][0].shader.name} renderQ={_fadeMats[i][0].renderQueue}");
-                        }
-                        else Debug.LogWarning($"[BushDebug] _fadeMats[{i}] NULL — 스왑 실패");
-                    }
-                    else r.sharedMaterials = _originalMats[i];
+                    if (fade && _fadeMats[i] != null)
+                        r.materials = _fadeMats[i];
+                    else
+                        r.sharedMaterials = _originalMats[i];
                 }
             }
         }
@@ -261,19 +235,15 @@ public class PlayerBushState : NetworkBehaviour
 
         if (profile != null && profile.type == ShaderFadeType.PropertyValue)
         {
-            bool hasProp = mat.HasProperty(profile.propertyName);
-            Debug.Log($"[BushDebug] CreateFadeMaterial | shader={src.shader.name} → PropertyValue | prop={profile.propertyName} exists={hasProp} value={profile.fadeValue}");
-            if (hasProp)
+            if (mat.HasProperty(profile.propertyName))
                 mat.SetFloat(profile.propertyName, profile.fadeValue);
 
-            // UTS Toon 계열: 블렌드 모드를 직접 설정해야 Transparent 패스가 동작
             mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
             mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             mat.SetInt("_ZWrite",   0);
             mat.SetOverrideTag("RenderType", "Transparent");
             mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
 
-            // 추가 프로퍼티
             if (profile.additionalProperties != null)
                 foreach (var p in profile.additionalProperties)
                     if (mat.HasProperty(p.name))
@@ -283,10 +253,8 @@ public class PlayerBushState : NetworkBehaviour
         {
             float a = (profile != null) ? profile.alpha : alpha;
 
-            // URP Lit
             if (mat.HasProperty("_Surface"))
             {
-                Debug.Log($"[BushDebug] CreateFadeMaterial | shader={src.shader.name} → URP Lit | alpha={a}");
                 mat.SetFloat("_Surface", 1f);
                 mat.SetFloat("_Blend",   0f);
                 mat.SetFloat("_ZWrite",  0f);
@@ -295,10 +263,8 @@ public class PlayerBushState : NetworkBehaviour
                 mat.SetOverrideTag("RenderType", "Transparent");
                 mat.renderQueue = (int)UnityEngine.Rendering.RenderQueue.Transparent;
             }
-            // Standard
             else if (mat.HasProperty("_Mode"))
             {
-                Debug.Log($"[BushDebug] CreateFadeMaterial | shader={src.shader.name} → Standard | alpha={a}");
                 mat.SetFloat("_Mode",   2f);
                 mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
                 mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
@@ -311,7 +277,6 @@ public class PlayerBushState : NetworkBehaviour
             }
             else
             {
-                Debug.LogWarning($"[BushDebug] CreateFadeMaterial | shader={src.shader.name} → 알 수 없는 셰이더 Fallback | alpha={a}");
                 mat.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
                 mat.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
                 mat.SetInt("_ZWrite",   0);

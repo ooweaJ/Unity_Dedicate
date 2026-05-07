@@ -18,6 +18,7 @@ MonoBehaviour:
   skills:
   - skillName: "\uBC1C\uCC28\uAE30"
     cooldown: 1
+    lockDuration: 1
     inputType: 0
     actions:
     - actionName: "\uBC1C\uCC28\uAE30"
@@ -41,6 +42,7 @@ MonoBehaviour:
       hitEffect: 1
   - skillName: "\uC704\uB85C \uC62C\uB824\uCC28\uAE30"
     cooldown: 4
+    lockDuration: 1
     inputType: 0
     actions:
     - actionName: "\uC62C\uB824\uCC28\uAE30"
@@ -64,19 +66,20 @@ MonoBehaviour:
       hitEffect: 1
   - skillName: "\uB300\uC26C \uBC1C\uCC28\uAE30"
     cooldown: 8
+    lockDuration: 1.5
     inputType: 0
     actions:
     - actionName: "\uB300\uC26C"
       delay: 0
-      damageMultiplier: 0.5
+      damageMultiplier: 0
       targetLayer:
         serializedVersion: 2
-        m_Bits: 64
+        m_Bits: 0
       actionType: 2
       meleeRange: 0
       meleeAngle: 0
       projectileData: {fileID: 0}
-      dashSpeed: 5
+      dashSpeed: 10
       dashDuration: 0.5
       dashDamageRadius: 10
       onHitEffect:

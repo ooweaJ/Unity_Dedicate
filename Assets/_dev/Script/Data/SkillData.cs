@@ -9,8 +9,9 @@ public enum SkillInputType
 [System.Serializable]
 public class SkillData
 {
-    public string            skillName = "스킬";
-    public float             cooldown  = 0.8f;
-    public SkillInputType    inputType = SkillInputType.Directional;
-    public List<SkillAction> actions   = new List<SkillAction>();
+    public string            skillName    = "스킬";
+    public float             cooldown     = 0.8f;
+    public float             lockDuration = 0.5f; // 스킬 사용 후 다음 입력 차단 시간
+    public SkillInputType    inputType    = SkillInputType.Directional;
+    public List<SkillAction> actions      = new List<SkillAction>();
 }

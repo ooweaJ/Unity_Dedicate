@@ -125,7 +125,6 @@ public class BushZone : NetworkBehaviour
 
     public void SetLocalPlayerInside(bool inside)
     {
-        Debug.Log($"[BushDebug] SetLocalPlayerInside | inside={inside} renderers={bushMeshRenderers?.Length ?? 0} fadeMats={(  _bushFadeMats != null ? "ready" : "null")}");
         if (bushMeshRenderers == null || _bushFadeMats == null) return;
 
         for (int i = 0; i < bushMeshRenderers.Length; i++)

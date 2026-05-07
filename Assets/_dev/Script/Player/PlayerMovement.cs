@@ -20,6 +20,7 @@ public class PlayerMovement : NetworkBehaviour
     private Rigidbody                 rb;
     private PlayerAnimationController anim;
     private PlayerInputHandler        input;
+    private CharacterWeapon           weapon;
 
     private Vector2 moveInput;
     private bool    isDashing     = false;
@@ -42,9 +43,10 @@ public class PlayerMovement : NetworkBehaviour
 
     private void Awake()
     {
-        rb    = GetComponent<Rigidbody>();
-        anim  = GetComponent<PlayerAnimationController>();
-        input = GetComponent<PlayerInputHandler>();
+        rb     = GetComponent<Rigidbody>();
+        anim   = GetComponent<PlayerAnimationController>();
+        input  = GetComponent<PlayerInputHandler>();
+        weapon = GetComponent<CharacterWeapon>();
 
         rb.freezeRotation = true;
         rb.interpolation  = RigidbodyInterpolation.Interpolate;
@@ -124,7 +126,6 @@ public class PlayerMovement : NetworkBehaviour
 
     private void ApplyKnockbackPhysics(Vector3 dir, float force)
     {
-        Debug.Log($"[PlayerMovement] ApplyKnockback: {gameObject.name} IsServer={isServer} IsLocal={isLocalPlayer} Force={force}");
         Vector3 flat = new Vector3(dir.x, 0f, dir.z).normalized;
         rb.linearVelocity = new Vector3(flat.x * force, rb.linearVelocity.y, flat.z * force);
         _isKnockedBack    = true;
@@ -136,9 +137,12 @@ public class PlayerMovement : NetworkBehaviour
     {
         if (isDashing || _isStunned) return;
 
-        if (_isKnockedBack)
+        if (_isKnockedBack) return;
+
+        // 공격 액션 중 이동·회전 잠금 — 회전 스냅백 방지 + 뒷걸음 애니메이션 불필요
+        if (weapon != null && weapon.IsActing)
         {
-            // UpdateStatusState에서 처리하므로 여기서는 리턴만 함
+            rb.linearVelocity = new Vector3(0f, rb.linearVelocity.y, 0f);
             return;
         }
 
@@ -228,7 +232,6 @@ public class PlayerMovement : NetworkBehaviour
     [Command]
     private void CmdNotifyWallHit()
     {
-        Debug.Log("[PlayerMovement] CmdNotifyWallHit: Reporting knockback wall hit to server");
         GetComponent<StatusEffectHandler>()?.OnKnockbackWallHit();
     }
 
