@@ -80,7 +80,7 @@ public class CharacterWeapon : NetworkBehaviour
     }
 
     // ─── 공개 API (PlayerCombat에서 호출) ────────────────────────────────
-    public void UseBasicAttack(Vector3 aimDir, float magnitude = 1f)
+    public void UseBasicAttack(Vector3 aimDir, float magnitude = 1f, Vector3 worldPos = default)
     {
         if (!CanUse(0, ref lastBasicTime))
         {
@@ -88,16 +88,16 @@ public class CharacterWeapon : NetworkBehaviour
             {
                 _bufAttackTime   = Time.time;
                 _bufAttackDir    = aimDir;
-                _bufAttackTarget = ComputeTargetPos(0, aimDir, magnitude);
+                _bufAttackTarget = ComputeTargetPos(0, aimDir, magnitude, worldPos);
             }
             return;
         }
         _bufAttackTime = -99f;
         _lockUntil     = Time.time + (GetSkill(0)?.lockDuration ?? 0f);
-        CmdUseAttack(transform.position, aimDir, ComputeTargetPos(0, aimDir, magnitude), 0);
+        CmdUseAttack(transform.position, aimDir, ComputeTargetPos(0, aimDir, magnitude, worldPos), 0);
     }
 
-    public void UseSkill1Attack(Vector3 aimDir, float magnitude = 1f)
+    public void UseSkill1Attack(Vector3 aimDir, float magnitude = 1f, Vector3 worldPos = default)
     {
         if (!CanUse(1, ref lastSkill1Time))
         {
@@ -105,16 +105,16 @@ public class CharacterWeapon : NetworkBehaviour
             {
                 _bufSkill1Time   = Time.time;
                 _bufSkill1Dir    = aimDir;
-                _bufSkill1Target = ComputeTargetPos(1, aimDir, magnitude);
+                _bufSkill1Target = ComputeTargetPos(1, aimDir, magnitude, worldPos);
             }
             return;
         }
         _bufSkill1Time = -99f;
         _lockUntil     = Time.time + (GetSkill(1)?.lockDuration ?? 0f);
-        CmdUseAttack(transform.position, aimDir, ComputeTargetPos(1, aimDir, magnitude), 1);
+        CmdUseAttack(transform.position, aimDir, ComputeTargetPos(1, aimDir, magnitude, worldPos), 1);
     }
 
-    public void UseSkill2Attack(Vector3 aimDir, float magnitude = 1f)
+    public void UseSkill2Attack(Vector3 aimDir, float magnitude = 1f, Vector3 worldPos = default)
     {
         if (!CanUse(2, ref lastSkill2Time))
         {
@@ -122,21 +122,25 @@ public class CharacterWeapon : NetworkBehaviour
             {
                 _bufSkill2Time   = Time.time;
                 _bufSkill2Dir    = aimDir;
-                _bufSkill2Target = ComputeTargetPos(2, aimDir, magnitude);
+                _bufSkill2Target = ComputeTargetPos(2, aimDir, magnitude, worldPos);
             }
             return;
         }
         _bufSkill2Time = -99f;
         _lockUntil     = Time.time + (GetSkill(2)?.lockDuration ?? 0f);
-        CmdUseAttack(transform.position, aimDir, ComputeTargetPos(2, aimDir, magnitude), 2);
+        CmdUseAttack(transform.position, aimDir, ComputeTargetPos(2, aimDir, magnitude, worldPos), 2);
     }
 
-    // TargetPoint 스킬: 조이스틱 magnitude로 착탄거리 결정
-    private Vector3 ComputeTargetPos(int skillIndex, Vector3 aimDir, float magnitude)
+    // TargetPoint 스킬: PC는 마우스 월드 좌표 직접 사용, 모바일은 조이스틱 magnitude로 거리 결정
+    private Vector3 ComputeTargetPos(int skillIndex, Vector3 aimDir, float magnitude, Vector3 worldPos = default)
     {
         var skill = GetSkill(skillIndex);
         if (skill == null || skill.inputType != SkillInputType.TargetPoint)
             return Vector3.zero;
+
+        // PC: 마우스 월드 좌표가 있으면 직접 사용 (maxDist 클램프는 PerformProjectile에서 처리)
+        if (worldPos != Vector3.zero)
+            return worldPos;
 
         float maxDist = 10f;
         if (skill.actions != null)

@@ -92,6 +92,23 @@ public class PlayerStats : NetworkBehaviour, IDamageable
 
     private float GetMaxHp() => charStats != null ? charStats.FinalMaxHp : 0f;
 
+    public override void OnStartClient()
+    {
+        if (charStats != null)
+            charStats.OnStatsApplied += OnStatsAppliedFromClient;
+    }
+
+    public override void OnStopClient()
+    {
+        if (charStats != null)
+            charStats.OnStatsApplied -= OnStatsAppliedFromClient;
+    }
+
+    private void OnStatsAppliedFromClient()
+    {
+        hpBar?.UpdateHP(currentHp > 0f ? currentHp : GetMaxHp(), GetMaxHp());
+    }
+
     private void OnHpChanged(float _, float newHp)
     {
         hpBar?.UpdateHP(newHp, GetMaxHp());

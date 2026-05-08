@@ -20,6 +20,10 @@ public class MobileCombatUI : MonoBehaviour
     private PlayerCombat     _combat;
     private CharacterWeapon  _weapon;
 
+    private System.Action<Vector2, float> _onBasicFire;
+    private System.Action<Vector2, float> _onSkill1Fire;
+    private System.Action<Vector2, float> _onSkill2Fire;
+
     private void Update()
     {
         TryBindLocalPlayer();
@@ -38,9 +42,13 @@ public class MobileCombatUI : MonoBehaviour
 
         if (_combat == null) return;
 
-        if (basicJoystick  != null) basicJoystick .OnFire += _combat.HandleAttack;
-        if (skill1Joystick != null) skill1Joystick.OnFire += _combat.HandleSkill1;
-        if (skill2Joystick != null) skill2Joystick.OnFire += _combat.HandleSkill2;
+        _onBasicFire  = (dir, mag) => _combat.HandleAttack(dir, mag);
+        _onSkill1Fire = (dir, mag) => _combat.HandleSkill1(dir, mag);
+        _onSkill2Fire = (dir, mag) => _combat.HandleSkill2(dir, mag);
+
+        if (basicJoystick  != null) basicJoystick .OnFire += _onBasicFire;
+        if (skill1Joystick != null) skill1Joystick.OnFire += _onSkill1Fire;
+        if (skill2Joystick != null) skill2Joystick.OnFire += _onSkill2Fire;
     }
 
     private void UpdateCooldowns()
@@ -54,8 +62,8 @@ public class MobileCombatUI : MonoBehaviour
     private void OnDestroy()
     {
         if (_combat == null) return;
-        if (basicJoystick  != null) basicJoystick .OnFire -= _combat.HandleAttack;
-        if (skill1Joystick != null) skill1Joystick.OnFire -= _combat.HandleSkill1;
-        if (skill2Joystick != null) skill2Joystick.OnFire -= _combat.HandleSkill2;
+        if (basicJoystick  != null) basicJoystick .OnFire -= _onBasicFire;
+        if (skill1Joystick != null) skill1Joystick.OnFire -= _onSkill1Fire;
+        if (skill2Joystick != null) skill2Joystick.OnFire -= _onSkill2Fire;
     }
 }

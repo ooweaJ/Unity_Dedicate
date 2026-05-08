@@ -1,4 +1,5 @@
 using Mirror;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -20,11 +21,16 @@ public class PlayerHPBar : NetworkBehaviour
     [SerializeField] private Color colorMid = Color.yellow;
     [SerializeField] private Color colorLow = Color.red;
 
+    [Header("HP Text")]
+    [SerializeField] private TMP_Text hpText;
+
     [Header("Bush Fade")]
     [SerializeField] [Range(0f, 1f)] private float bushAlpha = 0.4f;
 
     private Image       hpFillImage;
     private CanvasGroup _canvasGroup;
+    private float       _currentHP;
+    private float       _maxHP;
     private Transform   camTransform;
     private float targetRatio = 1f;
     private float delayTimer = 0f;
@@ -47,6 +53,7 @@ public class PlayerHPBar : NetworkBehaviour
         if (hpSlider != null) hpSlider.value = 1f;
         if (delaySlider != null) delaySlider.value = 1f;
         UpdateFillColor(1f);
+        if (hpText != null) hpText.text = "";
     }
 
     private void LateUpdate()
@@ -92,6 +99,9 @@ public class PlayerHPBar : NetworkBehaviour
 
     public void UpdateHP(float current, float max)
     {
+        _currentHP = current;
+        _maxHP     = max;
+
         float ratio = Mathf.Clamp01(current / max);
 
         if (hpSlider != null)
@@ -107,6 +117,9 @@ public class PlayerHPBar : NetworkBehaviour
 
         targetRatio = ratio;
         UpdateFillColor(ratio);
+
+        if (hpText != null)
+            hpText.text = $"{Mathf.CeilToInt(current)}";
     }
 
     private void UpdateFillColor(float ratio)

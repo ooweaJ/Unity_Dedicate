@@ -212,14 +212,25 @@ public class PlayerMovement : NetworkBehaviour
 
     private void OnCollisionStay(Collision col)
     {
-        if (isJumping) return;
+        bool touchedWall = false;
+
         foreach (ContactPoint c in col.contacts)
         {
             if (Vector3.Angle(c.normal, Vector3.up) <= MaxGroundAngle)
             {
-                isGrounded = true;
-                return;
+                if (!isJumping) isGrounded = true;
             }
+            else
+            {
+                touchedWall = true;
+            }
+        }
+
+        // 이미 벽에 붙어있는 상태에서 새 넉백이 들어오면 즉시 벽꿍 처리
+        if (touchedWall && _isKnockedBack && isLocalPlayer)
+        {
+            _isKnockedBack = false;
+            CmdNotifyWallHit();
         }
     }
 

@@ -21,8 +21,16 @@ public class PlayerAnimationController : NetworkBehaviour
     private static readonly int ParamSkill2 = Animator.StringToHash("Skill2");
     private static readonly int ParamHit    = Animator.StringToHash("Hit");
 
-    private Animator animator;
-    private CharacterSpawner characterSpawner;
+    [Header("Trail")]
+    [SerializeField] private float attackTrailDuration = 0.4f;
+    [SerializeField] private float skillTrailDuration  = 0.6f;
+    [SerializeField] private float skill2TrailDuration = 0.6f;
+
+    private Animator              animator;
+    private CharacterSpawner      characterSpawner;
+    private LimbTrailController[] _attackTrails;
+    private LimbTrailController[] _skillTrails;
+    private LimbTrailController[] _skill2Trails;
 
     // ─── SyncVar : 이동 파라미터 ─────────────────────────────────────────
     // 언리얼 RepNotify와 동일 — 서버에서 값 변경 시 모든 클라이언트 hook 호출
@@ -75,6 +83,30 @@ public class PlayerAnimationController : NetworkBehaviour
     public void SetAnimater(Animator animator)
     {
         this.animator = animator;
+        CacheTrails(animator);
+    }
+
+    private void CacheTrails(Animator anim)
+    {
+        var all = anim.GetComponentsInChildren<LimbTrailController>();
+
+        var attack = new System.Collections.Generic.List<LimbTrailController>();
+        var skill  = new System.Collections.Generic.List<LimbTrailController>();
+        var skill2 = new System.Collections.Generic.List<LimbTrailController>();
+
+        foreach (var t in all)
+        {
+            switch (t.trigger)
+            {
+                case TrailTrigger.Attack: attack.Add(t); break;
+                case TrailTrigger.Skill:  skill.Add(t);  break;
+                case TrailTrigger.Skill2: skill2.Add(t); break;
+            }
+        }
+
+        _attackTrails = attack.ToArray();
+        _skillTrails  = skill.ToArray();
+        _skill2Trails = skill2.ToArray();
     }
 
     // ─── 로컬 플레이어 파라미터 업데이트 (PlayerController에서 호출) ──────
@@ -119,18 +151,21 @@ public class PlayerAnimationController : NetworkBehaviour
     public void RpcPlayAttack()
     {
         animator?.SetTrigger(ParamAttack);
+        PlayTrails(_attackTrails, attackTrailDuration);
     }
 
     [ClientRpc]
     public void RpcPlaySkill()
     {
         animator?.SetTrigger(ParamSkill);
+        PlayTrails(_skillTrails, skillTrailDuration);
     }
 
     [ClientRpc]
     public void RpcPlaySkill2()
     {
         animator?.SetTrigger(ParamSkill2);
+        PlayTrails(_skill2Trails, skill2TrailDuration);
     }
 
     // RpcPlayHit는 피격자가 대상 — 피격자 본인도 받아야 하므로 includeOwner 유지
@@ -145,4 +180,12 @@ public class PlayerAnimationController : NetworkBehaviour
     public void PlayAttackLocal() => animator?.SetTrigger(ParamAttack);
     public void PlaySkillLocal()  => animator?.SetTrigger(ParamSkill);
     public void PlaySkill2Local() => animator?.SetTrigger(ParamSkill2);
+
+    // ─── 트레일 유틸 ─────────────────────────────────────────────────────
+    private static void PlayTrails(LimbTrailController[] trails, float duration)
+    {
+        if (trails == null) return;
+        foreach (var t in trails)
+            t?.Play(duration);
+    }
 }

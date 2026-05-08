@@ -16,14 +16,14 @@ public class PlayerCombat : NetworkBehaviour
     }
 
     // ─── PlayerController / MobileCombatUI 가 호출 ───────────────────────
-    public void HandleAttack(Vector2 aimDir2D, float magnitude = 1f)
-        => weapon?.UseBasicAttack(ToAimDir3D(aimDir2D), magnitude);
+    public void HandleAttack(Vector2 aimDir2D, float magnitude = 1f, Vector3 worldPos = default)
+        => weapon?.UseBasicAttack(ToAimDir3D(aimDir2D), magnitude, worldPos);
 
-    public void HandleSkill1(Vector2 aimDir2D, float magnitude = 1f)
-        => weapon?.UseSkill1Attack(ToAimDir3D(aimDir2D), magnitude);
+    public void HandleSkill1(Vector2 aimDir2D, float magnitude = 1f, Vector3 worldPos = default)
+        => weapon?.UseSkill1Attack(ToAimDir3D(aimDir2D), magnitude, worldPos);
 
-    public void HandleSkill2(Vector2 aimDir2D, float magnitude = 1f)
-        => weapon?.UseSkill2Attack(ToAimDir3D(aimDir2D), magnitude);
+    public void HandleSkill2(Vector2 aimDir2D, float magnitude = 1f, Vector3 worldPos = default)
+        => weapon?.UseSkill2Attack(ToAimDir3D(aimDir2D), magnitude, worldPos);
 
     // XZ 평면 2D 방향 → 월드 3D 방향
     private static Vector3 ToAimDir3D(Vector2 dir2D)

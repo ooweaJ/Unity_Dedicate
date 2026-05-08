@@ -1,3 +1,4 @@
+using System;
 using Mirror;
 using UnityEngine;
 
@@ -12,17 +13,25 @@ public class PlayerController : NetworkBehaviour
     private PlayerMovement     movement;
     private PlayerCombat       combat;
 
+    private Action<Vector2, float, Vector3> _onAttack;
+    private Action<Vector2, float, Vector3> _onSkill1;
+    private Action<Vector2, float, Vector3> _onSkill2;
+
     private void Awake()
     {
         input    = GetComponent<PlayerInputHandler>();
         movement = GetComponent<PlayerMovement>();
         combat   = GetComponent<PlayerCombat>();
 
+        _onAttack = (dir, mag, pos) => combat.HandleAttack(dir, mag, pos);
+        _onSkill1 = (dir, mag, pos) => combat.HandleSkill1(dir, mag, pos);
+        _onSkill2 = (dir, mag, pos) => combat.HandleSkill2(dir, mag, pos);
+
         input.OnMove   += movement.HandleMove;
         input.OnJump   += movement.HandleJump;
-        input.OnAttack += combat.HandleAttack;
-        input.OnSkill1 += combat.HandleSkill1;
-        input.OnSkill2 += combat.HandleSkill2;
+        input.OnAttack += _onAttack;
+        input.OnSkill1 += _onSkill1;
+        input.OnSkill2 += _onSkill2;
     }
 
     private void OnDestroy()
@@ -30,8 +39,8 @@ public class PlayerController : NetworkBehaviour
         if (input == null) return;
         input.OnMove   -= movement.HandleMove;
         input.OnJump   -= movement.HandleJump;
-        input.OnAttack -= combat.HandleAttack;
-        input.OnSkill1 -= combat.HandleSkill1;
-        input.OnSkill2 -= combat.HandleSkill2;
+        input.OnAttack -= _onAttack;
+        input.OnSkill1 -= _onSkill1;
+        input.OnSkill2 -= _onSkill2;
     }
 }

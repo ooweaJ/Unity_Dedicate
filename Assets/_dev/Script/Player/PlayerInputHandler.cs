@@ -15,10 +15,10 @@ public class PlayerInputHandler : MonoBehaviour
     public event Action<Vector2> OnMove;
     public event Action          OnJump;
 
-    // Vector2 = XZ 평면 조준 방향(normalized), float = magnitude(TargetPoint 거리용, PC는 항상 1)
-    public event Action<Vector2, float> OnAttack;
-    public event Action<Vector2, float> OnSkill1;
-    public event Action<Vector2, float> OnSkill2;
+    // Vector2 = XZ 평면 조준 방향(normalized), float = magnitude, Vector3 = 마우스 월드 좌표(PC) or zero(모바일)
+    public event Action<Vector2, float, Vector3> OnAttack;
+    public event Action<Vector2, float, Vector3> OnSkill1;
+    public event Action<Vector2, float, Vector3> OnSkill2;
 
     private NetworkIdentity netIdentity;
     private InputAction moveAction, jumpAction, attackAction, skill1Action, skill2Action;
@@ -54,15 +54,15 @@ public class PlayerInputHandler : MonoBehaviour
 
         attackAction = new InputAction("Attack", InputActionType.Button);
         attackAction.AddBinding("<Mouse>/leftButton");
-        attackAction.performed += _ => { if (IsControllable) OnAttack?.Invoke(GetMouseAimDir(), 1f); };
+        attackAction.performed += _ => { if (IsControllable) OnAttack?.Invoke(GetMouseAimDir(), 1f, GetMouseWorldPos()); };
 
         skill1Action = new InputAction("Skill1", InputActionType.Button);
         skill1Action.AddBinding("<Keyboard>/q");
-        skill1Action.performed += _ => { if (IsControllable) OnSkill1?.Invoke(GetMouseAimDir(), 1f); };
+        skill1Action.performed += _ => { if (IsControllable) OnSkill1?.Invoke(GetMouseAimDir(), 1f, GetMouseWorldPos()); };
 
         skill2Action = new InputAction("Skill2", InputActionType.Button);
         skill2Action.AddBinding("<Keyboard>/e");
-        skill2Action.performed += _ => { if (IsControllable) OnSkill2?.Invoke(GetMouseAimDir(), 1f); };
+        skill2Action.performed += _ => { if (IsControllable) OnSkill2?.Invoke(GetMouseAimDir(), 1f, GetMouseWorldPos()); };
     }
 
     // 마우스 위치 → 캐릭터 기준 XZ 방향
@@ -82,6 +82,20 @@ public class PlayerInputHandler : MonoBehaviour
                 return new Vector2(dir.x, dir.z).normalized;
         }
         return new Vector2(transform.forward.x, transform.forward.z);
+    }
+
+    // 마우스 위치 → 월드 좌표 (y=캐릭터 기준 수평면)
+    private Vector3 GetMouseWorldPos()
+    {
+        if (Camera.main == null) return Vector3.zero;
+
+        var plane = new Plane(Vector3.up, transform.position);
+        var ray   = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+
+        if (plane.Raycast(ray, out float dist))
+            return ray.GetPoint(dist);
+
+        return Vector3.zero;
     }
 
     private void OnEnable()

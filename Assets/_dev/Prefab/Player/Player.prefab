@@ -222,6 +222,9 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
+  attackTrailDuration: 0.4
+  skillTrailDuration: 0.6
+  skill2TrailDuration: 0.6
 --- !u!114 &-9053835182726575813
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -306,6 +309,8 @@ MonoBehaviour:
   colorFull: {r: 0, g: 1, b: 0, a: 1}
   colorMid: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   colorLow: {r: 1, g: 0, b: 0, a: 1}
+  hpText: {fileID: 2909988674422357672}
+  bushAlpha: 0.4
 --- !u!114 &-8084679952486756348
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -340,14 +345,17 @@ MonoBehaviour:
   skills:
   - skillName: "\uC2A4\uD0AC"
     cooldown: 0.8
+    lockDuration: 0.5
     inputType: 0
     actions: []
   - skillName: "\uC2A4\uD0AC"
     cooldown: 0.8
+    lockDuration: 0.5
     inputType: 0
     actions: []
   - skillName: "\uC2A4\uD0AC"
     cooldown: 0.8
+    lockDuration: 0.5
     inputType: 0
     actions: []
 --- !u!114 &5450027281985294688
@@ -502,14 +510,6 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 1984058379432112700, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
-      propertyPath: m_Layer
-      value: 6
-      objectReference: {fileID: 0}
-    - target: {fileID: 1992448107970781536, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
-      propertyPath: m_Layer
-      value: 6
-      objectReference: {fileID: 0}
     - target: {fileID: 3419455506226768407, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_PresetInfoIsWorld
       value: 1
@@ -518,26 +518,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: HPBar
       objectReference: {fileID: 0}
-    - target: {fileID: 3459339935210948148, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
-      propertyPath: m_Layer
-      value: 6
-      objectReference: {fileID: 0}
-    - target: {fileID: 3726765837038382677, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
-      propertyPath: m_Layer
-      value: 6
-      objectReference: {fileID: 0}
-    - target: {fileID: 5343023629321985158, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
-      propertyPath: m_Layer
-      value: 6
-      objectReference: {fileID: 0}
-    - target: {fileID: 6288420852950507400, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
-      propertyPath: m_Layer
-      value: 6
-      objectReference: {fileID: 0}
-    - target: {fileID: 7693279284980797842, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
-      propertyPath: m_Layer
-      value: 6
-      objectReference: {fileID: 0}
     - target: {fileID: 7790097510283850154, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -546,10 +526,6 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 7838438859927746327, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
-      propertyPath: m_Layer
-      value: 6
-      objectReference: {fileID: 0}
     - target: {fileID: 8023960165083474376, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -557,16 +533,23 @@ PrefabInstance:
     - target: {fileID: 8023960165083474376, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_AnchorMax.y
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8523464846510073093, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
-      propertyPath: m_SortingOrder
-      value: 5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
+--- !u!114 &2909988674422357672 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7963247486799466522, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
+  m_PrefabInstance: {fileID: 5107495591285288626}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Unity.TextMeshPro::TMPro.TextMeshProUGUI
 --- !u!114 &4629831335788962907 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 477679786148399849, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
