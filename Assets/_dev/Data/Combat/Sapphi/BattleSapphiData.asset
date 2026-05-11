@@ -81,7 +81,7 @@ MonoBehaviour:
       projectileData: {fileID: 0}
       dashSpeed: 10
       dashDuration: 0.5
-      dashDamageRadius: 10
+      dashDamageRadius: 1
       onHitEffect:
         type: 1
         value: 1
