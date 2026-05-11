@@ -54,6 +54,7 @@ public class ProjectileBase : NetworkBehaviour
     private void OnVisualIndexChanged(int _, int newIndex)
     {
         var visual = ProjectileManager.Instance?.GetVisual(newIndex);
+        Debug.Log($"[DBG-VISUAL] index={newIndex}  visual={(visual != null ? visual.name : "NULL")}  isServer={isServer}");
         if (visual == null) return;
 
         var obj = Instantiate(visual, transform);

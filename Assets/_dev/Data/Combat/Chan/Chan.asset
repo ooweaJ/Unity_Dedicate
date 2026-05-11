@@ -67,11 +67,11 @@ MonoBehaviour:
   - skillName: "\uD3ED\uD314 \uBD88\uB369\uC774"
     cooldown: 8
     lockDuration: 1
-    inputType: 0
+    inputType: 1
     actions:
     - actionName: "\uD3ED\uD314 \uBD88\uB369\uC774"
       delay: 0.2
-      damageMultiplier: 0
+      damageMultiplier: 1
       targetLayer:
         serializedVersion: 2
         m_Bits: 64

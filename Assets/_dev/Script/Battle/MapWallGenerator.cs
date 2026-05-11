@@ -15,6 +15,10 @@ public class MapWallGenerator : MonoBehaviour
     [SerializeField] private GameObject[] wallPrefabs;
     [SerializeField] [Min(1)] private int wallHeight = 3;
 
+    [Header("레이어")]
+    [Tooltip("Wall 컨테이너에 적용할 레이어 이름 (Project Settings > Tags & Layers)")]
+    [SerializeField] private string wallLayerName = "Wall";
+
 #if UNITY_EDITOR
     private void OnValidate()
     {
@@ -51,11 +55,14 @@ public class MapWallGenerator : MonoBehaviour
         float offsetZ    = (height + 1) * 0.5f;
         float colCenterY = (wallHeight - 1) * 0.5f;
 
+        int wallLayer = LayerMask.NameToLayer(wallLayerName);
+        if (wallLayer < 0) wallLayer = 0;
+
         // Front (z+) / Back (z-) — 코너 포함 (width+2)
-        var front = CreateContainer("Wall_Front");
+        var front = CreateContainer("Wall_Front", wallLayer);
         AddCollider(front, new Vector3(0f, colCenterY,  offsetZ), new Vector3(width + 2, wallHeight, 1f));
 
-        var back = CreateContainer("Wall_Back");
+        var back = CreateContainer("Wall_Back", wallLayer);
         AddCollider(back,  new Vector3(0f, colCenterY, -offsetZ), new Vector3(width + 2, wallHeight, 1f));
 
         for (int x = 0; x < width + 2; x++)
@@ -66,10 +73,10 @@ public class MapWallGenerator : MonoBehaviour
         }
 
         // Left (x-) / Right (x+) — 코너 제외 (height)
-        var left = CreateContainer("Wall_Left");
+        var left = CreateContainer("Wall_Left", wallLayer);
         AddCollider(left,  new Vector3(-offsetX, colCenterY, 0f), new Vector3(1f, wallHeight, height));
 
-        var right = CreateContainer("Wall_Right");
+        var right = CreateContainer("Wall_Right", wallLayer);
         AddCollider(right, new Vector3( offsetX, colCenterY, 0f), new Vector3(1f, wallHeight, height));
 
         for (int z = 0; z < height; z++)
@@ -117,9 +124,10 @@ public class MapWallGenerator : MonoBehaviour
 
     // ── 유틸 ──────────────────────────────────────────────────────────────────
 
-    private Transform CreateContainer(string containerName)
+    private Transform CreateContainer(string containerName, int layer = 0)
     {
         var go = new GameObject(containerName);
+        go.layer = layer;
         go.transform.SetParent(transform);
         go.transform.localPosition = Vector3.zero;
         go.transform.localRotation = Quaternion.identity;

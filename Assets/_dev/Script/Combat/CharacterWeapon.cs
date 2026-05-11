@@ -339,7 +339,7 @@ public class CharacterWeapon : NetworkBehaviour
 
             proj.Init(shotDir, gameObject, dmg, data);
 
-            if (isTargetReached && proj is ExplosiveProjectile expProj)
+            if (isTargetReached && clampedTarget != Vector3.zero && proj is ExplosiveProjectile expProj)
                 expProj.SetTargetPosition(clampedTarget);
 
             NetworkServer.Spawn(obj);
@@ -398,6 +398,21 @@ public class CharacterWeapon : NetworkBehaviour
             case 1: anim?.RpcPlaySkill();  break;
             case 2: anim?.RpcPlaySkill2(); break;
         }
+    }
+
+    /// <summary>해당 슬롯이 착탄점 지정형(수류탄류)인지 반환</summary>
+    public bool IsTargetPointSkill(int index)
+        => GetSkill(index)?.inputType == SkillInputType.TargetPoint;
+
+    /// <summary>해당 슬롯의 폭발 투사체 데이터(maxDistance, explosionRadius) 반환</summary>
+    public (float maxDist, float radius) GetExplosiveSkillInfo(int index)
+    {
+        var skill = GetSkill(index);
+        if (skill?.actions != null)
+            foreach (var action in skill.actions)
+                if (action.projectileData is ExplosiveProjectileDataSO exp)
+                    return (exp.maxDistance, exp.explosionRadius);
+        return (10f, 3f);
     }
 
     private SkillData GetSkill(int index)

@@ -15,10 +15,16 @@ public class PlayerInputHandler : MonoBehaviour
     public event Action<Vector2> OnMove;
     public event Action          OnJump;
 
-    // Vector2 = XZ 평면 조준 방향(normalized), float = magnitude, Vector3 = 마우스 월드 좌표(PC) or zero(모바일)
-    public event Action<Vector2, float, Vector3> OnAttack;
-    public event Action<Vector2, float, Vector3> OnSkill1;
-    public event Action<Vector2, float, Vector3> OnSkill2;
+    // 모든 스킬 공통: Down = 누른 순간(조준 시작), Up = 뗀 순간(발사)
+    // 빠른 공격은 탭(바로 떼기)하면 즉시 발사와 동일하게 동작
+    public event Action                          OnAttackDown;
+    public event Action<Vector2, float, Vector3> OnAttackUp;
+
+    public event Action                          OnSkill1Down;
+    public event Action<Vector2, float, Vector3> OnSkill1Up;
+
+    public event Action                          OnSkill2Down;
+    public event Action<Vector2, float, Vector3> OnSkill2Up;
 
     private NetworkIdentity netIdentity;
     private InputAction moveAction, jumpAction, attackAction, skill1Action, skill2Action;
@@ -54,15 +60,18 @@ public class PlayerInputHandler : MonoBehaviour
 
         attackAction = new InputAction("Attack", InputActionType.Button);
         attackAction.AddBinding("<Mouse>/leftButton");
-        attackAction.performed += _ => { if (IsControllable) OnAttack?.Invoke(GetMouseAimDir(), 1f, GetMouseWorldPos()); };
+        attackAction.started  += _ => { if (IsControllable) OnAttackDown?.Invoke(); };
+        attackAction.canceled += _ => { if (IsControllable) OnAttackUp?.Invoke(GetMouseAimDir(), 1f, GetMouseWorldPos()); };
 
         skill1Action = new InputAction("Skill1", InputActionType.Button);
         skill1Action.AddBinding("<Keyboard>/q");
-        skill1Action.performed += _ => { if (IsControllable) OnSkill1?.Invoke(GetMouseAimDir(), 1f, GetMouseWorldPos()); };
+        skill1Action.started  += _ => { if (IsControllable) OnSkill1Down?.Invoke(); };
+        skill1Action.canceled += _ => { if (IsControllable) OnSkill1Up?.Invoke(GetMouseAimDir(), 1f, GetMouseWorldPos()); };
 
         skill2Action = new InputAction("Skill2", InputActionType.Button);
         skill2Action.AddBinding("<Keyboard>/e");
-        skill2Action.performed += _ => { if (IsControllable) OnSkill2?.Invoke(GetMouseAimDir(), 1f, GetMouseWorldPos()); };
+        skill2Action.started  += _ => { if (IsControllable) OnSkill2Down?.Invoke(); };
+        skill2Action.canceled += _ => { if (IsControllable) OnSkill2Up?.Invoke(GetMouseAimDir(), 1f, GetMouseWorldPos()); };
     }
 
     // 마우스 위치 → 캐릭터 기준 XZ 방향

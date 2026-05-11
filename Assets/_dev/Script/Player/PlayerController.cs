@@ -13,9 +13,12 @@ public class PlayerController : NetworkBehaviour
     private PlayerMovement     movement;
     private PlayerCombat       combat;
 
-    private Action<Vector2, float, Vector3> _onAttack;
-    private Action<Vector2, float, Vector3> _onSkill1;
-    private Action<Vector2, float, Vector3> _onSkill2;
+    private Action                          _onAttackDown;
+    private Action<Vector2, float, Vector3> _onAttackUp;
+    private Action                          _onSkill1Down;
+    private Action<Vector2, float, Vector3> _onSkill1Up;
+    private Action                          _onSkill2Down;
+    private Action<Vector2, float, Vector3> _onSkill2Up;
 
     private void Awake()
     {
@@ -23,24 +26,33 @@ public class PlayerController : NetworkBehaviour
         movement = GetComponent<PlayerMovement>();
         combat   = GetComponent<PlayerCombat>();
 
-        _onAttack = (dir, mag, pos) => combat.HandleAttack(dir, mag, pos);
-        _onSkill1 = (dir, mag, pos) => combat.HandleSkill1(dir, mag, pos);
-        _onSkill2 = (dir, mag, pos) => combat.HandleSkill2(dir, mag, pos);
+        _onAttackDown = ()                   => combat.HandleSkillDown(0);
+        _onAttackUp   = (dir, mag, pos)      => combat.HandleSkillReleased(0, dir, mag, pos);
+        _onSkill1Down = ()                   => combat.HandleSkillDown(1);
+        _onSkill1Up   = (dir, mag, pos)      => combat.HandleSkillReleased(1, dir, mag, pos);
+        _onSkill2Down = ()                   => combat.HandleSkillDown(2);
+        _onSkill2Up   = (dir, mag, pos)      => combat.HandleSkillReleased(2, dir, mag, pos);
 
-        input.OnMove   += movement.HandleMove;
-        input.OnJump   += movement.HandleJump;
-        input.OnAttack += _onAttack;
-        input.OnSkill1 += _onSkill1;
-        input.OnSkill2 += _onSkill2;
+        input.OnMove      += movement.HandleMove;
+        input.OnJump      += movement.HandleJump;
+        input.OnAttackDown += _onAttackDown;
+        input.OnAttackUp   += _onAttackUp;
+        input.OnSkill1Down += _onSkill1Down;
+        input.OnSkill1Up   += _onSkill1Up;
+        input.OnSkill2Down += _onSkill2Down;
+        input.OnSkill2Up   += _onSkill2Up;
     }
 
     private void OnDestroy()
     {
         if (input == null) return;
-        input.OnMove   -= movement.HandleMove;
-        input.OnJump   -= movement.HandleJump;
-        input.OnAttack -= _onAttack;
-        input.OnSkill1 -= _onSkill1;
-        input.OnSkill2 -= _onSkill2;
+        input.OnMove      -= movement.HandleMove;
+        input.OnJump      -= movement.HandleJump;
+        input.OnAttackDown -= _onAttackDown;
+        input.OnAttackUp   -= _onAttackUp;
+        input.OnSkill1Down -= _onSkill1Down;
+        input.OnSkill1Up   -= _onSkill1Up;
+        input.OnSkill2Down -= _onSkill2Down;
+        input.OnSkill2Up   -= _onSkill2Up;
     }
 }

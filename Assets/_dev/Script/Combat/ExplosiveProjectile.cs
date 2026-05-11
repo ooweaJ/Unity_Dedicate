@@ -1,14 +1,7 @@
+using System.Collections.Generic;
 using Mirror;
 using UnityEngine;
 
-/// <summary>
-/// 폭발 투사체
-///
-/// OnImpact:        충돌 즉시 폭발
-/// OnMaxDistance:   최대 거리 직선 비행 후 자동 폭발 (경로상 충돌 무시)
-/// OnTargetReached: 지정 착탄점까지 포물선(수류탄) 비행 후 폭발 (벽 통과)
-///                  CharacterWeapon.PerformProjectile에서 SetTargetPosition() 호출 필요
-/// </summary>
 public class ExplosiveProjectile : ProjectileBase
 {
     private ExplosionTrigger trigger;
@@ -17,6 +10,7 @@ public class ExplosiveProjectile : ProjectileBase
 
     // OnTargetReached 전용
     [SyncVar] private Vector3 _targetPos;
+    private bool              _hasTarget;   // Vector3.zero 착탄점 버그 방지용
     private Vector3           _spawnPos;
     private float             _targetDist;
     private float             _arcHeight;
@@ -42,23 +36,27 @@ public class ExplosiveProjectile : ProjectileBase
             explosionEffect      = expData.explosionEffect;
             _arcHeight           = expData.arcHeight;
         }
+
+        Debug.Log($"[Explosive] Init — trigger={trigger}, arcHeight={_arcHeight}, " +
+                  $"radius={explosionRadius}, dmg={dmg}, multiplier={explosionMultiplier}");
     }
 
-    /// <summary>
-    /// OnTargetReached 전용. NetworkServer.Spawn 호출 전에 서버에서 설정한다.
-    /// </summary>
     [Server]
     public void SetTargetPosition(Vector3 worldPos)
     {
         _spawnPos  = transform.position;
         _targetPos = worldPos;
+        _hasTarget = true;
 
         _targetDist = Vector3.Distance(
             new Vector3(_spawnPos.x, 0f, _spawnPos.z),
             new Vector3(worldPos.x,  0f, worldPos.z));
+
+        Debug.Log($"[DBG-SET] spawn={_spawnPos:F2}  target={worldPos:F2}  dist={_targetDist:F2}  speed={speed}  예상비행={_targetDist/Mathf.Max(speed,0.01f):F2}s");
     }
 
     // ─── 이동 ─────────────────────────────────────────────────────────────
+
     protected override void FixedUpdate()
     {
         if (!isServer) return;
@@ -83,9 +81,15 @@ public class ExplosiveProjectile : ProjectileBase
     }
 
     // 포물선 이동 — 수평 속도 일정, Y는 4t(1-t) 포물선
+    private bool _dbgFirstArcFrame = true;
+
     private void MoveArc()
     {
-        if (_targetPos == Vector3.zero) return;
+        if (!_hasTarget)
+        {
+            Debug.LogWarning("[DBG-ARC] _hasTarget=false → 이동 안 함 (SetTargetPosition 미호출)");
+            return;
+        }
 
         traveledDistance += speed * Time.fixedDeltaTime;
         float t = _targetDist > 0f ? Mathf.Clamp01(traveledDistance / _targetDist) : 1f;
@@ -96,22 +100,36 @@ public class ExplosiveProjectile : ProjectileBase
         float   arcY    = _arcHeight * 4f * t * (1f - t);
         Vector3 nextPos = new Vector3(flatPos.x, _spawnPos.y + arcY, flatPos.z);
 
+        if (_dbgFirstArcFrame)
+        {
+            _dbgFirstArcFrame = false;
+            Debug.Log($"[DBG-ARC 1프레임] t={t:F3}  traveled={traveledDistance:F3}  targetDist={_targetDist:F2}  " +
+                      $"speed={speed}  rb.pos={rb.position:F2}  nextPos={nextPos:F2}");
+        }
+
         Vector3 moveDir = nextPos - rb.position;
         if (moveDir != Vector3.zero)
             transform.rotation = Quaternion.LookRotation(moveDir);
-        rb.MovePosition(nextPos);
 
         if (t >= 1f)
         {
+            // rb.position은 FixedUpdate 내 transform과 동기화 안 됨 → transform.position 직접 설정
+            transform.position = nextPos;
+            Debug.Log($"[DBG-ARC 도착] nextPos={nextPos:F2}  tf.pos(설정 후)={transform.position:F2}");
             Explode();
             DestroySelf();
+        }
+        else
+        {
+            rb.MovePosition(nextPos);
         }
     }
 
     // ─── 충돌 처리 ────────────────────────────────────────────────────────
+
     protected override void HandleTriggerEnter(Collider other)
     {
-        // 거리/착탄점 모드는 충돌 무시 (벽 통과)
+        Debug.Log($"[DBG-HIT] trigger={trigger}  other={other.name}  layer={LayerMask.LayerToName(other.gameObject.layer)}  tf.pos={transform.position:F2}");
         if (trigger == ExplosionTrigger.OnMaxDistance ||
             trigger == ExplosionTrigger.OnTargetReached) return;
 
@@ -120,29 +138,44 @@ public class ExplosiveProjectile : ProjectileBase
     }
 
     // ─── 폭발 판정 ────────────────────────────────────────────────────────
+
     [Server]
     private void Explode()
     {
-        Collider[] hits = Physics.OverlapSphere(transform.position, explosionRadius, explosionTargetLayer);
+        Debug.Log($"[DBG-EXPLODE] tf.pos={transform.position:F2}  rb.pos={rb.position:F2}  " +
+                  $"radius={explosionRadius}  layer={explosionTargetLayer.value}  dmg={damage}x{explosionMultiplier}");
+
+        Collider[] hits     = Physics.OverlapSphere(transform.position, explosionRadius, explosionTargetLayer);
+        var        hitRoots = new HashSet<GameObject>();
+
+        Debug.Log($"[Explosive] OverlapSphere hit {hits.Length} colliders");
 
         foreach (var hit in hits)
         {
-            if (owner != null && hit.transform.root.gameObject == owner) continue;
+            var root = hit.transform.root.gameObject;
+            if (owner != null && root == owner) continue;
+            if (!hitRoots.Add(root)) continue;
 
-            float dist     = Vector3.Distance(transform.position, hit.transform.position);
-            float range    = Mathf.Max(0.01f, explosionRadius - explosionInnerRadius);
-            float falloff  = 1f - Mathf.Clamp01((dist - explosionInnerRadius) / range);
-            float finalDmg = damage * explosionMultiplier * falloff;
+            Vector3 closest  = hit.ClosestPoint(transform.position);
+            float   dist     = Vector3.Distance(transform.position, closest);
+            float   range    = Mathf.Max(0.01f, explosionRadius - explosionInnerRadius);
+            float   falloff  = 1f - Mathf.Clamp01((dist - explosionInnerRadius) / range);
+            float   finalDmg = damage * explosionMultiplier * falloff;
 
-            Vector3 blastDir = (hit.transform.position - transform.position).normalized;
-            var info = new DamageInfo(finalDmg, owner, blastDir, statusEffect);
-            hit.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
-            hit.transform.root.GetComponent<PlayerAnimationController>()
-                ?.RpcPlayHit(hit.transform.position, hitEffect);
+            Debug.Log($"[Explosive] Hit '{root.name}' — dist={dist:F2}, falloff={falloff:F2}, finalDmg={finalDmg:F1}");
+
+            Vector3 blastDir = (root.transform.position - transform.position).normalized;
+            var     info     = new DamageInfo(finalDmg, owner, blastDir, statusEffect);
+            root.GetComponent<IDamageable>()?.TakeDamage(info);
+            root.GetComponent<PlayerAnimationController>()?.RpcPlayHit(closest, hitEffect);
         }
 
         owner?.GetComponent<PlayerBushState>()?.RevealTemporarily();
         RpcPlayExplosionEffect(transform.position, explosionEffect);
+
+#if UNITY_EDITOR
+        DrawExplosionGizmo();
+#endif
     }
 
     [ClientRpc]
@@ -150,4 +183,34 @@ public class ExplosiveProjectile : ProjectileBase
     {
         EffectManager.Instance?.Play(effect, pos);
     }
+
+    // ─── 에디터 디버그 시각화 ─────────────────────────────────────────────
+
+#if UNITY_EDITOR
+    private void DrawExplosionGizmo()
+    {
+        const int   seg = 48;
+        const float dur = 3f;
+        Vector3     pos = transform.position;
+
+        for (int i = 0; i < seg; i++)
+        {
+            float a1 = i       * Mathf.PI * 2f / seg;
+            float a2 = (i + 1) * Mathf.PI * 2f / seg;
+
+            // 빨강 = 폭발 반경 (XZ 수평)
+            Debug.DrawLine(
+                pos + new Vector3(Mathf.Cos(a1), 0f, Mathf.Sin(a1)) * explosionRadius,
+                pos + new Vector3(Mathf.Cos(a2), 0f, Mathf.Sin(a2)) * explosionRadius,
+                Color.red, dur);
+
+            // 노랑 = 풀 데미지 내부 반경
+            if (explosionInnerRadius > 0f)
+                Debug.DrawLine(
+                    pos + new Vector3(Mathf.Cos(a1), 0f, Mathf.Sin(a1)) * explosionInnerRadius,
+                    pos + new Vector3(Mathf.Cos(a2), 0f, Mathf.Sin(a2)) * explosionInnerRadius,
+                    Color.yellow, dur);
+        }
+    }
+#endif
 }
