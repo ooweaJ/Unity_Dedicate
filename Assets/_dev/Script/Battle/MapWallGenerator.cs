@@ -47,12 +47,16 @@ public class MapWallGenerator : MonoBehaviour
     {
         if (wallPrefabs == null || wallPrefabs.Length == 0) return;
 
-        float offsetX = (width  + 1) * 0.5f;
-        float offsetZ = (height + 1) * 0.5f;
+        float offsetX    = (width  + 1) * 0.5f;
+        float offsetZ    = (height + 1) * 0.5f;
+        float colCenterY = (wallHeight - 1) * 0.5f;
 
         // Front (z+) / Back (z-) — 코너 포함 (width+2)
         var front = CreateContainer("Wall_Front");
-        var back  = CreateContainer("Wall_Back");
+        AddCollider(front, new Vector3(0f, colCenterY,  offsetZ), new Vector3(width + 2, wallHeight, 1f));
+
+        var back = CreateContainer("Wall_Back");
+        AddCollider(back,  new Vector3(0f, colCenterY, -offsetZ), new Vector3(width + 2, wallHeight, 1f));
 
         for (int x = 0; x < width + 2; x++)
         {
@@ -62,8 +66,11 @@ public class MapWallGenerator : MonoBehaviour
         }
 
         // Left (x-) / Right (x+) — 코너 제외 (height)
-        var left  = CreateContainer("Wall_Left");
+        var left = CreateContainer("Wall_Left");
+        AddCollider(left,  new Vector3(-offsetX, colCenterY, 0f), new Vector3(1f, wallHeight, height));
+
         var right = CreateContainer("Wall_Right");
+        AddCollider(right, new Vector3( offsetX, colCenterY, 0f), new Vector3(1f, wallHeight, height));
 
         for (int z = 0; z < height; z++)
         {
@@ -71,6 +78,13 @@ public class MapWallGenerator : MonoBehaviour
             SpawnColumn(left,  -offsetX, wz, z);
             SpawnColumn(right,  offsetX, wz, z);
         }
+    }
+
+    private static void AddCollider(Transform container, Vector3 center, Vector3 size)
+    {
+        var col = container.gameObject.AddComponent<BoxCollider>();
+        col.center = center;
+        col.size   = size;
     }
 
     private void SpawnColumn(Transform container, float wx, float wz, int colIndex)

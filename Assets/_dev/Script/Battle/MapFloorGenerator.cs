@@ -47,6 +47,12 @@ public class MapFloorGenerator : MonoBehaviour
         if (tilePrefabs == null || tilePrefabs.Length == 0) return;
 
         var container = CreateContainer(FloorContainer);
+
+        // 바닥 전체를 덮는 단일 콜리전 (타일 개수와 무관하게 1개)
+        var col = container.gameObject.AddComponent<BoxCollider>();
+        col.center = Vector3.zero;
+        col.size   = new Vector3(width, 1f, height);
+
         float offsetX = (width  - 1) * 0.5f;
         float offsetZ = (height - 1) * 0.5f;
 
