@@ -18,7 +18,7 @@ public class ProjectileBase : NetworkBehaviour
     [SyncVar(hook = nameof(OnVisualIndexChanged))]
     private int visualIndex = -1;
 
-    protected float        speed;
+    [SyncVar] protected float speed;
     protected float        lifeTime;
     protected LayerMask    hitLayers;
     protected EffectType   hitEffect;
@@ -50,11 +50,9 @@ public class ProjectileBase : NetworkBehaviour
         Invoke(nameof(DestroySelf), lifeTime);
     }
 
-    // SyncVar 훅 — 서버/클라이언트 모두 호출됨 (스폰 시 초기값 포함)
     private void OnVisualIndexChanged(int _, int newIndex)
     {
         var visual = ProjectileManager.Instance?.GetVisual(newIndex);
-        Debug.Log($"[DBG-VISUAL] index={newIndex}  visual={(visual != null ? visual.name : "NULL")}  isServer={isServer}");
         if (visual == null) return;
 
         var obj = Instantiate(visual, transform);

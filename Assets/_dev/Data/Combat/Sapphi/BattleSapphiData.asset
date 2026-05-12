@@ -66,7 +66,7 @@ MonoBehaviour:
       hitEffect: 1
   - skillName: "\uB300\uC26C \uBC1C\uCC28\uAE30"
     cooldown: 8
-    lockDuration: 1.5
+    lockDuration: 1
     inputType: 0
     actions:
     - actionName: "\uB300\uC26C"
