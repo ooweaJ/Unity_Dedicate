@@ -5,8 +5,7 @@ public enum ItemType
 {
     Consumable,     // 소모품
     Equipment,      // 장비
-    Material,       // 재료
-    Transcendence,  // 초월
+    Transcendence,  // 초월 조각
 }
 
 public enum EquipmentSlotType 
@@ -21,8 +20,8 @@ public enum ItemActionType
 {
     Use,
     Discard,
-    OpenTranscendence,
-    Enhance
+    Enhance,
+    Equip
 }
 
 [System.Serializable]
@@ -42,9 +41,6 @@ public class ItemRawData
     public int maxStack;
     [TextArea(3, 10)]
     public string description;
-
-    [Header("Actions")]
-    public List<ItemActionDef> actions; // 소모품/재료용 클릭 액션
 
     [Header("Equipment Stats (Only for Equipment)")]
     public EquipmentSlotType slotType;

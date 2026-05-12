@@ -19,8 +19,9 @@ public class InventorySlot : BaseSlot,
 
     public event Action<int, Vector2> OnHoverEnter;
     public event Action               OnHoverExit;
-    public event Action<int, Vector2> OnClicked;   // 클릭 (소비템/재료/장비 강화)
-    public event Action<int>          OnDragBegin; // 드래그 시작 (장비 장착)
+    public event Action<int, Vector2> OnClicked;      // 좌클릭 — 팝업
+    public event Action<int, Vector2> OnRightClicked; // 우클릭 — 장비 자동 장착
+    public event Action<int>          OnDragBegin;    // 드래그 시작 — 장비 장착
 
     public override void SetItem(int itemId, ItemRawData data, int amount)
     {
@@ -38,7 +39,10 @@ public class InventorySlot : BaseSlot,
     public void OnPointerClick(PointerEventData e)
     {
         if (IsEmpty) return;
-        OnClicked?.Invoke(ItemId, e.position);
+        if (e.button == PointerEventData.InputButton.Right)
+            OnRightClicked?.Invoke(ItemId, e.position);
+        else
+            OnClicked?.Invoke(ItemId, e.position);
     }
 
     public void OnBeginDrag(PointerEventData e)

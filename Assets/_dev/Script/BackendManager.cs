@@ -58,11 +58,11 @@ public static class BackendManager
     }
 
     // POST /users/:userId/transcend
-    // 캐릭터 초월 — N초월에 조각 N개 소모, 100% 성공
-    // 응답: { success, transcendStage, newMaxLevel, shardsUsed, user }
-    public static async Task<string> TranscendCharacter(int userId, int characterId)
+    // 캐릭터 초월 — shardsToUse / shardsRequired 확률 판정, 실패해도 조각 소모
+    // 응답: { success, transcendSuccess, transcendStage, newMaxLevel, shardsUsed, user }
+    public static async Task<string> TranscendCharacter(int userId, int characterId, int shardsToUse)
     {
-        var json    = $"{{\"characterId\":{characterId}}}";
+        var json    = $"{{\"characterId\":{characterId},\"shardsToUse\":{shardsToUse}}}";
         var content = new StringContent(json, Encoding.UTF8, "application/json");
         var res     = await client.PostAsync(baseUrl + $"/users/{userId}/transcend", content);
         return await res.Content.ReadAsStringAsync();

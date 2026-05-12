@@ -15,38 +15,38 @@ public class InventoryUIManager : MonoBehaviour
     [SerializeField] private GameObject panel;
 
     [Header("Sub Managers")]
-    [SerializeField] private CharacterListManager  listManager;
-    [SerializeField] private CharacterModelManager modelManager;
-    [SerializeField] private List<CharacterInfoPanel> CharacterinfoPanels;
-    [SerializeField] private ItemInfoPanel         itemInfoPanel;
-    [SerializeField] private SidebarManager        sidebarManager;
+    [SerializeField] private CharacterListManager      listManager;
+    [SerializeField] private CharacterModelManager     modelManager;
+    [SerializeField] private List<CharacterInfoPanel>  CharacterinfoPanels;
+    [SerializeField] private ItemInfoPanel             itemInfoPanel;
+    [SerializeField] private SidebarManager            sidebarManager;
 
     [Header("Item UIs & Popups")]
-    [SerializeField] private List<InventoryUI>    _itemInventoryUIs;
-    [SerializeField] private List<EquipmentSlot>  _equipmentSlots;
-    [SerializeField] private ItemActionPopup       actionPopup;
-    [SerializeField] private EnhancePanel          enhancePanel;
+    [SerializeField] private List<InventoryUI>   _itemInventoryUIs;
+    [SerializeField] private List<EquipmentSlot> _equipmentSlots;
+    [SerializeField] private ItemActionPopup     actionPopup;
+    [SerializeField] private EnhancePanel        enhancePanel;
+    [SerializeField] private TranscendPanel      transcendPanel;
 
     [Header("Tab Panels")]
     [SerializeField] private List<TabPanelMapping> panelMappings;
 
-    private List<CharacterUIModel>    _characterUIModels   = new();
-    private Dictionary<int, TabPanelMapping> _panelDict   = new();
+    private List<CharacterUIModel>         _characterUIModels  = new();
+    private Dictionary<int, TabPanelMapping> _panelDict        = new();
 
-    // 데이터 캐시
-    private List<PlayerCharacterData>  _cachedCharacterDatas  = new();
-    private List<PlayerEquipmentData>  _cachedEquipmentDatas  = new();
-    private List<PlayerItemData>       _cachedItemDatas       = new();
+    private List<PlayerCharacterData>  _cachedCharacterDatas = new();
+    private List<PlayerEquipmentData>  _cachedEquipmentDatas = new();
+    private List<PlayerItemData>       _cachedItemDatas      = new();
     private int _selectedCharacterId = -1;
 
     // ── 이벤트 (InventoryController가 구독) ──────────────────────────
-    public event Action<int, int>                OnUseItem;                // (charId, itemId)
-    public event Action<int>                     OnDiscardItem;
-    public event Action<int>                     OnOpenTranscendence;      // (charId)
-    public event Action<int, int, EquipmentSlotType> OnEquipItem;          // (charId, equipInstanceId, slot)
-    public event Action<int, EquipmentSlotType>  OnUnequipItem;            // (charId, slot)
-    public event Action<int>                     OnEnhanceEquipment;       // (equipInstanceId)
-    public event Action<int>                     OnEnhancePreviewRequested; // (equipInstanceId)
+    public event Action<int, int>                    OnUseItem;                 // (charId, itemId)
+    public event Action<int>                         OnDiscardItem;             // (itemId)
+    public event Action<int, int, EquipmentSlotType> OnEquipItem;               // (charId, equipInstanceId, slot)
+    public event Action<int, EquipmentSlotType>      OnUnequipItem;             // (charId, slot)
+    public event Action<int>                         OnEnhanceEquipment;        // (equipInstanceId)
+    public event Action<int>                         OnEnhancePreviewRequested; // (equipInstanceId)
+    public event Action<int, int>                    OnTranscendWithShards;     // (characterId, shardsToUse)
 
     private void OnEnable()
     {
@@ -61,11 +61,11 @@ public class InventoryUIManager : MonoBehaviour
                 () => _cachedCharacterDatas,
                 () => _selectedCharacterId
             );
-
-            inventoryUI.OnItemClicked    += HandleItemClicked;
-            inventoryUI.OnItemHoverEnter += HandleItemHoverEnter;
-            inventoryUI.OnItemHoverExit  += HandleItemHoverExit;
-            inventoryUI.OnItemDragBegin  += HandleItemDragBegin;
+            inventoryUI.OnItemClicked      += HandleItemClicked;
+            inventoryUI.OnItemRightClicked += HandleItemRightClicked;
+            inventoryUI.OnItemHoverEnter   += HandleItemHoverEnter;
+            inventoryUI.OnItemHoverExit    += HandleItemHoverExit;
+            inventoryUI.OnItemDragBegin    += HandleItemDragBegin;
         }
 
         foreach (var slot in _equipmentSlots)
@@ -74,8 +74,8 @@ public class InventoryUIManager : MonoBehaviour
             slot.OnItemClicked += HandleUnequip;
         }
 
-        if (enhancePanel != null)
-            enhancePanel.OnEnhanceRequested += HandleEnhancePanelRequest;
+        if (enhancePanel   != null) enhancePanel.OnEnhanceRequested     += HandleEnhancePanelRequest;
+        if (transcendPanel != null) transcendPanel.OnTranscendRequested  += HandleTranscendPanelRequest;
 
         sidebarManager.OnTabChanged += SwitchSubPanel;
         sidebarManager.Init();
@@ -85,10 +85,11 @@ public class InventoryUIManager : MonoBehaviour
     {
         foreach (var inventoryUI in _itemInventoryUIs)
         {
-            inventoryUI.OnItemClicked    -= HandleItemClicked;
-            inventoryUI.OnItemHoverEnter -= HandleItemHoverEnter;
-            inventoryUI.OnItemHoverExit  -= HandleItemHoverExit;
-            inventoryUI.OnItemDragBegin  -= HandleItemDragBegin;
+            inventoryUI.OnItemClicked      -= HandleItemClicked;
+            inventoryUI.OnItemRightClicked -= HandleItemRightClicked;
+            inventoryUI.OnItemHoverEnter   -= HandleItemHoverEnter;
+            inventoryUI.OnItemHoverExit    -= HandleItemHoverExit;
+            inventoryUI.OnItemDragBegin    -= HandleItemDragBegin;
         }
 
         foreach (var slot in _equipmentSlots)
@@ -97,13 +98,16 @@ public class InventoryUIManager : MonoBehaviour
             slot.OnItemClicked -= HandleUnequip;
         }
 
-        if (enhancePanel != null)
-            enhancePanel.OnEnhanceRequested -= HandleEnhancePanelRequest;
+        if (enhancePanel   != null) enhancePanel.OnEnhanceRequested    -= HandleEnhancePanelRequest;
+        if (transcendPanel != null) transcendPanel.OnTranscendRequested -= HandleTranscendPanelRequest;
 
         sidebarManager.OnTabChanged -= SwitchSubPanel;
     }
 
-    private void HandleEnhancePanelRequest(int id) => OnEnhanceEquipment?.Invoke(id);
+    private void HandleEnhancePanelRequest(int id)           => OnEnhanceEquipment?.Invoke(id);
+    private void HandleTranscendPanelRequest(int charId, int shardsToUse) => OnTranscendWithShards?.Invoke(charId, shardsToUse);
+
+    // ── 열기 / 닫기 ───────────────────────────────────────────────────
 
     public void Open()  => panel.SetActive(true);
     public void Close()
@@ -113,6 +117,7 @@ public class InventoryUIManager : MonoBehaviour
         itemInfoPanel.Hide();
         actionPopup?.Hide();
         enhancePanel?.Hide();
+        transcendPanel?.Hide();
     }
 
     // ── 초기화 ────────────────────────────────────────────────────────
@@ -122,9 +127,9 @@ public class InventoryUIManager : MonoBehaviour
         IEnumerable<PlayerItemData>      itemDatas,
         IEnumerable<PlayerEquipmentData> equipmentDatas)
     {
-        _cachedCharacterDatas = charDatas      != null ? charDatas.ToList()      : new();
-        _cachedItemDatas      = itemDatas       != null ? itemDatas.ToList()      : new();
-        _cachedEquipmentDatas = equipmentDatas  != null ? equipmentDatas.ToList() : new();
+        _cachedCharacterDatas = charDatas     != null ? charDatas.ToList()      : new();
+        _cachedItemDatas      = itemDatas      != null ? itemDatas.ToList()      : new();
+        _cachedEquipmentDatas = equipmentDatas != null ? equipmentDatas.ToList() : new();
 
         _characterUIModels = _cachedCharacterDatas
             .Select(s => new CharacterUIModel(s, GameDataManager.Instance.GetCharacter(s.characterId)))
@@ -163,6 +168,7 @@ public class InventoryUIManager : MonoBehaviour
         itemInfoPanel.Hide();
         actionPopup?.Hide();
         enhancePanel?.Hide();
+        transcendPanel?.Hide();
     }
 
     // ── 슬롯 이벤트 핸들러 ───────────────────────────────────────────
@@ -174,28 +180,19 @@ public class InventoryUIManager : MonoBehaviour
             var equipData = _cachedEquipmentDatas.FirstOrDefault(e => e.equip_instance_id == id);
             if (equipData == null) return;
             var staticData = GameDataManager.Instance.GetItem(equipData.itemId);
-            if (staticData != null)
-            {
-                itemInfoPanel.SetEquipmentData(staticData, equipData.enhance);
-                itemInfoPanel.ShowAt(pos);
-            }
+            if (staticData != null) { itemInfoPanel.SetEquipmentData(staticData, equipData.enhance); itemInfoPanel.ShowAt(pos); }
             return;
         }
 
         if (sourceType == ItemType.Transcendence)
         {
-            var charData = _cachedCharacterDatas.FirstOrDefault(c => c.characterId == id);
+            var charData   = _cachedCharacterDatas.FirstOrDefault(c => c.characterId == id);
             if (charData == null) return;
             var staticData = GameDataManager.Instance.GetCharacter(id);
-            if (staticData != null)
-            {
-                itemInfoPanel.SetShardData(staticData, charData.shardAmount);
-                itemInfoPanel.ShowAt(pos);
-            }
+            if (staticData != null) { itemInfoPanel.SetShardData(staticData, charData.shardAmount); itemInfoPanel.ShowAt(pos); }
             return;
         }
 
-        // Consumable / Material
         var itemData = _cachedItemDatas.FirstOrDefault(i => i.itemId == id);
         if (itemData != null)
         {
@@ -217,20 +214,53 @@ public class InventoryUIManager : MonoBehaviour
                 var staticData = GameDataManager.Instance.GetItem(equipData.itemId);
                 if (staticData != null)
                 {
-                    enhancePanel?.Open(id, staticData.displayName);
-                    OnEnhancePreviewRequested?.Invoke(id);
+                    actionPopup.ShowEquipment(pos, actionType =>
+                    {
+                        if (actionType == ItemActionType.Enhance)
+                        {
+                            enhancePanel?.Open(id, staticData.displayName, staticData.icon);
+                            OnEnhancePreviewRequested?.Invoke(id);
+                        }
+                        else if (actionType == ItemActionType.Equip)
+                        {
+                            OnEquipItem?.Invoke(_selectedCharacterId, id, staticData.slotType);
+                        }
+                    });
                 }
             }
             foreach (var ui in _itemInventoryUIs) ui.RefreshSelection(id);
             return;
         }
 
-        // Consumable / Material / Transcendence
+        if (sourceType == ItemType.Transcendence)
+        {
+            var charData   = _cachedCharacterDatas.FirstOrDefault(c => c.characterId == id);
+            var staticData = GameDataManager.Instance.GetCharacter(id);
+            if (charData != null && staticData != null)
+                transcendPanel?.Open(id, staticData.displayName, charData.enhance, charData.shardAmount);
+            foreach (var ui in _itemInventoryUIs) ui.RefreshSelection(id);
+            return;
+        }
+
+        // Consumable
         var data = GameDataManager.Instance.GetItem(id);
         if (data == null) return;
-
-        actionPopup.Show(data, pos, actionType => HandleAction(id, actionType));
+        actionPopup.Show(data, pos, actionType =>
+        {
+            if (actionType == ItemActionType.Use)     OnUseItem?.Invoke(_selectedCharacterId, id);
+            if (actionType == ItemActionType.Discard) OnDiscardItem?.Invoke(id);
+        });
         foreach (var ui in _itemInventoryUIs) ui.RefreshSelection(id);
+    }
+
+    private void HandleItemRightClicked(int id, Vector2 pos, ItemType sourceType)
+    {
+        if (sourceType != ItemType.Equipment) return;
+        var equipData  = _cachedEquipmentDatas.FirstOrDefault(e => e.equip_instance_id == id);
+        if (equipData == null) return;
+        var staticData = GameDataManager.Instance.GetItem(equipData.itemId);
+        if (staticData == null) return;
+        OnEquipItem?.Invoke(_selectedCharacterId, id, staticData.slotType);
     }
 
     private void HandleItemDragBegin(int id, ItemType sourceType)
@@ -251,18 +281,7 @@ public class InventoryUIManager : MonoBehaviour
         }
 
         var data = GameDataManager.Instance.GetItem(id);
-        if (data != null)
-            DragController.Instance?.BeginDrag(data);
-    }
-
-    private void HandleAction(int itemId, ItemActionType actionType)
-    {
-        switch (actionType)
-        {
-            case ItemActionType.Use:               OnUseItem?.Invoke(_selectedCharacterId, itemId); break;
-            case ItemActionType.Discard:           OnDiscardItem?.Invoke(itemId); break;
-            case ItemActionType.OpenTranscendence: OnOpenTranscendence?.Invoke(_selectedCharacterId); break;
-        }
+        if (data != null) DragController.Instance?.BeginDrag(data);
     }
 
     // ── 강화 패널 응답 ────────────────────────────────────────────────
@@ -279,11 +298,19 @@ public class InventoryUIManager : MonoBehaviour
     public void ShowEnhanceError(string message)
         => enhancePanel?.ShowError(message);
 
-    // 드롭 → 장착 (equipInstanceId)
+    // ── 초월 패널 응답 ────────────────────────────────────────────────
+
+    public void ShowTranscendResult(bool transcendSuccess, int transcendStage)
+        => transcendPanel?.ShowResult(transcendSuccess, transcendStage);
+
+    public void ShowTranscendError(string message)
+        => transcendPanel?.ShowError(message);
+
+    // ── 장착 슬롯 ─────────────────────────────────────────────────────
+
     private void HandleEquip(int equipInstanceId, EquipmentSlotType slotType)
         => OnEquipItem?.Invoke(_selectedCharacterId, equipInstanceId, slotType);
 
-    // 장착 슬롯 클릭 → 해제
     private void HandleUnequip(int equipInstanceId)
     {
         var slot = _equipmentSlots.FirstOrDefault(s => s.ItemId == equipInstanceId);
@@ -298,13 +325,7 @@ public class InventoryUIManager : MonoBehaviour
             if (charData.equippedItems.TryGetValue(slot.acceptedSlotType, out var equip))
             {
                 var staticData = GameDataManager.Instance.GetItem(equip.itemId);
-                if (staticData == null)
-                {
-                    Debug.LogWarning($"[InventoryUIManager] 장착 아이템 ID {equip.itemId}가 ItemTableSO에 없습니다.");
-                    slot.Clear();
-                    continue;
-                }
-                // ItemId = equip_instance_id, amount = enhance (강화 표시용)
+                if (staticData == null) { slot.Clear(); continue; }
                 slot.SetItem(equip.equip_instance_id, staticData, equip.enhance);
             }
             else

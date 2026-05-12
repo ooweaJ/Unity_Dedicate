@@ -23,9 +23,9 @@ public class InventoryController : MonoBehaviour
             uiManager.OnUnequipItem             += HandleUnequipItem;
             uiManager.OnUseItem                 += HandleUseItem;
             uiManager.OnDiscardItem             += HandleDiscardItem;
-            uiManager.OnOpenTranscendence       += HandleOpenTranscendence;
             uiManager.OnEnhanceEquipment        += HandleEnhanceEquipment;
             uiManager.OnEnhancePreviewRequested += HandleEnhancePreview;
+            uiManager.OnTranscendWithShards     += HandleTranscendWithShards;
         }
     }
 
@@ -40,9 +40,9 @@ public class InventoryController : MonoBehaviour
             uiManager.OnUnequipItem             -= HandleUnequipItem;
             uiManager.OnUseItem                 -= HandleUseItem;
             uiManager.OnDiscardItem             -= HandleDiscardItem;
-            uiManager.OnOpenTranscendence       -= HandleOpenTranscendence;
             uiManager.OnEnhanceEquipment        -= HandleEnhanceEquipment;
             uiManager.OnEnhancePreviewRequested -= HandleEnhancePreview;
+            uiManager.OnTranscendWithShards     -= HandleTranscendWithShards;
         }
     }
 
@@ -157,17 +157,37 @@ public class InventoryController : MonoBehaviour
     }
 
     // ── 캐릭터 초월 ───────────────────────────────────────────────────
-    private async void HandleOpenTranscendence(int characterId)
+    // 서버 응답: { success, transcendSuccess, transcendStage, newMaxLevel, shardsUsed, user }
+    private async void HandleTranscendWithShards(int characterId, int shardsToUse)
     {
         try
         {
-            int userId = PlayerDataManager.Instance.GetUserId();
-            string json = await BackendManager.TranscendCharacter(userId, characterId);
-            ApplyServerResponse(json, "Transcend");
+            int userId  = PlayerDataManager.Instance.GetUserId();
+            string json = await BackendManager.TranscendCharacter(userId, characterId, shardsToUse);
+
+            var response    = JObject.Parse(json);
+            bool apiSuccess = response["success"] is JToken s && (bool)s;
+
+            if (apiSuccess)
+            {
+                bool transcendSuccess = response["transcendSuccess"] != null && (bool)response["transcendSuccess"];
+                int  transcendStage   = response["transcendStage"]   != null ? (int)response["transcendStage"] : 0;
+
+                uiManager.ShowTranscendResult(transcendSuccess, transcendStage);
+
+                if (response["user"] is JToken user)
+                    PlayerDataManager.Instance.ApplyUserData(user);
+            }
+            else
+            {
+                var msg = response["message"]?.ToString() ?? "알 수 없는 오류";
+                uiManager.ShowTranscendError(msg);
+            }
         }
         catch (System.Exception e)
         {
             Debug.LogError($"[InventoryController] Transcend 오류: {e.Message}");
+            uiManager.ShowTranscendError("서버 연결 오류");
         }
     }
 
