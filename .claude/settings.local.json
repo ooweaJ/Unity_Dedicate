@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(xargs grep -l -i \"transcend\")"
+      "Bash(xargs grep -l -i \"transcend\")",
+      "mcp__claude_ai_Notion__notion-search"
     ]
   }
 }

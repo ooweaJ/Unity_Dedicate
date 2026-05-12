@@ -6,15 +6,14 @@ using UnityEngine.UI;
 
 public class EnhancePanel : MonoBehaviour
 {
-    [SerializeField] private Image      itemIcon;
-    [SerializeField] private Image      enhanceAnimImage;
-    [SerializeField] private TMP_Text   itemNameText;
-    [SerializeField] private TMP_Text   currentEnhanceText;
-    [SerializeField] private TMP_Text   successRateText;
-    [SerializeField] private TMP_Text   goldCostText;
-    [SerializeField] private TMP_Text   statusText;
-    [SerializeField] private Button     enhanceButton;
-    [SerializeField] private Button     closeButton;
+    [SerializeField] private Image    itemIcon;
+    [SerializeField] private Image    enhanceAnimImage;
+    [SerializeField] private TMP_Text itemNameText;
+    [SerializeField] private TMP_Text currentEnhanceText;  // "+N → +N+1"
+    [SerializeField] private TMP_Text successRateText;     // "X%"
+    [SerializeField] private TMP_Text goldCostText;        // "N G"
+    [SerializeField] private Button   enhanceButton;
+    [SerializeField] private Button   closeButton;
 
     [SerializeField] private float animColorInterval = 0.08f;
     [SerializeField] private float minAnimDuration   = 2f;
@@ -67,20 +66,18 @@ public class EnhancePanel : MonoBehaviour
 
     public void SetPreviewData(int currentEnhance, float successRate, int goldCost)
     {
-        if (currentEnhanceText != null) currentEnhanceText.text = $"+{currentEnhance}  →  +{currentEnhance + 1}";
-        if (successRateText != null)    successRateText.text    = $"{(int)(successRate * 100)}%";
-        if (goldCostText != null)       goldCostText.text       = $"{goldCost:N0} G";
-        if (statusText != null)         statusText.text         = "";
-        if (enhanceButton != null)      enhanceButton.interactable = true;
+        if (currentEnhanceText != null) currentEnhanceText.text    = $"+{currentEnhance}  →  +{currentEnhance + 1}";
+        if (successRateText    != null) successRateText.text        = $"{(int)(successRate * 100)}%";
+        if (goldCostText       != null) goldCostText.text           = $"{goldCost:N0} G";
+        if (enhanceButton      != null) enhanceButton.interactable  = true;
     }
 
     public void SetMaxEnhance()
     {
-        if (currentEnhanceText != null) currentEnhanceText.text = "+8 (최대)";
-        if (successRateText != null)    successRateText.text    = "-";
-        if (goldCostText != null)       goldCostText.text       = "-";
-        if (statusText != null)         statusText.text         = "최대 강화 상태입니다.";
-        if (enhanceButton != null)      enhanceButton.interactable = false;
+        if (currentEnhanceText != null) currentEnhanceText.text    = "+8 (최대)";
+        if (successRateText    != null) successRateText.text        = "-";
+        if (goldCostText       != null) goldCostText.text           = "-";
+        if (enhanceButton      != null) enhanceButton.interactable  = false;
     }
 
     public void ShowResult(bool success, int enhance)
@@ -96,8 +93,7 @@ public class EnhancePanel : MonoBehaviour
             enhanceAnimImage.color                   = Color.white;
             enhanceAnimImage.transform.localRotation = Quaternion.identity;
         }
-        if (statusText != null)       statusText.text        = message;
-        if (enhanceButton != null)    enhanceButton.interactable = false;
+        if (enhanceButton != null) enhanceButton.interactable = false;
     }
 
     public void Hide()
@@ -130,13 +126,10 @@ public class EnhancePanel : MonoBehaviour
         StopAnim();
         if (enhanceAnimImage != null)
         {
-            enhanceAnimImage.color                    = success ? ResultSuccess : ResultFail;
-            enhanceAnimImage.transform.localRotation  = Quaternion.identity;
+            enhanceAnimImage.color                   = success ? ResultSuccess : ResultFail;
+            enhanceAnimImage.transform.localRotation = Quaternion.identity;
         }
-        if (statusText != null)
-            statusText.text = success ? $"강화 성공!  (+{enhance})" : "강화 실패...";
-        if (enhanceButton != null)
-            enhanceButton.interactable = false;
+        if (enhanceButton != null) enhanceButton.interactable = false;
     }
 
     private void StopAnim()
@@ -151,9 +144,8 @@ public class EnhancePanel : MonoBehaviour
     private void SetLoadingState()
     {
         if (currentEnhanceText != null) currentEnhanceText.text   = "...";
-        if (successRateText != null)    successRateText.text       = "...";
-        if (goldCostText != null)       goldCostText.text          = "...";
-        if (statusText != null)         statusText.text            = "";
-        if (enhanceButton != null)      enhanceButton.interactable = false;
+        if (successRateText    != null) successRateText.text       = "...";
+        if (goldCostText       != null) goldCostText.text          = "...";
+        if (enhanceButton      != null) enhanceButton.interactable = false;
     }
 }

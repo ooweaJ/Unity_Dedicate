@@ -5,78 +5,65 @@ using UnityEngine.UI;
 
 public class TranscendPanel : MonoBehaviour
 {
-    [SerializeField] private TMP_Text characterNameText;
-    [SerializeField] private TMP_Text currentStageText;
-    [SerializeField] private TMP_Text shardInfoText;
-    [SerializeField] private TMP_Text shardsToUseText;
-    [SerializeField] private TMP_Text probabilityText;
-    [SerializeField] private TMP_Text statusText;
-    [SerializeField] private Button   btnMinus;
-    [SerializeField] private Button   btnPlus;
-    [SerializeField] private Button   transcendButton;
-    [SerializeField] private Button   closeButton;
+    [Header("Texts")]
+    [SerializeField] private TMP_Text stageText;        // "N단계  →  N+1단계"
+    [SerializeField] private TMP_Text shardCountText;   // "보유 조각 : N"
+    [SerializeField] private TMP_Text shardsRatioText;  // "( 투입수 / 최대수 )"  — −/+ 버튼 사이
+    [SerializeField] private TMP_Text probabilityText;  // "확률 : X%"
+
+    [Header("Buttons")]
+    [SerializeField] private Button btnMinus;
+    [SerializeField] private Button btnPlus;
+    [SerializeField] private Button transcendButton;
 
     public event Action<int, int> OnTranscendRequested; // (characterId, shardsToUse)
 
     private int _characterId;
-    private int _shardsRequired;
-    private int _maxShardsToUse;
-    private int _shardsToUse;
+    private int _shardsRequired;   // 이번 초월에 필요한 총 조각 수 (= 다음 단계 숫자)
+    private int _maxShardsToUse;   // 실제 투입 가능 최대 = min(보유조각, _shardsRequired)
+    private int _shardsToUse;      // 현재 선택된 투입 수
 
     private void Awake()
     {
         btnMinus?.onClick.AddListener(() => SetShardsToUse(_shardsToUse - 1));
         btnPlus?.onClick.AddListener(() => SetShardsToUse(_shardsToUse + 1));
         transcendButton?.onClick.AddListener(OnTranscendClicked);
-        closeButton?.onClick.AddListener(Hide);
     }
 
-    public void Open(int characterId, string characterName, int currentStage, int currentShards)
+    // 캐릭터 선택 시 호출 — 탭에 항상 표시되므로 Open/Hide 없음
+    public void Init(int characterId, int currentStage, int currentShards)
     {
-        _characterId     = characterId;
-        _shardsRequired  = currentStage + 1;
-        _maxShardsToUse  = Mathf.Min(currentShards, _shardsRequired);
+        _characterId    = characterId;
+        _shardsRequired = currentStage + 1;
+        _maxShardsToUse = Mathf.Min(currentShards, _shardsRequired);
 
-        if (characterNameText != null) characterNameText.text = characterName;
-        if (currentStageText  != null) currentStageText.text  = $"{currentStage}단계";
-        if (shardInfoText     != null) shardInfoText.text     = $"보유 조각: {currentShards} / 필요: {_shardsRequired}";
-        if (statusText        != null) statusText.text        = "";
+        if (stageText      != null) stageText.text      = $"{currentStage}단계  →  {currentStage + 1}단계";
+        if (shardCountText != null) shardCountText.text = $"보유 조각 : {currentShards}";
 
-        SetButtonsInteractable(true);
-
-        if (_maxShardsToUse <= 0)
+        if (_maxShardsToUse > 0)
         {
-            if (statusText        != null) statusText.text             = $"조각이 부족합니다. (필요: {_shardsRequired}개)";
-            if (shardsToUseText   != null) shardsToUseText.text        = "0개";
-            if (probabilityText   != null) probabilityText.text        = "0%";
-            if (transcendButton   != null) transcendButton.interactable = false;
-            if (btnMinus          != null) btnMinus.interactable        = false;
-            if (btnPlus           != null) btnPlus.interactable         = false;
+            SetShardsToUse(1);
+            if (transcendButton != null) transcendButton.interactable = true;
         }
         else
         {
-            SetShardsToUse(1);
+            if (shardsRatioText != null) shardsRatioText.text        = $"( 0 / {_shardsRequired} )";
+            if (probabilityText != null) probabilityText.text        = "확률 : 0%";
+            if (btnMinus        != null) btnMinus.interactable       = false;
+            if (btnPlus         != null) btnPlus.interactable        = false;
+            if (transcendButton != null) transcendButton.interactable = false;
         }
-
-        gameObject.SetActive(true);
     }
 
     public void ShowResult(bool transcendSuccess, int transcendStage)
     {
-        if (statusText != null)
-            statusText.text = transcendSuccess
-                ? $"초월 성공! ({transcendStage}단계 달성)"
-                : "초월 실패... 조각은 소모됩니다.";
-        SetButtonsInteractable(false);
+        SetInteractable(false);
     }
 
     public void ShowError(string message)
     {
-        if (statusText != null) statusText.text = message;
-        SetButtonsInteractable(false);
+        SetInteractable(false);
     }
-
-    public void Hide() => gameObject.SetActive(false);
 
     // ── private ──────────────────────────────────────────────────────
 
@@ -85,21 +72,20 @@ public class TranscendPanel : MonoBehaviour
         _shardsToUse = Mathf.Clamp(value, 1, _maxShardsToUse);
 
         float probability = (float)_shardsToUse / _shardsRequired * 100f;
-        if (shardsToUseText != null) shardsToUseText.text = $"{_shardsToUse}개";
-        if (probabilityText != null) probabilityText.text = $"{(int)probability}%";
 
-        if (btnMinus != null) btnMinus.interactable = _shardsToUse > 1;
-        if (btnPlus  != null) btnPlus.interactable  = _shardsToUse < _maxShardsToUse;
+        if (shardsRatioText != null) shardsRatioText.text  = $"( {_shardsToUse} / {_shardsRequired} )";
+        if (probabilityText != null) probabilityText.text  = $"확률 : {(int)probability}%";
+        if (btnMinus        != null) btnMinus.interactable = _shardsToUse > 1;
+        if (btnPlus         != null) btnPlus.interactable  = _shardsToUse < _maxShardsToUse;
     }
 
     private void OnTranscendClicked()
     {
-        SetButtonsInteractable(false);
-        if (statusText != null) statusText.text = "초월 시도 중...";
+        SetInteractable(false);
         OnTranscendRequested?.Invoke(_characterId, _shardsToUse);
     }
 
-    private void SetButtonsInteractable(bool value)
+    private void SetInteractable(bool value)
     {
         if (transcendButton != null) transcendButton.interactable = value;
         if (btnMinus        != null) btnMinus.interactable        = value && _shardsToUse > 1;
