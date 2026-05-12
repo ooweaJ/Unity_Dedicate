@@ -29,6 +29,7 @@ public class BattleNetworkPlayer : NetworkBehaviour
 
     private void OnNicknameChanged(string _, string newValue)
     {
+        GetComponent<PlayerHPBar>()?.SetNickname(newValue);
         OnPlayerJoined?.Invoke(this);
     }
 

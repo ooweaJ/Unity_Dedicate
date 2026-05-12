@@ -24,6 +24,9 @@ public class PlayerHPBar : NetworkBehaviour
     [Header("HP Text")]
     [SerializeField] private TMP_Text hpText;
 
+    [Header("World Space Offset (플레이어 회전과 무관한 고정 오프셋)")]
+    [SerializeField] private Vector3 worldOffset = new Vector3(0f, 2f, -1.5f);
+
     [Header("Bush Fade")]
     [SerializeField] [Range(0f, 1f)] private float bushAlpha = 0.4f;
 
@@ -34,6 +37,20 @@ public class PlayerHPBar : NetworkBehaviour
     private Transform   camTransform;
     private float targetRatio = 1f;
     private float delayTimer = 0f;
+
+    public void SetNickname(string nickname)
+    {
+        if (hpText != null)
+            hpText.text = nickname;
+    }
+
+    public override void OnStartClient()
+    {
+        base.OnStartClient();
+        var bnp = GetComponent<BattleNetworkPlayer>();
+        if (bnp != null && !string.IsNullOrEmpty(bnp.nickname))
+            SetNickname(bnp.nickname);
+    }
 
     private void Start()
     {
@@ -53,7 +70,7 @@ public class PlayerHPBar : NetworkBehaviour
         if (hpSlider != null) hpSlider.value = 1f;
         if (delaySlider != null) delaySlider.value = 1f;
         UpdateFillColor(1f);
-        if (hpText != null) hpText.text = "";
+        if (hpText != null) hpText.text = GetComponent<BattleNetworkPlayer>()?.nickname ?? "";
     }
 
     private void LateUpdate()
@@ -76,8 +93,9 @@ public class PlayerHPBar : NetworkBehaviour
                 return;
         }
 
-        // World Space RectTransform도 .rotation은 월드 회전
-        // LateUpdate에서 덮어쓰면 Player 회전 이후에 적용되므로 회전 고정됨
+        // 위치: 월드 오프셋으로 고정 — 로컬 오프셋은 플레이어 회전 시 같이 돌아가므로 사용 안 함
+        hpCanvasTransform.position = transform.position + worldOffset;
+        // 회전: 카메라 방향을 향하도록 고정
         hpCanvasTransform.rotation = Quaternion.LookRotation(camTransform.forward);
     }
 
@@ -118,8 +136,7 @@ public class PlayerHPBar : NetworkBehaviour
         targetRatio = ratio;
         UpdateFillColor(ratio);
 
-        if (hpText != null)
-            hpText.text = $"{Mathf.CeilToInt(current)}";
+        // hpText는 닉네임 고정 표시 — HP 숫자로 덮어쓰지 않음
     }
 
     private void UpdateFillColor(float ratio)
