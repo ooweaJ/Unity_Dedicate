@@ -25,6 +25,7 @@ public class InventoryUIManager : MonoBehaviour
     [SerializeField] private List<InventoryUI>    _itemInventoryUIs;
     [SerializeField] private List<EquipmentSlot>  _equipmentSlots;
     [SerializeField] private ItemActionPopup       actionPopup;
+    [SerializeField] private EnhancePanel          enhancePanel;
 
     [Header("Tab Panels")]
     [SerializeField] private List<TabPanelMapping> panelMappings;
@@ -39,12 +40,13 @@ public class InventoryUIManager : MonoBehaviour
     private int _selectedCharacterId = -1;
 
     // ── 이벤트 (InventoryController가 구독) ──────────────────────────
-    public event Action<int, int>                OnUseItem;         // (charId, itemId)
+    public event Action<int, int>                OnUseItem;                // (charId, itemId)
     public event Action<int>                     OnDiscardItem;
-    public event Action<int>                     OnOpenTranscendence; // (charId)
-    public event Action<int, int, EquipmentSlotType> OnEquipItem;   // (charId, equipInstanceId, slot)
-    public event Action<int, EquipmentSlotType>  OnUnequipItem;     // (charId, slot)
-    public event Action<int>                     OnEnhanceEquipment; // (equipInstanceId)
+    public event Action<int>                     OnOpenTranscendence;      // (charId)
+    public event Action<int, int, EquipmentSlotType> OnEquipItem;          // (charId, equipInstanceId, slot)
+    public event Action<int, EquipmentSlotType>  OnUnequipItem;            // (charId, slot)
+    public event Action<int>                     OnEnhanceEquipment;       // (equipInstanceId)
+    public event Action<int>                     OnEnhancePreviewRequested; // (equipInstanceId)
 
     private void OnEnable()
     {
@@ -72,6 +74,9 @@ public class InventoryUIManager : MonoBehaviour
             slot.OnItemClicked += HandleUnequip;
         }
 
+        if (enhancePanel != null)
+            enhancePanel.OnEnhanceRequested += HandleEnhancePanelRequest;
+
         sidebarManager.OnTabChanged += SwitchSubPanel;
         sidebarManager.Init();
     }
@@ -92,8 +97,13 @@ public class InventoryUIManager : MonoBehaviour
             slot.OnItemClicked -= HandleUnequip;
         }
 
+        if (enhancePanel != null)
+            enhancePanel.OnEnhanceRequested -= HandleEnhancePanelRequest;
+
         sidebarManager.OnTabChanged -= SwitchSubPanel;
     }
+
+    private void HandleEnhancePanelRequest(int id) => OnEnhanceEquipment?.Invoke(id);
 
     public void Open()  => panel.SetActive(true);
     public void Close()
@@ -102,6 +112,7 @@ public class InventoryUIManager : MonoBehaviour
         modelManager.ClearAllModels();
         itemInfoPanel.Hide();
         actionPopup?.Hide();
+        enhancePanel?.Hide();
     }
 
     // ── 초기화 ────────────────────────────────────────────────────────
@@ -151,6 +162,7 @@ public class InventoryUIManager : MonoBehaviour
 
         itemInfoPanel.Hide();
         actionPopup?.Hide();
+        enhancePanel?.Hide();
     }
 
     // ── 슬롯 이벤트 핸들러 ───────────────────────────────────────────
@@ -205,19 +217,8 @@ public class InventoryUIManager : MonoBehaviour
                 var staticData = GameDataManager.Instance.GetItem(equipData.itemId);
                 if (staticData != null)
                 {
-                    var enhanceActions = new ItemRawData
-                    {
-                        displayName = staticData.displayName,
-                        actions = new List<ItemActionDef>
-                        {
-                            new ItemActionDef { label = "강화", type = ItemActionType.Enhance }
-                        }
-                    };
-                    actionPopup.Show(enhanceActions, pos, actionType =>
-                    {
-                        if (actionType == ItemActionType.Enhance)
-                            OnEnhanceEquipment?.Invoke(id);
-                    });
+                    enhancePanel?.Open(id, staticData.displayName);
+                    OnEnhancePreviewRequested?.Invoke(id);
                 }
             }
             foreach (var ui in _itemInventoryUIs) ui.RefreshSelection(id);
@@ -263,6 +264,20 @@ public class InventoryUIManager : MonoBehaviour
             case ItemActionType.OpenTranscendence: OnOpenTranscendence?.Invoke(_selectedCharacterId); break;
         }
     }
+
+    // ── 강화 패널 응답 ────────────────────────────────────────────────
+
+    public void ShowEnhancePreview(int currentEnhance, float successRate, int goldCost)
+        => enhancePanel?.SetPreviewData(currentEnhance, successRate, goldCost);
+
+    public void ShowEnhanceMaxEnhance()
+        => enhancePanel?.SetMaxEnhance();
+
+    public void ShowEnhanceResult(bool success, int enhance)
+        => enhancePanel?.ShowResult(success, enhance);
+
+    public void ShowEnhanceError(string message)
+        => enhancePanel?.ShowError(message);
 
     // 드롭 → 장착 (equipInstanceId)
     private void HandleEquip(int equipInstanceId, EquipmentSlotType slotType)

@@ -139,6 +139,16 @@ public static class BackendManager
 
     // ─── 장비 강화 ────────────────────────────────────────────────────
 
+    // GET /equipment/:userId/enhance/:equipInstanceId/preview
+    // 골드 소모 없이 비용·확률만 조회
+    // 응답: { success, maxEnhance, currentEnhance, successRate, goldCost }
+    public static async Task<string> GetEnhancePreview(int userId, int equipInstanceId)
+    {
+        var res = await client.GetAsync(
+            baseUrl + $"/equipment/{userId}/enhance/{equipInstanceId}/preview");
+        return await res.Content.ReadAsStringAsync();
+    }
+
     // POST /equipment/:userId/enhance/:equipInstanceId
     // 골드 소모 + 확률 판정. 실패해도 골드만 소비 (강화 수치 유지)
     // 응답: { success, enhanced, enhance, goldCost, successRate, user }

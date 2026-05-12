@@ -19,12 +19,13 @@ public class InventoryController : MonoBehaviour
 
         if (uiManager != null)
         {
-            uiManager.OnEquipItem          += HandleEquipItem;
-            uiManager.OnUnequipItem        += HandleUnequipItem;
-            uiManager.OnUseItem            += HandleUseItem;
-            uiManager.OnDiscardItem        += HandleDiscardItem;
-            uiManager.OnOpenTranscendence  += HandleOpenTranscendence;
-            uiManager.OnEnhanceEquipment   += HandleEnhanceEquipment;
+            uiManager.OnEquipItem               += HandleEquipItem;
+            uiManager.OnUnequipItem             += HandleUnequipItem;
+            uiManager.OnUseItem                 += HandleUseItem;
+            uiManager.OnDiscardItem             += HandleDiscardItem;
+            uiManager.OnOpenTranscendence       += HandleOpenTranscendence;
+            uiManager.OnEnhanceEquipment        += HandleEnhanceEquipment;
+            uiManager.OnEnhancePreviewRequested += HandleEnhancePreview;
         }
     }
 
@@ -35,12 +36,13 @@ public class InventoryController : MonoBehaviour
 
         if (uiManager != null)
         {
-            uiManager.OnEquipItem         -= HandleEquipItem;
-            uiManager.OnUnequipItem       -= HandleUnequipItem;
-            uiManager.OnUseItem           -= HandleUseItem;
-            uiManager.OnDiscardItem       -= HandleDiscardItem;
-            uiManager.OnOpenTranscendence -= HandleOpenTranscendence;
-            uiManager.OnEnhanceEquipment  -= HandleEnhanceEquipment;
+            uiManager.OnEquipItem               -= HandleEquipItem;
+            uiManager.OnUnequipItem             -= HandleUnequipItem;
+            uiManager.OnUseItem                 -= HandleUseItem;
+            uiManager.OnDiscardItem             -= HandleDiscardItem;
+            uiManager.OnOpenTranscendence       -= HandleOpenTranscendence;
+            uiManager.OnEnhanceEquipment        -= HandleEnhanceEquipment;
+            uiManager.OnEnhancePreviewRequested -= HandleEnhancePreview;
         }
     }
 
@@ -169,6 +171,46 @@ public class InventoryController : MonoBehaviour
         }
     }
 
+    // ── 강화 미리보기 ─────────────────────────────────────────────────
+    // 서버 응답: { success, maxEnhance, currentEnhance, successRate, goldCost }
+    private async void HandleEnhancePreview(int equipInstanceId)
+    {
+        try
+        {
+            int userId = PlayerDataManager.Instance.GetUserId();
+            string json = await BackendManager.GetEnhancePreview(userId, equipInstanceId);
+
+            var response = JObject.Parse(json);
+            bool apiSuccess = response["success"] is JToken s && (bool)s;
+
+            if (apiSuccess)
+            {
+                bool maxEnhance = response["maxEnhance"] != null && (bool)response["maxEnhance"];
+                if (maxEnhance)
+                {
+                    uiManager.ShowEnhanceMaxEnhance();
+                }
+                else
+                {
+                    int   currentEnhance = response["currentEnhance"] != null ? (int)response["currentEnhance"]     : 0;
+                    float successRate    = response["successRate"]     != null ? (float)response["successRate"]      : 0f;
+                    int   goldCost       = response["goldCost"]        != null ? (int)response["goldCost"]           : 0;
+                    uiManager.ShowEnhancePreview(currentEnhance, successRate, goldCost);
+                }
+            }
+            else
+            {
+                var msg = response["message"]?.ToString() ?? "알 수 없는 오류";
+                uiManager.ShowEnhanceError(msg);
+            }
+        }
+        catch (System.Exception e)
+        {
+            Debug.LogError($"[InventoryController] GetEnhancePreview 오류: {e.Message}");
+            uiManager.ShowEnhanceError("서버 연결 오류");
+        }
+    }
+
     // ── 장비 강화 ─────────────────────────────────────────────────────
     // 서버 응답: { success, enhanced, enhance, goldCost, successRate, user }
     private async void HandleEnhanceEquipment(int equipInstanceId)
@@ -183,11 +225,10 @@ public class InventoryController : MonoBehaviour
 
             if (apiSuccess)
             {
-                bool enhanced    = response["enhanced"] != null && (bool)response["enhanced"];
-                int  newEnhance  = response["enhance"]  != null ? (int)response["enhance"] : 0;
-                int  goldCost    = response["goldCost"] != null ? (int)response["goldCost"] : 0;
+                bool enhanced   = response["enhanced"] != null && (bool)response["enhanced"];
+                int  newEnhance = response["enhance"]  != null ? (int)response["enhance"] : 0;
 
-                Debug.Log($"[InventoryController] 강화 {(enhanced ? $"성공 (+{newEnhance})" : "실패")} — 골드 -{goldCost}");
+                uiManager.ShowEnhanceResult(enhanced, newEnhance);
 
                 if (response["user"] is JToken user)
                     PlayerDataManager.Instance.ApplyUserData(user);
@@ -195,12 +236,13 @@ public class InventoryController : MonoBehaviour
             else
             {
                 var msg = response["message"]?.ToString() ?? "알 수 없는 오류";
-                Debug.LogWarning($"[InventoryController] EnhanceEquipment 서버 오류: {msg}");
+                uiManager.ShowEnhanceError(msg);
             }
         }
         catch (System.Exception e)
         {
             Debug.LogError($"[InventoryController] EnhanceEquipment 오류: {e.Message}");
+            uiManager.ShowEnhanceError("서버 연결 오류");
         }
     }
 }
