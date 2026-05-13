@@ -13,12 +13,12 @@ MonoBehaviour:
   m_Name: BattleSapphiData
   m_EditorClassIdentifier: Assembly-CSharp::CharacterDataSO
   weaponMeshPrefab: {fileID: 8384663211046332819, guid: f35679122b59888499aef7a69b391c05, type: 3}
-  moveSpeed: 5
+  moveSpeed: 2.3
   deathEffect: 6
   skills:
   - skillName: "\uBC1C\uCC28\uAE30"
     cooldown: 1
-    lockDuration: 1
+    lockDuration: 0.5
     inputType: 0
     actions:
     - actionName: "\uBC1C\uCC28\uAE30"
@@ -42,7 +42,7 @@ MonoBehaviour:
       hitEffect: 1
   - skillName: "\uC704\uB85C \uC62C\uB824\uCC28\uAE30"
     cooldown: 4
-    lockDuration: 1
+    lockDuration: 0.5
     inputType: 0
     actions:
     - actionName: "\uC62C\uB824\uCC28\uAE30"
@@ -66,15 +66,15 @@ MonoBehaviour:
       hitEffect: 1
   - skillName: "\uB300\uC26C \uBC1C\uCC28\uAE30"
     cooldown: 8
-    lockDuration: 1
+    lockDuration: 0.75
     inputType: 0
     actions:
     - actionName: "\uB300\uC26C"
       delay: 0
-      damageMultiplier: 0
+      damageMultiplier: 0.5
       targetLayer:
         serializedVersion: 2
-        m_Bits: 0
+        m_Bits: 64
       actionType: 2
       meleeRange: 0
       meleeAngle: 0
@@ -84,26 +84,26 @@ MonoBehaviour:
       dashDamageRadius: 1
       onHitEffect:
         type: 1
-        value: 1
-        duration: 0.5
+        value: 5
+        duration: 1
         interval: 0
       hitEffect: 1
     - actionName: "\uBC1C\uCC28\uAE30"
-      delay: 1
+      delay: 0.5
       damageMultiplier: 1
       targetLayer:
         serializedVersion: 2
         m_Bits: 64
       actionType: 0
       meleeRange: 2
-      meleeAngle: 90
+      meleeAngle: 120
       projectileData: {fileID: 0}
       dashSpeed: 0
       dashDuration: 0
       dashDamageRadius: 0
       onHitEffect:
-        type: 1
-        value: 5
+        type: 2
+        value: 2
         duration: 0.5
         interval: 0
       hitEffect: 1

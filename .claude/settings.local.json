@@ -2,7 +2,10 @@
   "permissions": {
     "allow": [
       "Bash(xargs grep -l -i \"transcend\")",
-      "mcp__claude_ai_Notion__notion-search"
+      "mcp__claude_ai_Notion__notion-search",
+      "PowerShell(Get-ChildItem C:\\\\jaewoo -Depth 2 | Where-Object { $_.Name -match \"server|backend|node|express\" -or $_.Extension -eq \".js\" -or $_.Extension -eq \".sql\" } | Select-Object FullName)",
+      "Bash(cmd.exe *)",
+      "PowerShell(< br> *)"
     ]
   }
 }

@@ -131,9 +131,27 @@ public class InventoryController : MonoBehaviour
     {
         try
         {
-            int userId = PlayerDataManager.Instance.GetUserId();
+            int userId  = PlayerDataManager.Instance.GetUserId();
             string json = await BackendManager.UseItem(userId, itemId, characterId);
-            ApplyServerResponse(json, "UseItem");
+
+            var response   = JObject.Parse(json);
+            bool apiSuccess = response["success"] is JToken s && (bool)s;
+
+            if (apiSuccess)
+            {
+                bool   leveledUp = response["leveledUp"] != null && (bool)response["leveledUp"];
+                string message   = response["message"]?.ToString() ?? "아이템 사용 완료";
+
+                uiManager.ShowItemUseResult(message, leveledUp);
+
+                if (response["user"] is JToken user)
+                    PlayerDataManager.Instance.ApplyUserData(user);
+            }
+            else
+            {
+                var msg = response["message"]?.ToString() ?? "알 수 없는 오류";
+                uiManager.ShowItemUseError(msg);
+            }
         }
         catch (System.Exception e)
         {

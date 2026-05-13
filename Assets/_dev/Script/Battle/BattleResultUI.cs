@@ -1,4 +1,5 @@
 using Mirror;
+using Newtonsoft.Json.Linq;
 using System;
 using TMPro;
 using UnityEngine;
@@ -84,6 +85,33 @@ public class BattleResultUI : MonoBehaviour
         SetTitle(winnerName, isDraw, localIsWinner);
         SetLocalPlayerExp(localIdx, exps, rankDeltas);
         BuildScoreRows(names, kills, damages, isWinner, exps);
+
+        if (localIdx >= 0)
+            ReportExpToServer(exps[localIdx]);
+    }
+
+    private async void ReportExpToServer(int gainedExp)
+    {
+        try
+        {
+            int    userId = PlayerDataManager.Instance.GetUserId();
+            string json   = await BackendManager.BattleResult(userId, gainedExp);
+
+            var response = JObject.Parse(json);
+            if (response["success"] is JToken s && (bool)s)
+            {
+                if (response["user"] is JToken user)
+                    PlayerDataManager.Instance.ApplyUserData(user);
+            }
+            else
+            {
+                Debug.LogWarning($"[BattleResult] 서버 오류: {response["message"]}");
+            }
+        }
+        catch (Exception e)
+        {
+            Debug.LogError($"[BattleResult] API 호출 실패: {e.Message}");
+        }
     }
 
     // ─── 타이틀 ────────────────────────────────────────────────────────

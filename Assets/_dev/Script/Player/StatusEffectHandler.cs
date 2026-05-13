@@ -98,22 +98,27 @@ public class StatusEffectHandler : NetworkBehaviour
 
     private IEnumerator StunCoroutine(float duration)
     {
-        _isStunned   = true;
+        _isStunned = true;
+        RpcShowStatusEffect(StatusEffectType.Stun, duration);
         yield return new WaitForSeconds(duration);
-        _isStunned   = false;
+        _isStunned = false;
+        RpcHideStatusEffect();
         _stunRoutine = null;
     }
 
     private IEnumerator SlowCoroutine(float multiplier, float duration)
     {
         _slowMultiplier = multiplier;
+        RpcShowStatusEffect(StatusEffectType.Slow, duration);
         yield return new WaitForSeconds(duration);
         _slowMultiplier = 1f;
-        _slowRoutine    = null;
+        RpcHideStatusEffect();
+        _slowRoutine = null;
     }
 
     private IEnumerator DotCoroutine(float dmgPerTick, float interval, float duration, GameObject source)
     {
+        RpcShowStatusEffect(StatusEffectType.DotDamage, duration);
         float elapsed = 0f;
         while (elapsed < duration)
         {
@@ -122,7 +127,16 @@ public class StatusEffectHandler : NetworkBehaviour
             if (_stats == null || _stats.IsDead) yield break;
             _stats.TakeDamage(new DamageInfo(dmgPerTick, source));
         }
+        RpcHideStatusEffect();
     }
+
+    [ClientRpc]
+    private void RpcShowStatusEffect(StatusEffectType type, float duration)
+        => GetComponent<StatusEffectBar>()?.Show(type, duration);
+
+    [ClientRpc]
+    private void RpcHideStatusEffect()
+        => GetComponent<StatusEffectBar>()?.Hide();
 
     // ─── SyncVar 훅 (모든 클라이언트에서 실행) ───────────────────────────────
     private void OnStunnedChanged(bool _, bool stunned)

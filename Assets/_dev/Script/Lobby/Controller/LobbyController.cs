@@ -69,8 +69,10 @@ public class LobbyController : MonoBehaviour
             playerInfoUI.UpdateUI(
                 PlayerDataManager.Instance.GetUsername(),
                 PlayerDataManager.Instance.GetLevel(),
-                PlayerDataManager.Instance.GetGold()
-                );
+                PlayerDataManager.Instance.GetGold(),
+                PlayerDataManager.Instance.GetGem(),
+                PlayerDataManager.Instance.GetExp()
+            );
         }
     }
 

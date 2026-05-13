@@ -110,6 +110,7 @@ public class PlayerDataManager : MonoBehaviour
     public int             GetLevel()               => _data.level;
     public int             GetExp()                 => _data.exp;
     public int             GetGold()                => _data.gold;
+    public int             GetGem()                 => _data.gem;
     public int             GetSelectedCharacterId() => _data.selectedCharacterId;
     public PlayerInventory GetInventory()           => _data.inventory;
 

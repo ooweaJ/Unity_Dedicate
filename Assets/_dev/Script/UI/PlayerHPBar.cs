@@ -38,10 +38,25 @@ public class PlayerHPBar : NetworkBehaviour
     private float targetRatio = 1f;
     private float delayTimer = 0f;
 
+    private string _nickname = "";
+
     public void SetNickname(string nickname)
     {
+        _nickname = nickname;
         if (hpText != null)
             hpText.text = nickname;
+    }
+
+    public void ShowStatusText(string text)
+    {
+        if (hpText != null)
+            hpText.text = text;
+    }
+
+    public void RestoreNickname()
+    {
+        if (hpText != null)
+            hpText.text = _nickname;
     }
 
     public override void OnStartClient()

@@ -304,6 +304,14 @@ public class InventoryUIManager : MonoBehaviour
         messagePanel?.Show(message, UIMessageType.Error);
     }
 
+    // ── 아이템 사용 응답 ──────────────────────────────────────────────
+
+    public void ShowItemUseResult(string message, bool leveledUp)
+        => messagePanel?.Show(message, leveledUp ? UIMessageType.Success : UIMessageType.Info);
+
+    public void ShowItemUseError(string message)
+        => messagePanel?.Show(message, UIMessageType.Error);
+
     // ── 초월 패널 응답 ────────────────────────────────────────────────
 
     public void ShowTranscendResult(bool transcendSuccess, int transcendStage)

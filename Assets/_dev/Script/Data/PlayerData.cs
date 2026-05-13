@@ -37,6 +37,7 @@ public class PlayerData
     public int    level               { get; private set; }
     public int    exp                 { get; private set; }
     public int    gold                { get; private set; }
+    public int    gem                 { get; private set; }
     public int    selectedCharacterId { get; private set; } = -1;
 
     public PlayerInventory inventory { get; } = new PlayerInventory();
@@ -50,6 +51,7 @@ public class PlayerData
         level    = (int)user["level"];
         exp      = user["exp"] != null ? (int)user["exp"] : 0;
         gold     = (int)user["gold"];
+        gem      = user["gem"] != null ? (int)user["gem"] : 0;
 
         var selToken = user["selected_character_id"];
         selectedCharacterId = (selToken == null || selToken.Type == JTokenType.Null)

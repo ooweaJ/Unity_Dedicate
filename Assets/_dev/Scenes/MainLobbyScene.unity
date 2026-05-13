@@ -3858,6 +3858,11 @@ MonoBehaviour:
   goldTexts:
   - {fileID: 75255787}
   - {fileID: 748760968}
+  gemTexts:
+  - {fileID: 641128548}
+  - {fileID: 775579811}
+  expBarMaterial: {fileID: 2100000, guid: 24a162490eb10854e866099d27abf3d9, type: 2}
+  expProgressProperty: _Progress
 --- !u!114 &287048755
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6274,6 +6279,9 @@ MonoBehaviour:
   txtAtk: {fileID: 605319885}
   txtDef: {fileID: 605319884}
   txtTrans: {fileID: 605319883}
+  expBarMaterial: {fileID: 0}
+  expProgressProperty: _Progress
+  expLerpDuration: 0.6
 --- !u!1 &607537181
 GameObject:
   m_ObjectHideFlags: 0

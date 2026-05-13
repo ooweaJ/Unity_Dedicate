@@ -2555,6 +2555,9 @@ MonoBehaviour:
   txtAtk: {fileID: 3175171357756424297}
   txtDef: {fileID: 4294792586394700167}
   txtTrans: {fileID: 6834596388787041257}
+  expBarMaterial: {fileID: 2100000, guid: 93af256fa24515846855ede6710568dc, type: 2}
+  expProgressProperty: _Progress
+  expLerpDuration: 0.6
 --- !u!1 &7894463061707022668
 GameObject:
   m_ObjectHideFlags: 0

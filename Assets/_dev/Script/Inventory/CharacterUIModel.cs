@@ -1,3 +1,5 @@
+using UnityEngine;
+
 public class CharacterUIModel
 {
     public PlayerCharacterData ServerData { get; private set; }
@@ -20,7 +22,8 @@ public class CharacterUIModel
     public int    StarRating    => StaticData.grade;
     public string Name          => StaticData.displayName;
     public string LevelText     => $"{ServerData.level}/{MaxLevel}";
-    public float  ExpProgress   => (float)ServerData.exp;
+    public int    MaxExpForLevel => ServerData.level * 100;
+    public float  ExpProgress   => MaxExpForLevel > 0 ? Mathf.Clamp01((float)ServerData.exp / MaxExpForLevel) : 0f;
     public string Hp            => ((int)Stats.hp).ToString();
     public string Atk           => ((int)Stats.atk).ToString();
     public string Def           => ((int)Stats.def).ToString();
