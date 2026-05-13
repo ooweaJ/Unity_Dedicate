@@ -37,9 +37,6 @@ public class EnhancePanel : MonoBehaviour
     private void OnEnhanceClicked()
     {
         if (enhanceButton != null) enhanceButton.interactable = false;
-        _animStartTime = Time.time;
-        StopAnim();
-        _animCoroutine = StartCoroutine(AnimateColors());
         OnEnhanceRequested?.Invoke(_equipInstanceId);
     }
 
@@ -82,6 +79,9 @@ public class EnhancePanel : MonoBehaviour
 
     public void ShowResult(bool success, int enhance)
     {
+        _animStartTime = Time.time;
+        StopAnim();
+        _animCoroutine = StartCoroutine(AnimateColors());
         StartCoroutine(ShowResultAfterMinDuration(success, enhance));
     }
 
@@ -93,7 +93,7 @@ public class EnhancePanel : MonoBehaviour
             enhanceAnimImage.color                   = Color.white;
             enhanceAnimImage.transform.localRotation = Quaternion.identity;
         }
-        if (enhanceButton != null) enhanceButton.interactable = false;
+        if (enhanceButton != null) enhanceButton.interactable = true;
     }
 
     public void Hide()

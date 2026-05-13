@@ -29,7 +29,10 @@ public abstract class BaseSlot : MonoBehaviour
         
         if (txtAmount != null)
         {
-            txtAmount.text = amount > 1 ? amount.ToString() : "";
+            if (data.itemType == ItemType.Equipment)
+                txtAmount.text = amount > 0 ? $"+{amount}" : "";
+            else
+                txtAmount.text = amount > 1 ? amount.ToString() : "";
         }
         
         if (emptyIndicator != null)

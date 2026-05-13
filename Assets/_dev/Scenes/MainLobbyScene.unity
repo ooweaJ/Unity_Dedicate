@@ -7459,7 +7459,7 @@ Canvas:
   m_AdditionalShaderChannelsFlag: 25
   m_UpdateRectTransformForStandalone: 0
   m_SortingLayerID: 0
-  m_SortingOrder: 0
+  m_SortingOrder: 10
   m_TargetDisplay: 0
 --- !u!224 &717354271
 RectTransform:
@@ -9377,6 +9377,17 @@ RectTransform:
   m_CorrespondingSourceObject: {fileID: 5024879530909556869, guid: 58c5832c309c1bb47924f095b609a426, type: 3}
   m_PrefabInstance: {fileID: 978105371}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &978105373 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3712151931061639931, guid: 58c5832c309c1bb47924f095b609a426, type: 3}
+  m_PrefabInstance: {fileID: 978105371}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fb5526c98db2a004d87c6a06230eef73, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::MessagePanel
 --- !u!1 &979018854
 GameObject:
   m_ObjectHideFlags: 0
@@ -16647,7 +16658,7 @@ MonoBehaviour:
   actionPopup: {fileID: 582846195}
   enhancePanel: {fileID: 1494199756}
   transcendPanel: {fileID: 548677843}
-  messagePanel: {fileID: 0}
+  messagePanel: {fileID: 978105373}
   panelMappings:
   - tabId: 0
     panelsToShow:

@@ -21,14 +21,13 @@ public class MessagePanel : MonoBehaviour
     {
         Instance = this;
         confirmButton?.onClick.AddListener(Hide);
-        gameObject.SetActive(false);
     }
 
     public void Show(string message, UIMessageType type = UIMessageType.Info)
     {
         if (messageText != null)
         {
-            messageText.text  = message;
+            messageText.text  = message.Replace(". ", ".\n");
             messageText.color = type switch
             {
                 UIMessageType.Success => colorSuccess,
