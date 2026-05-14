@@ -116,4 +116,10 @@ public class CharacterSpawner : NetworkBehaviour
 
         Debug.Log($"[SPAWNER] 외형 부착: {prefab.name}");
     }
+
+    public void HideVisual()
+    {
+        if (characterModelRoot != null)
+            characterModelRoot.gameObject.SetActive(false);
+    }
 }

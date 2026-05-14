@@ -30,10 +30,15 @@ public class ProjectileDataSO : ScriptableObject
 
     [Header("충돌")]
     public LayerMask hitLayers;
+    [Tooltip("벽으로 판정할 레이어. 여기 해당하면 데미지 없이 wallHitEffectPrefab 재생 후 소멸.")]
+    public LayerMask wallLayer;
 
     [Header("상태이상")]
     public StatusEffect onHitEffect;
 
-    [Header("이펙트")]
-    public EffectType hitEffect = EffectType.ProjectileHit;
+    [Header("이펙트 — ProjectileManager.fxPrefabs[] 에 같이 등록 필요")]
+    [Tooltip("플레이어 적중 시 FX 프리팹")]
+    public GameObject hitEffectPrefab;
+    [Tooltip("벽 충돌 시 FX 프리팹 (바운스 투사체는 반사 시마다 재생)")]
+    public GameObject wallHitEffectPrefab;
 }

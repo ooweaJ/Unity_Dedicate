@@ -59,7 +59,7 @@ public class BattleNetworkPlayer : NetworkBehaviour
         level             = authData.level;
         selectedCharacter = authData.selectedCharacter;
         stats             = authData.stats;
-        teamId            = s_teamCounter++;
+        teamId            = s_teamCounter++ % 2;
     }
 
     [TargetRpc]

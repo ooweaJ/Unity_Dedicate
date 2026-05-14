@@ -94,7 +94,7 @@ public class ShopController : MonoBehaviour
             }
             GachaContext.PendingResults = response.results;
             GachaContext.IsResultReady = true;
-            GachaContext.OnGachaResult.Invoke();
+            GachaContext.OnGachaResult?.Invoke();
         }
         else
         {

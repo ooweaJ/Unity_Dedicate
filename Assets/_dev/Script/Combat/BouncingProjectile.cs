@@ -3,15 +3,14 @@ using UnityEngine;
 
 /// <summary>
 /// 반사 투사체 — BouncingProjectileDataSO에서 수치 주입
+/// wallLayer / wallHitEffectPrefab 은 기반 ProjectileDataSO(→ProjectileBase)에서 처리
 /// 벽 감지는 SphereCast로 처리 (빠른 투사체의 터널링 방지)
 /// </summary>
 public class BouncingProjectile : ProjectileBase
 {
-    private int       maxBounces;
-    private LayerMask wallLayer;
-    private EffectType wallHitEffect;
+    private int maxBounces;
+    private int bounceCount;
 
-    private int            bounceCount;
     private SphereCollider col;
 
     protected override void Awake()
@@ -25,11 +24,7 @@ public class BouncingProjectile : ProjectileBase
         base.Init(dir, ownerObj, dmg, data);
 
         if (data is BouncingProjectileDataSO bounceData)
-        {
-            maxBounces    = bounceData.maxBounces;
-            wallLayer     = bounceData.wallLayer;
-            wallHitEffect = bounceData.wallHitEffect;
-        }
+            maxBounces = bounceData.maxBounces;
     }
 
     // ─── 이동 + 벽 감지 (터널링 방지) ────────────────────────────────────
@@ -57,7 +52,7 @@ public class BouncingProjectile : ProjectileBase
     // ─── 플레이어 피격 ─────────────────────────────────────────────────
     protected override void HandleTriggerEnter(Collider other)
     {
-        if (IsWall(other)) return;
+        if (IsWall(other)) return; // 벽은 FixedUpdate SphereCast가 처리
         OnHit(other);
         DestroySelf();
     }
@@ -67,15 +62,7 @@ public class BouncingProjectile : ProjectileBase
     {
         direction = Vector3.Reflect(direction, normal).normalized;
         bounceCount++;
-        RpcPlayWallHitEffect(transform.position, wallHitEffect);
+        RpcPlayFX(_wallHitFxIndex, transform.position); // 기반 클래스 RPC 재사용
         if (bounceCount >= maxBounces) DestroySelf();
-    }
-
-    private bool IsWall(Collider other) => ((1 << other.gameObject.layer) & wallLayer) != 0;
-
-    [ClientRpc]
-    private void RpcPlayWallHitEffect(Vector3 pos, EffectType effect)
-    {
-        EffectManager.Instance?.Play(effect, pos);
     }
 }

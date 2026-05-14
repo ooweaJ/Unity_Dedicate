@@ -21,6 +21,8 @@ public class PlayerCameraFollow : MonoBehaviour
     public LayerMask collisionMask = 0; // ← ~0 에서 0으로 변경 (자기 콜라이더 히트 방지)
 
     private Vector3 currentVelocity;
+    private bool    _cameraFlipped     = false;
+    private bool    _cameraInitialized = false;
 
     void Start()
     {
@@ -39,7 +41,15 @@ public class PlayerCameraFollow : MonoBehaviour
                 return;
         }
 
-        Vector3 desiredPosition = target.position + new Vector3(0, height, -distance);
+        // 팀 1(북쪽 진영)은 카메라를 반대 방향으로 — 1회만 판정
+        if (!_cameraInitialized && BattleNetworkPlayer.Local != null)
+        {
+            _cameraFlipped     = BattleNetworkPlayer.Local.teamId == 1;
+            _cameraInitialized = true;
+        }
+
+        float   zSign           = _cameraFlipped ? 1f : -1f;
+        Vector3 desiredPosition = target.position + new Vector3(0, height, zSign * distance);
 
         if (useSpringArm && collisionMask != 0) // ← collisionMask 0이면 스킵
         {

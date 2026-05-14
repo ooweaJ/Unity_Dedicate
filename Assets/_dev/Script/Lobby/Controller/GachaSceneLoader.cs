@@ -18,6 +18,39 @@ public class GachaSceneLoader : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
+    void OnEnable()
+    {
+        SceneManager.sceneUnloaded += OnAnySceneUnloaded;
+        SceneManager.sceneLoaded   += OnAnySceneLoaded;
+    }
+
+    void OnDisable()
+    {
+        SceneManager.sceneUnloaded -= OnAnySceneUnloaded;
+        SceneManager.sceneLoaded   -= OnAnySceneLoaded;
+    }
+
+    // 배틀 씬 전환 등 외부 요인으로 GachaScene이 언로드되면 상태 초기화
+    private void OnAnySceneUnloaded(Scene scene)
+    {
+        if (scene.name == GACHA_SCENE)
+        {
+            _isPreloaded = false;
+            _preloadOp   = null;
+            Debug.Log("[GachaLoader] GachaScene 언로드 감지 → 상태 초기화");
+        }
+    }
+
+    // 로비로 돌아왔을 때 preload가 사라졌으면 재시작
+    private void OnAnySceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        if (scene.name == "MainLobbyScene" && _preloadOp == null && !_isPreloaded)
+        {
+            StartCoroutine(PreloadRoutine());
+            Debug.Log("[GachaLoader] 로비 복귀 감지 → Preload 재시작");
+        }
+    }
+
     void Start()
     {
         // 로비 진입하자마자 백그라운드에서 로드 시작
@@ -46,24 +79,29 @@ public class GachaSceneLoader : MonoBehaviour
     // ── 버튼 클릭 시 즉시 활성화 ─────────────────────
     public static void Activate()
     {
-        if (_instance._isPreloaded)
+        if (_instance == null) return;
+
+        // preloadOp가 살아있고 preload 완료 → 즉시 활성화
+        if (_instance._isPreloaded && _instance._preloadOp != null)
         {
-            // 이미 로드됨 → 즉시 활성화
             _instance._preloadOp.allowSceneActivation = true;
             _instance.StartCoroutine(_instance.OnActivateComplete());
         }
         else
         {
-            // 아직 로드 중 → 로드 끝나자마자 활성화
-            Debug.Log("[GachaLoader] 아직 로드 중, 완료되면 바로 활성화");
+            // 배틀 복귀 등으로 preload가 날아간 경우 포함 — 재로드 후 활성화
+            Debug.Log("[GachaLoader] Preload 없음(또는 진행 중) → 로드 후 활성화");
             _instance.StartCoroutine(_instance.WaitAndActivate());
         }
     }
 
     IEnumerator WaitAndActivate()
     {
-        // 로드 완료까지 대기
-        yield return new WaitUntil(() => _instance._isPreloaded);
+        // preload 코루틴이 시작도 안 된 경우 직접 시작
+        if (_preloadOp == null && !_isPreloaded)
+            StartCoroutine(PreloadRoutine());
+
+        yield return new WaitUntil(() => _isPreloaded);
         _preloadOp.allowSceneActivation = true;
         yield return StartCoroutine(OnActivateComplete());
     }

@@ -11,7 +11,7 @@ public class BattleManager : NetworkBehaviour
 
     [Header("Settings")]
     [SerializeField] private float resultDisplayTime = 10f;
-    [SerializeField] private int   requiredPlayers   = 2;
+    [SerializeField] private int   requiredPlayers   = 4;
 
     public enum BattleState { WaitingForPlayers, InProgress, Ended }
 
@@ -57,6 +57,8 @@ public class BattleManager : NetworkBehaviour
         if (players.Count == 0 && currentState == BattleState.Ended)
         {
             currentState = BattleState.WaitingForPlayers;
+            BattleNetworkPlayer.ResetTeamCounter();
+            SpawnManager.Instance?.ResetSpawnCounts();
             CustomNetworkManager.Instance.ReleaseMatchPort();
             Debug.Log("[BATTLE] 상태 리셋 — 다음 매치 대기");
         }
@@ -107,26 +109,37 @@ public class BattleManager : NetworkBehaviour
             return;
         }
         var alive = players.Where(p => p != null && !p.IsDead).ToList();
-        if (alive.Count == 1) EndBattle(alive[0], isDraw: false);
-        else if (alive.Count == 0) EndBattle(null, isDraw: true);
+
+        if (alive.Count == 0) { EndBattle(-1, isDraw: true); return; }
+
+        // 살아있는 팀이 1개뿐이면 그 팀 승리
+        var aliveTeams = alive.Select(GetTeamId).Distinct().ToList();
+        if (aliveTeams.Count == 1)
+            EndBattle(aliveTeams[0], isDraw: false);
     }
 
     [Server]
     private void EndByTimeLimit()
     {
-        var winner = players.Where(p => !p.IsDead)
-                            .OrderByDescending(p => p.CurrentHpRatio)
-                            .FirstOrDefault();
-        EndBattle(winner, isDraw: winner == null);
+        var alive = players.Where(p => !p.IsDead).ToList();
+
+        if (alive.Count == 0) { EndBattle(-1, isDraw: true); return; }
+
+        // 팀별 HP 비율 합산 → 높은 팀 승리
+        var teamHP  = alive.GroupBy(GetTeamId)
+                           .ToDictionary(g => g.Key, g => g.Sum(p => p.CurrentHpRatio));
+        var ordered = teamHP.OrderByDescending(kv => kv.Value).ToList();
+        bool isDraw = ordered.Count > 1 && Mathf.Abs(ordered[0].Value - ordered[1].Value) < 0.01f;
+        EndBattle(isDraw ? -1 : ordered[0].Key, isDraw);
     }
 
     [Server]
-    private void EndBattle(PlayerStats winner, bool isDraw)
+    private void EndBattle(int winnerTeamId, bool isDraw)
     {
         if (currentState == BattleState.Ended) return;
         currentState = BattleState.Ended;
 
-        var result = BuildResult(winner, isDraw);
+        var result = BuildResult(winnerTeamId, isDraw);
 
         // 백엔드 API 호출 (점수 반영) — 서버에서만, await 안 기다림
         _ = scoreService.ReportMatchResult(result);
@@ -142,7 +155,9 @@ public class BattleManager : NetworkBehaviour
         var rankDeltas = result.playerResults.Select(p => p.rankPointDelta).ToArray();
 
         string winnerNickname = isDraw ? "" :
-            (winner != null ? resultTracker[winner].playerName : "");
+            string.Join(" & ", resultTracker
+                .Where(kv => kv.Value.isWinner)
+                .Select(kv => kv.Value.playerName));
 
         RpcShowResultAndPreload(
             winnerNickname, isDraw,
@@ -152,22 +167,25 @@ public class BattleManager : NetworkBehaviour
     }
 
     [Server]
-    private BattleResultData BuildResult(PlayerStats winner, bool isDraw)
+    private BattleResultData BuildResult(int winnerTeamId, bool isDraw)
     {
         var result = new BattleResultData
         {
-            winnerName = isDraw ? "" : winner?.gameObject.name ?? "",
-            isDraw = isDraw
+            winnerName = isDraw ? "무승부" : $"Team {winnerTeamId}",
+            isDraw     = isDraw
         };
         foreach (var kvp in resultTracker)
         {
-            kvp.Value.isWinner       = !isDraw && kvp.Key == winner;
+            kvp.Value.isWinner       = !isDraw && GetTeamId(kvp.Key) == winnerTeamId;
             kvp.Value.expGained      = ExpCalculator.Calculate(kvp.Value, isDraw);
             kvp.Value.rankPointDelta = ExpCalculator.RankDelta(kvp.Value.isWinner, isDraw);
             result.playerResults.Add(kvp.Value);
         }
         return result;
     }
+
+    private int GetTeamId(PlayerStats ps) =>
+        ps.GetComponent<BattleNetworkPlayer>()?.teamId ?? -1;
 
     // ─── ClientRpc: 결과창 표시 ─────────────────────────────────────────
     [ClientRpc]

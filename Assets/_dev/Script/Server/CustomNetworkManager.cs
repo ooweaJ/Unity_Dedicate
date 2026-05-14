@@ -74,8 +74,7 @@ public class CustomNetworkManager : NetworkManager
         GameObject prefab = serverType == "battle" ? battlePlayerPrefab : lobbyPlayerPrefab;
         GameObject player = Instantiate(prefab);
 
-        if (SpawnManager.Instance != null)
-            player.transform.position = SpawnManager.Instance.GetNextSpawnPosition();
+        // 스폰 위치는 battle 서버에서 팀 배정 후 처리 (아래 SetInfo 이후)
 
         var authData = (MyAuthenticator.AuthRequestMessage)conn.authenticationData;
 
@@ -92,6 +91,11 @@ public class CustomNetworkManager : NetworkManager
             // 스폰 전에 SyncVar 세팅 → OnStartServer/OnStartClient에서 올바른 값 사용
             var battlePlayer = player.GetComponent<BattleNetworkPlayer>();
             battlePlayer?.SetInfo(authData);
+
+            // 팀 ID 기반 스폰 위치 (SetInfo 이후라 teamId가 확정된 상태)
+            if (SpawnManager.Instance != null && battlePlayer != null)
+                player.transform.position = SpawnManager.Instance.GetSpawnPositionForTeam(battlePlayer.teamId);
+
             NetworkServer.AddPlayerForConnection(conn, player);
 
             Debug.Log($"[BATTLE] 입장: {authData.nickname} | 캐릭터: {authData.selectedCharacter}");
@@ -108,9 +112,9 @@ public class CustomNetworkManager : NetworkManager
         matchQueue.Add(player);
         Debug.Log($"[MATCH] 대기 {matchQueue.Count}명");
 
-        if (matchQueue.Count >= 2)
+        if (matchQueue.Count >= 4)
         {
-            Debug.Log("[MATCH] 2명 확보, 매칭을 시작합니다.");
+            Debug.Log("[MATCH] 4명 확보, 매칭을 시작합니다.");
             StartMatch();
         }
     }
@@ -125,8 +129,8 @@ public class CustomNetworkManager : NetworkManager
     [Server]
     private async void StartMatch()
     {
-        var matched = new List<LobbyNetworkPlayer> { matchQueue[0], matchQueue[1] };
-        matchQueue.RemoveRange(0, 2);
+        var matched = matchQueue.GetRange(0, 4);
+        matchQueue.RemoveRange(0, 4);
 
         string res  = await BackendManager.AcquirePort();
         JObject json = JObject.Parse(res);

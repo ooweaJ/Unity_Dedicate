@@ -37,6 +37,8 @@ public class BattleResultUI : MonoBehaviour
     [Header("스코어보드")]
     [SerializeField] private Transform  scoreContainer;
     [SerializeField] private GameObject scoreRowPrefab;
+    [Tooltip("팀 구분선 프리팹 (선택). TextMeshProUGUI 1개로 팀 이름 표시. null이면 구분선 생략")]
+    [SerializeField] private GameObject teamHeaderPrefab;
 
     [Header("하단")]
     [SerializeField] private TextMeshProUGUI timerText;
@@ -45,6 +47,9 @@ public class BattleResultUI : MonoBehaviour
     private static readonly Color ColorVictory = new Color(1f, 0.84f, 0f);
     private static readonly Color ColorDefeat  = new Color(0.9f, 0.2f, 0.2f);
     private static readonly Color ColorDraw    = new Color(0.7f, 0.7f, 0.7f);
+
+    private static readonly Color RowColorAlly  = new Color(0.15f, 0.35f, 0.75f, 0.85f);
+    private static readonly Color RowColorEnemy = new Color(0.75f, 0.15f, 0.15f, 0.85f);
 
     private Action _onConfirm;
     private float  _autoTimer;
@@ -77,17 +82,32 @@ public class BattleResultUI : MonoBehaviour
         resultPanel.SetActive(true);
         Debug.Log("[RESULT UI] 결과창 표시");
 
-        // 로컬 플레이어를 netId로 찾기 (gameObject.name 비교 X — 모두 "Player(Clone)")
-        uint localNetId   = NetworkClient.localPlayer?.netId ?? 0;
-        int  localIdx     = FindLocalIndex(netIds, localNetId);
+        // 로컬 플레이어를 netId로 찾기
+        uint localNetId    = NetworkClient.localPlayer?.netId ?? 0;
+        int  localIdx      = FindLocalIndex(netIds, localNetId);
         bool localIsWinner = localIdx >= 0 && isWinner[localIdx];
 
-        SetTitle(winnerName, isDraw, localIsWinner);
+        // 라이브 BattleNetworkPlayer에서 팀 ID 조회 (RPC 인자 변경 없이)
+        int localTeamId = BattleNetworkPlayer.Local?.teamId ?? -1;
+        int[] teamIds   = ResolveTeamIds(netIds);
+
+        SetTitle(isDraw, localIsWinner);
         SetLocalPlayerExp(localIdx, exps, rankDeltas);
-        BuildScoreRows(names, kills, damages, isWinner, exps);
+        BuildScoreRows(names, kills, damages, isWinner, exps, teamIds, localTeamId);
 
         if (localIdx >= 0)
             ReportExpToServer(exps[localIdx]);
+    }
+
+    private static int[] ResolveTeamIds(uint[] netIds)
+    {
+        var result = new int[netIds.Length];
+        for (int i = 0; i < netIds.Length; i++)
+        {
+            var bnp = BattleNetworkPlayer.players.Find(p => p.netId == netIds[i]);
+            result[i] = bnp?.teamId ?? -1;
+        }
+        return result;
     }
 
     private async void ReportExpToServer(int gainedExp)
@@ -115,26 +135,26 @@ public class BattleResultUI : MonoBehaviour
     }
 
     // ─── 타이틀 ────────────────────────────────────────────────────────
-    private void SetTitle(string winnerName, bool isDraw, bool localIsWinner)
+    private void SetTitle(bool isDraw, bool localIsWinner)
     {
         if (isDraw)
         {
             titleText.text  = "무승부";
             titleText.color = ColorDraw;
-            if (winnerText != null) winnerText.text = "무승부";
         }
         else if (localIsWinner)
         {
             titleText.text  = "승리!";
             titleText.color = ColorVictory;
-            if (winnerText != null) winnerText.text = $"{winnerName} 승리";
         }
         else
         {
             titleText.text  = "패배";
             titleText.color = ColorDefeat;
-            if (winnerText != null) winnerText.text = $"{winnerName} 승리";
         }
+
+        // 승리자 텍스트 미사용
+        if (winnerText != null) winnerText.gameObject.SetActive(false);
     }
 
     // ─── 로컬 플레이어 EXP / 랭크 ─────────────────────────────────────
@@ -157,13 +177,39 @@ public class BattleResultUI : MonoBehaviour
     // ScoreRowPrefab 컬럼 순서: [이름] [결과] [킬] [딜] [경험치]
     private void BuildScoreRows(
         string[] names, int[] kills, float[] damages,
-        bool[] isWinner, int[] exps)
+        bool[] isWinner, int[] exps, int[] teamIds, int localTeamId)
     {
         foreach (Transform child in scoreContainer)
             Destroy(child.gameObject);
 
-        for (int i = 0; i < names.Length; i++)
+        var sorted = new System.Collections.Generic.List<int>(names.Length);
+        for (int i = 0; i < names.Length; i++) sorted.Add(i);
+        sorted.Sort((a, b) =>
         {
+            // 내 팀 먼저, 같은 팀 안에서는 킬 많은 순
+            int teamA = teamIds[a] == localTeamId ? 0 : 1;
+            int teamB = teamIds[b] == localTeamId ? 0 : 1;
+            if (teamA != teamB) return teamA.CompareTo(teamB);
+            return kills[b].CompareTo(kills[a]);
+        });
+
+        int lastGroup = -2;
+        foreach (int i in sorted)
+        {
+            int group = teamIds[i] == localTeamId ? 0 : 1;
+
+            // 팀 경계: 헤더 행 삽입
+            if (group != lastGroup)
+            {
+                if (teamHeaderPrefab != null)
+                {
+                    var header = Instantiate(teamHeaderPrefab, scoreContainer);
+                    var ht = header.GetComponentInChildren<TextMeshProUGUI>();
+                    if (ht != null) ht.text = group == 0 ? "내 팀" : "상대 팀";
+                }
+                lastGroup = group;
+            }
+
             var row   = Instantiate(scoreRowPrefab, scoreContainer);
             var texts = row.GetComponentsInChildren<TextMeshProUGUI>();
             if (texts.Length < 5)
@@ -178,7 +224,12 @@ public class BattleResultUI : MonoBehaviour
             texts[3].text = $"{damages[i]:F0}";
             texts[4].text = $"+{exps[i]}";
 
-            if (isWinner[i]) texts[0].color = ColorVictory;
+            // 텍스트 전체 흰색
+            foreach (var t in texts) t.color = Color.white;
+
+            // 행 배경: 아군 파란색 / 적 빨간색
+            var bg = row.GetComponent<UnityEngine.UI.Image>();
+            if (bg != null) bg.color = group == 0 ? RowColorAlly : RowColorEnemy;
         }
     }
 

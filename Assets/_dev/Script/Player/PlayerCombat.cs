@@ -13,6 +13,20 @@ public class PlayerCombat : NetworkBehaviour
     private GrenadeAimIndicator     aimIndicator;
     private SkillDirectionIndicator dirIndicator;
 
+    // 팀 1(북쪽)은 조이스틱 X·Z 반전 — PlayerMovement와 동일 보정
+    private float _aimSign            = 1f;
+    private bool  _aimSignInitialized = false;
+
+    private float GetAimSign()
+    {
+        if (!_aimSignInitialized && BattleNetworkPlayer.Local != null)
+        {
+            _aimSign            = BattleNetworkPlayer.Local.teamId == 1 ? -1f : 1f;
+            _aimSignInitialized = true;
+        }
+        return _aimSign;
+    }
+
     private void Awake()
     {
         weapon = GetComponent<CharacterWeapon>();
@@ -87,7 +101,8 @@ public class PlayerCombat : NetworkBehaviour
     public void HandleMobileSkillDrag(int slot, Vector2 joystickDir, float magnitude)
     {
         if (weapon == null) return;
-        Vector3 dir3D = new Vector3(joystickDir.x, 0f, joystickDir.y);
+        float s = GetAimSign();
+        Vector3 dir3D = new Vector3(joystickDir.x * s, 0f, joystickDir.y * s);
 
         if (weapon.IsTargetPointSkill(slot))
         {
@@ -124,8 +139,11 @@ public class PlayerCombat : NetworkBehaviour
         }
     }
 
-    private static Vector3 ToAimDir3D(Vector2 dir2D)
-        => new Vector3(dir2D.x, 0f, dir2D.y).normalized;
+    private Vector3 ToAimDir3D(Vector2 dir2D)
+    {
+        float s = GetAimSign();
+        return new Vector3(dir2D.x * s, 0f, dir2D.y * s).normalized;
+    }
 
     private static bool IsMobileMode()
     {

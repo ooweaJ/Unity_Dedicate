@@ -20,13 +20,17 @@ MonoBehaviour:
   spreadAngle: 0
   hitLayers:
     serializedVersion: 2
-    m_Bits: 320
+    m_Bits: 64
+  wallLayer:
+    serializedVersion: 2
+    m_Bits: 0
   onHitEffect:
     type: 1
     value: 2
     duration: 0
     interval: 0
-  hitEffect: 0
+  hitEffectPrefab: {fileID: 0}
+  wallHitEffectPrefab: {fileID: 0}
   trigger: 2
   maxDistance: 10
   arcHeight: 3

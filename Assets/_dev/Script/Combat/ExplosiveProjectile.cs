@@ -258,7 +258,8 @@ public class ExplosiveProjectile : ProjectileBase
             Vector3 blastDir = (root.transform.position - transform.position).normalized;
             var     info     = new DamageInfo(finalDmg, owner, blastDir, statusEffect);
             root.GetComponent<IDamageable>()?.TakeDamage(info);
-            root.GetComponent<PlayerAnimationController>()?.RpcPlayHit(closest, hitEffect);
+            // 폭발 FX가 메인 이펙트 — 피격 애니메이션만 트리거
+            root.GetComponent<PlayerAnimationController>()?.RpcPlayHit(closest, EffectType.None);
         }
 
         owner?.GetComponent<PlayerBushState>()?.RevealTemporarily();

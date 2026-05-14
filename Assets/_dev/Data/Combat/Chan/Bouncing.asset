@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Bouncing
   m_EditorClassIdentifier: Assembly-CSharp::BouncingProjectileDataSO
   projectileType: 2
-  visualPrefab: {fileID: 3342188441488164344, guid: b66ab4b1254c1874a90bcf2f2d5d9987, type: 3}
+  visualPrefab: {fileID: 5273840212609265238, guid: 74ef2b9b6fa1c7747891398e4ac5b2a4, type: 3}
   speed: 6
   lifeTime: 5
   count: 1
@@ -21,14 +21,14 @@ MonoBehaviour:
   hitLayers:
     serializedVersion: 2
     m_Bits: 320
+  wallLayer:
+    serializedVersion: 2
+    m_Bits: 256
   onHitEffect:
     type: 0
     value: 0
     duration: 0
     interval: 0
-  hitEffect: 3
+  hitEffectPrefab: {fileID: 6361997728236094490, guid: fd25cbdb7c54fa4478d443fd2bea4ef1, type: 3}
+  wallHitEffectPrefab: {fileID: 6361997728236094490, guid: fd25cbdb7c54fa4478d443fd2bea4ef1, type: 3}
   maxBounces: 3
-  wallLayer:
-    serializedVersion: 2
-    m_Bits: 256
-  wallHitEffect: 5

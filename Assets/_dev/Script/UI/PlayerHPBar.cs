@@ -6,7 +6,7 @@ using UnityEngine.UI;
 public class PlayerHPBar : NetworkBehaviour
 {
     [Header("HPBar Canvas 연결")]
-    [SerializeField] private Transform hpCanvasTransform;
+    [SerializeField] private GameObject hpCanvas;
 
     [Header("Sliders")]
     [SerializeField] private Slider hpSlider;
@@ -24,11 +24,19 @@ public class PlayerHPBar : NetworkBehaviour
     [Header("HP Text")]
     [SerializeField] private TMP_Text hpText;
 
-    [Header("World Space Offset (플레이어 회전과 무관한 고정 오프셋)")]
-    [SerializeField] private Vector3 worldOffset = new Vector3(0f, 2f, -1.5f);
+    [Header("HP바 높이 (월드 Y축 오프셋)")]
+    [SerializeField] private float barHeight = 2.5f;
 
     [Header("Bush Fade")]
     [SerializeField] [Range(0f, 1f)] private float bushAlpha = 0.4f;
+
+    [Header("Team Colors")]
+    [SerializeField] private Color allyColorFull = new Color(0.3f, 0.9f, 0.3f);
+    [SerializeField] private Color allyColorMid  = new Color(0.9f, 0.9f, 0.3f);
+    [SerializeField] private Color allyColorLow  = new Color(0.9f, 0.3f, 0.3f);
+    [SerializeField] private Color enemyColorFull = new Color(0.9f, 0.3f, 0.3f);
+    [SerializeField] private Color enemyColorMid  = new Color(0.9f, 0.5f, 0.2f);
+    [SerializeField] private Color enemyColorLow  = new Color(0.6f, 0.1f, 0.1f);
 
     private Image       hpFillImage;
     private CanvasGroup _canvasGroup;
@@ -37,6 +45,7 @@ public class PlayerHPBar : NetworkBehaviour
     private Transform   camTransform;
     private float targetRatio = 1f;
     private float delayTimer = 0f;
+    private bool  _teamColorSet = false;
 
     private string _nickname = "";
 
@@ -75,9 +84,9 @@ public class PlayerHPBar : NetworkBehaviour
         if (Camera.main != null)
             camTransform = Camera.main.transform;
 
-        if (hpCanvasTransform != null)
-            _canvasGroup = hpCanvasTransform.GetComponent<CanvasGroup>()
-                        ?? hpCanvasTransform.gameObject.AddComponent<CanvasGroup>();
+        if (hpCanvas != null)
+            _canvasGroup = hpCanvas.GetComponent<CanvasGroup>()
+                        ?? hpCanvas.AddComponent<CanvasGroup>();
 
         if (hpSlider != null && hpSlider.fillRect != null)
             hpFillImage = hpSlider.fillRect.GetComponent<Image>();
@@ -90,28 +99,43 @@ public class PlayerHPBar : NetworkBehaviour
 
     private void LateUpdate()
     {
+        // 로컬 플레이어 확정 후 팀 색상 1회 적용
+        if (!_teamColorSet && BattleNetworkPlayer.Local != null)
+        {
+            var self  = GetComponent<BattleNetworkPlayer>();
+            bool ally = self == null || self.teamId == BattleNetworkPlayer.Local.teamId;
+            SetTeamColors(ally);
+            _teamColorSet = true;
+        }
+
         UpdateHPBarRotation();
         UpdateDelayBar();
     }
 
+    public void SetTeamColors(bool isAlly)
+    {
+        colorFull = isAlly ? allyColorFull : enemyColorFull;
+        colorMid  = isAlly ? allyColorMid  : enemyColorMid;
+        colorLow  = isAlly ? allyColorLow  : enemyColorLow;
+        UpdateFillColor(_maxHP > 0f ? _currentHP / _maxHP : 1f);
+    }
+
     private void UpdateHPBarRotation()
     {
-        if (hpCanvasTransform == null) return;
+        if (hpCanvas == null) return;
 
-        // camTransform 캐싱 실패 시 재시도 (씬 로딩 타이밍 문제 대비)
         if (camTransform == null)
         {
-            Debug.Log("카메라없음");
             if (Camera.main != null)
                 camTransform = Camera.main.transform;
             else
                 return;
         }
 
-        // 위치: 월드 오프셋으로 고정 — 로컬 오프셋은 플레이어 회전 시 같이 돌아가므로 사용 안 함
-        hpCanvasTransform.position = transform.position + worldOffset;
-        // 회전: 카메라 방향을 향하도록 고정
-        hpCanvasTransform.rotation = Quaternion.LookRotation(camTransform.forward);
+        // 월드 Y만 올려서 고정 — XZ 오프셋 없음 (진영·카메라 각도 무관)
+        hpCanvas.transform.position = transform.position + Vector3.up * barHeight;
+        // 카메라 정면을 향해 회전 (빌보드)
+        hpCanvas.transform.rotation = Quaternion.LookRotation(camTransform.forward);
     }
 
     private void UpdateDelayBar()
@@ -162,10 +186,14 @@ public class PlayerHPBar : NetworkBehaviour
             : Color.Lerp(colorLow, colorMid, ratio * 2f);
     }
 
+    public void Hide()
+    {
+        hpCanvas?.SetActive(false);
+    }
+
     public void SetBushVisible(bool visible, bool fade = false)
     {
-        if (hpCanvasTransform != null)
-            hpCanvasTransform.gameObject.SetActive(visible);
+        hpCanvas?.SetActive(visible);
 
         if (_canvasGroup != null)
             _canvasGroup.alpha = (visible && fade) ? bushAlpha : 1f;

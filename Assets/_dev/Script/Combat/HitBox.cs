@@ -18,13 +18,15 @@ public class HitBox : NetworkBehaviour
 {
     private readonly HashSet<Collider> alreadyHit = new HashSet<Collider>();
 
-    private GameObject     owner;
-    private CharacterWeapon weapon;
+    private GameObject          owner;
+    private CharacterWeapon     weapon;
+    private BattleNetworkPlayer _ownerBnp;
 
     private void Awake()
     {
-        owner  = transform.root.gameObject;
-        weapon = transform.root.GetComponent<CharacterWeapon>();
+        owner     = transform.root.gameObject;
+        weapon    = transform.root.GetComponent<CharacterWeapon>();
+        _ownerBnp = transform.root.GetComponent<BattleNetworkPlayer>();
         gameObject.SetActive(false);
     }
 
@@ -44,6 +46,10 @@ public class HitBox : NetworkBehaviour
         if (!isServer) return;
         if (other.transform.root.gameObject == owner) return;
         if (alreadyHit.Contains(other)) return;
+
+        // 팀원 통과 (캐싱된 BNP 사용 — null이면 데미지 차단)
+        var targetBnp = other.transform.root.GetComponent<BattleNetworkPlayer>();
+        if (_ownerBnp != null && targetBnp != null && _ownerBnp.teamId == targetBnp.teamId) return;
 
         alreadyHit.Add(other);
 

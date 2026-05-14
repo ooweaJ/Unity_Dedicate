@@ -5,7 +5,9 @@
       "mcp__claude_ai_Notion__notion-search",
       "PowerShell(Get-ChildItem C:\\\\jaewoo -Depth 2 | Where-Object { $_.Name -match \"server|backend|node|express\" -or $_.Extension -eq \".js\" -or $_.Extension -eq \".sql\" } | Select-Object FullName)",
       "Bash(cmd.exe *)",
-      "PowerShell(< br> *)"
+      "PowerShell(< br> *)",
+      "Bash(Get-ChildItem -Path \"C:\\\\jaewoo\\\\Unity\\\\Unity_Dedicate\" -Recurse -Filter \"CustomNetworkManager.cs\" -ErrorAction SilentlyContinue)",
+      "Bash(Select-Object -ExpandProperty FullName)"
     ]
   }
 }

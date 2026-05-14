@@ -24,6 +24,10 @@ public class PlayerMovement : NetworkBehaviour
     private PlayerAnimationController anim;
     private CharacterWeapon           weapon;
 
+    // 팀 1(북쪽)은 X·Z 입력 반전 — 카메라 방향과 일치
+    private float _inputSign        = 1f;
+    private bool  _inputInitialized = false;
+
     private Vector2 moveInput;
     private bool    isDashing     = false;
     private bool    isGrounded    = false;
@@ -147,7 +151,7 @@ public class PlayerMovement : NetworkBehaviour
             return;
         }
 
-        Vector3 dir = new Vector3(moveInput.x, 0f, moveInput.y);
+        Vector3 dir = GetMoveDir();
 
         if (dir.magnitude < 0.1f)
         {
@@ -159,6 +163,18 @@ public class PlayerMovement : NetworkBehaviour
         rb.linearVelocity = new Vector3(dir.x * speed, rb.linearVelocity.y, dir.z * speed);
         transform.rotation = Quaternion.RotateTowards(
             transform.rotation, Quaternion.LookRotation(dir), rotateSpeed * Time.fixedDeltaTime);
+    }
+
+    /// 팀 ID 기반 입력 보정 — 팀 1(북쪽)은 X·Z 모두 반전
+    /// BattleNetworkPlayer.Local이 확정되는 첫 프레임에 1회 초기화
+    private Vector3 GetMoveDir()
+    {
+        if (!_inputInitialized && BattleNetworkPlayer.Local != null)
+        {
+            _inputSign        = BattleNetworkPlayer.Local.teamId == 1 ? -1f : 1f;
+            _inputInitialized = true;
+        }
+        return new Vector3(moveInput.x * _inputSign, 0f, moveInput.y * _inputSign);
     }
 
     // ─── 대시 ─────────────────────────────────────────────────────────────
@@ -262,9 +278,9 @@ public class PlayerMovement : NetworkBehaviour
 
     private float CalculateDirection()
     {
-        if (moveInput.magnitude < 0.1f) return 0f;
-        Vector3 dir   = new Vector3(moveInput.x, 0f, moveInput.y);
-        float   angle = Vector3.SignedAngle(transform.forward, dir, Vector3.up);
+        Vector3 dir = GetMoveDir();
+        if (dir.magnitude < 0.1f) return 0f;
+        float angle = Vector3.SignedAngle(transform.forward, dir, Vector3.up);
         return Mathf.Clamp(angle / 180f, -1f, 1f);
     }
 }

@@ -302,7 +302,7 @@ MonoBehaviour:
   syncDirection: 0
   syncMode: 0
   syncInterval: 0
-  hpCanvasTransform: {fileID: 6245781624154186126}
+  hpCanvas: {fileID: 8566817885119096966}
   hpSlider: {fileID: 4629831335788962907}
   delaySlider: {fileID: 4841998623387766762}
   delaySpeed: 1.5
@@ -311,8 +311,14 @@ MonoBehaviour:
   colorMid: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
   colorLow: {r: 1, g: 0, b: 0, a: 1}
   hpText: {fileID: 2909988674422357672}
-  worldOffset: {x: 0, y: 2, z: 0.25}
+  barHeight: 2.5
   bushAlpha: 0.4
+  allyColorFull: {r: 0.3, g: 0.9, b: 0.3, a: 1}
+  allyColorMid: {r: 0.9, g: 0.9, b: 0.3, a: 1}
+  allyColorLow: {r: 0.9, g: 0.3, b: 0.3, a: 1}
+  enemyColorFull: {r: 0.9, g: 0.3, b: 0.3, a: 1}
+  enemyColorMid: {r: 0.9, g: 0.5, b: 0.2, a: 1}
+  enemyColorLow: {r: 0.6, g: 0.1, b: 0.1, a: 1}
 --- !u!114 &-8084679952486756348
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -378,6 +384,7 @@ MonoBehaviour:
   moveSpeed: 5
   rotateSpeed: 720
   jumpForce: 6
+  localMode: 0
 --- !u!114 &5353052779405045285
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -390,6 +397,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6a93440b2c2ed4a4fa6f6c1adb599ba5, type: 3}
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::PlayerInputHandler
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
   localMode: 0
 --- !u!114 &2994282188269406790
 MonoBehaviour:
@@ -619,6 +629,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: HPBar
       objectReference: {fileID: 0}
+    - target: {fileID: 3459339935210948148, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 7790097510283850154, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -715,5 +729,10 @@ MonoBehaviour:
 --- !u!224 &6245781624154186126 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 1174315141881237308, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
+  m_PrefabInstance: {fileID: 5107495591285288626}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &8566817885119096966 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 3459339935210948148, guid: 1b9d72b23fa48a94bbf8a12cc5bb455a, type: 3}
   m_PrefabInstance: {fileID: 5107495591285288626}
   m_PrefabAsset: {fileID: 0}

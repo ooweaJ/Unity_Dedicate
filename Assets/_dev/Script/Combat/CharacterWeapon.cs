@@ -47,6 +47,7 @@ public class CharacterWeapon : NetworkBehaviour
     private const float InputBufferWindow = 0.15f;
 
     private StatusEffectHandler effectHandler;
+    private BattleNetworkPlayer _myBnp;
 
     private void Awake()
     {
@@ -54,6 +55,7 @@ public class CharacterWeapon : NetworkBehaviour
         anim          = GetComponent<PlayerAnimationController>();
         movement      = GetComponent<PlayerMovement>();
         effectHandler = GetComponent<StatusEffectHandler>();
+        _myBnp        = GetComponent<BattleNetworkPlayer>();
     }
 
     private void Update()
@@ -261,23 +263,31 @@ public class CharacterWeapon : NetworkBehaviour
         Vector3    center = origin + dir * (action.meleeRange * 0.5f);
         Collider[] hits   = Physics.OverlapSphere(center, action.meleeRange * 0.5f, action.targetLayer);
 
-        var myBushState  = GetComponent<PlayerBushState>();
+        var  myBushState  = GetComponent<PlayerBushState>();
         bool revealedSelf = false;
+        // 같은 루트의 콜라이더가 여러 개인 경우 중복 처리 방지
+        var hitRoots = new System.Collections.Generic.HashSet<GameObject>();
 
         foreach (var hit in hits)
         {
-            if (hit.transform.root.gameObject == gameObject) continue;
+            var root = hit.transform.root.gameObject;
+            if (root == gameObject) continue;
             if (Vector3.Angle(dir, (hit.transform.position - origin).normalized) > action.meleeAngle * 0.5f) continue;
+            if (!hitRoots.Add(root)) continue;
+
+            // 팀원 통과 (캐싱된 _myBnp 사용)
+            var targetBnp = root.GetComponent<BattleNetworkPlayer>();
+            if (_myBnp != null && targetBnp != null && _myBnp.teamId == targetBnp.teamId) continue;
 
             var info = new DamageInfo(dmg, gameObject, dir, action.onHitEffect);
-            hit.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
-            hit.transform.root.GetComponent<PlayerAnimationController>()
+            root.GetComponent<IDamageable>()?.TakeDamage(info);
+            root.GetComponent<PlayerAnimationController>()
                 ?.RpcPlayHit(hit.transform.position, action.hitEffect);
 
             // 공격자가 부쉬 안, 피격자가 부쉬 밖 → 공격자 노출
             if (!revealedSelf && myBushState != null && myBushState.inBush)
             {
-                var victimBushState = hit.transform.root.GetComponent<PlayerBushState>();
+                var victimBushState = root.GetComponent<PlayerBushState>();
                 if (victimBushState == null || !victimBushState.inBush)
                 {
                     myBushState.RevealTemporarily();
@@ -360,20 +370,28 @@ public class CharacterWeapon : NetworkBehaviour
         yield return new WaitForSeconds(action.dashDuration);
 
         Collider[] hits        = Physics.OverlapSphere(transform.position, action.dashDamageRadius, action.targetLayer);
-        var        myBushState = GetComponent<PlayerBushState>();
+        var        myBushState  = GetComponent<PlayerBushState>();
         bool       revealedSelf = false;
+        var        dashHitRoots = new System.Collections.Generic.HashSet<GameObject>();
 
         foreach (var hit in hits)
         {
-            if (hit.transform.root.gameObject == gameObject) continue;
+            var root = hit.transform.root.gameObject;
+            if (root == gameObject) continue;
+            if (!dashHitRoots.Add(root)) continue;
+
+            // 팀원 통과 (캐싱된 _myBnp 사용)
+            var targetBnpDash = root.GetComponent<BattleNetworkPlayer>();
+            if (_myBnp != null && targetBnpDash != null && _myBnp.teamId == targetBnpDash.teamId) continue;
+
             var info = new DamageInfo(dmg, gameObject, dir, action.onHitEffect);
-            hit.transform.root.GetComponent<IDamageable>()?.TakeDamage(info);
-            hit.transform.root.GetComponent<PlayerAnimationController>()
+            root.GetComponent<IDamageable>()?.TakeDamage(info);
+            root.GetComponent<PlayerAnimationController>()
                 ?.RpcPlayHit(hit.transform.position, action.hitEffect);
 
             if (!revealedSelf && myBushState != null && myBushState.inBush)
             {
-                var victimBushState = hit.transform.root.GetComponent<PlayerBushState>();
+                var victimBushState = root.GetComponent<PlayerBushState>();
                 if (victimBushState == null || !victimBushState.inBush)
                 {
                     myBushState.RevealTemporarily();
