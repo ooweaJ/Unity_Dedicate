@@ -26,43 +26,82 @@ public class VirtualJoystickButton : MonoBehaviour, IPointerDownHandler, IDragHa
     [SerializeField] private Image         iconImage;     // 스킬 아이콘 (쿨다운 중 어둡게)
 
     [Header("쿨다운 연출")]
-    [SerializeField] private float dimAlpha       = 0.4f;   // 쿨다운 중 아이콘 투명도
     [SerializeField] private float readyPulseDuration = 0.25f; // 준비 완료 펄스 시간
 
     /// <summary>(aimDir XZ 정규화, magnitude 0~1) — 조이스틱 뗄 때 발동</summary>
     public event Action<Vector2, float> OnFire;
+    /// <summary>누른 순간</summary>
+    public event Action OnPress;
+    /// <summary>드래그 중 매 프레임 — (정규화 방향, magnitude 0~1)</summary>
+    public event Action<Vector2, float> OnDragUpdate;
 
     private Vector2   _pointerStart;
     private bool      _isPressed;
     private bool      _wasOnCooldown;
     private Coroutine _pulseRoutine;
+    private bool      _isPCMode;
+    private bool      _isBlocked;
+
+    // ─── 쿨다운 차단 ──────────────────────────────────────────────────────
+    public void SetBlocked(bool blocked)
+    {
+        _isBlocked = blocked;
+        if (blocked && _isPressed)
+        {
+            _isPressed = false;
+            MoveKnob(Vector2.zero);
+        }
+    }
+
+    // ─── PC 모드 (쿨다운 뷰어만 사용, 드래그 비활성화) ─────────────────────
+    public void SetPCMode(bool pcMode)
+    {
+        _isPCMode = pcMode;
+        if (knob != null)
+        {
+            var img = knob.GetComponent<Image>();
+            if (img != null)
+            {
+                Color c = img.color;
+                c.a = pcMode ? 0f : 100f / 255f;
+                img.color = c;
+            }
+        }
+    }
 
     // ─── 터치/마우스 이벤트 ──────────────────────────────────────────────
     public void OnPointerDown(PointerEventData e)
     {
+        if (_isPCMode || _isBlocked) return;
         _isPressed    = true;
         _pointerStart = e.position;
         MoveKnob(Vector2.zero);
+        OnPress?.Invoke();
     }
 
     public void OnDrag(PointerEventData e)
     {
-        if (!_isPressed) return;
+        if (_isPCMode || !_isPressed) return;
         Vector2 delta   = e.position - _pointerStart;
         Vector2 clamped = Vector2.ClampMagnitude(delta, maxDragRadius);
         MoveKnob(clamped);
+
+        float   mag = Mathf.Clamp01(delta.magnitude / maxDragRadius);
+        Vector2 dir = delta.sqrMagnitude > 0.001f ? delta.normalized : Vector2.zero;
+        OnDragUpdate?.Invoke(dir, mag);
     }
 
     public void OnPointerUp(PointerEventData e)
     {
-        if (!_isPressed) return;
+        if (_isPCMode || !_isPressed) return;
         _isPressed = false;
 
         Vector2 delta     = e.position - _pointerStart;
         float   magnitude = Mathf.Clamp01(delta.magnitude / maxDragRadius);
 
-        if (magnitude >= minMagnitude)
-            OnFire?.Invoke(delta.normalized, magnitude);
+        // 드래그가 충분하면 해당 방향, 탭이면 zero (PlayerCombat에서 캐릭터 정면으로 처리)
+        Vector2 dir = magnitude >= minMagnitude ? delta.normalized : Vector2.zero;
+        OnFire?.Invoke(dir, magnitude >= minMagnitude ? magnitude : 0f);
 
         MoveKnob(Vector2.zero);
     }
@@ -75,13 +114,6 @@ public class VirtualJoystickButton : MonoBehaviour, IPointerDownHandler, IDragHa
             cooldownFill.fillAmount = ratio;
 
         bool onCooldown = ratio > 0f;
-
-        if (iconImage != null)
-        {
-            Color c = iconImage.color;
-            c.a = onCooldown ? dimAlpha : 1f;
-            iconImage.color = c;
-        }
 
         if (_wasOnCooldown && !onCooldown)
             TriggerReadyPulse();

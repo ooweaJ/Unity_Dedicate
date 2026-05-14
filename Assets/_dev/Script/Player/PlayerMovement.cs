@@ -17,9 +17,11 @@ public class PlayerMovement : NetworkBehaviour
     [Header("점프")]
     public float jumpForce = 6f;
 
+    [Tooltip("네트워크 없이 로컬 단독 테스트 시 true")]
+    public bool localMode = false;
+
     private Rigidbody                 rb;
     private PlayerAnimationController anim;
-    private PlayerInputHandler        input;
     private CharacterWeapon           weapon;
 
     private Vector2 moveInput;
@@ -39,13 +41,12 @@ public class PlayerMovement : NetworkBehaviour
 
     private const float MaxGroundAngle = 45f;
 
-    private bool IsControllable => isLocalPlayer || (input != null && input.localMode);
+    private bool IsControllable => localMode || isLocalPlayer;
 
     private void Awake()
     {
         rb     = GetComponent<Rigidbody>();
         anim   = GetComponent<PlayerAnimationController>();
-        input  = GetComponent<PlayerInputHandler>();
         weapon = GetComponent<CharacterWeapon>();
 
         rb.freezeRotation = true;

@@ -48,6 +48,7 @@ public class GrenadeAimIndicator : MonoBehaviour
         _maxDistance     = maxDistance;
         _explosionRadius = explosionRadius;
         _active          = true;
+        TargetPos        = transform.position + transform.forward * maxDistance;
         SetVisible(true);
     }
 
@@ -57,28 +58,51 @@ public class GrenadeAimIndicator : MonoBehaviour
         SetVisible(false);
     }
 
+    /// <summary>모바일 조이스틱 방향·거리로 타겟 직접 지정</summary>
+    public void SetDirectTarget(Vector3 worldPos)
+    {
+        TargetPos = worldPos;
+    }
+
     // ─── 매 프레임 갱신 ───────────────────────────────────────────────────
 
     private void Update()
     {
-        if (!_active || Camera.main == null || Mouse.current == null) return;
+        if (!_active) return;
 
-        var plane = new Plane(Vector3.up, transform.position);
-        var ray   = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
-
-        if (plane.Raycast(ray, out float enter))
+        if (!IsMobileMode())
         {
-            Vector3 raw   = ray.GetPoint(enter);
-            Vector3 delta = new Vector3(raw.x - transform.position.x, 0f, raw.z - transform.position.z);
-            if (delta.magnitude > _maxDistance)
-                raw = transform.position + delta.normalized * _maxDistance;
-            TargetPos = new Vector3(raw.x, transform.position.y, raw.z);
+            if (Camera.main == null || Mouse.current == null) return;
+
+            var plane = new Plane(Vector3.up, transform.position);
+            var ray   = Camera.main.ScreenPointToRay(Mouse.current.position.ReadValue());
+
+            if (plane.Raycast(ray, out float enter))
+            {
+                Vector3 raw   = ray.GetPoint(enter);
+                Vector3 delta = new Vector3(raw.x - transform.position.x, 0f, raw.z - transform.position.z);
+                if (delta.magnitude > _maxDistance)
+                    raw = transform.position + delta.normalized * _maxDistance;
+                TargetPos = new Vector3(raw.x, transform.position.y, raw.z);
+            }
         }
 
-        float y = TargetPos.y + 0.05f;
+        RefreshVisuals();
+    }
 
+    private static bool IsMobileMode()
+    {
+#if UNITY_EDITOR
+        return true;
+#else
+        return Application.isMobilePlatform;
+#endif
+    }
+
+    private void RefreshVisuals()
+    {
+        float y = TargetPos.y + 0.25f;
         UpdateLineCircle(_landingCircle, TargetPos, 0.5f, y);
-
         // disc는 fill 위에 border가 올라오도록 fill을 살짝 낮게
         _fillDisc.position   = new Vector3(TargetPos.x, y - 0.01f, TargetPos.z);
         _fillDisc.localScale = Vector3.one * (_explosionRadius * 2f);

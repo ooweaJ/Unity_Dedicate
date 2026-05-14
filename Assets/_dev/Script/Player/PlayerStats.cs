@@ -51,7 +51,20 @@ public class PlayerStats : NetworkBehaviour, IDamageable
 
         ApplyStatusEffect(info.Effect, info.Direction, info.Attacker);
 
-        RpcShowDamagePopup(actualDamage, transform.position + Vector3.up * 1.5f);
+        // 공격자 반대 방향으로 1f 오프셋 (캐릭터를 가리지 않게)
+        Vector3 awayDir = Vector3.zero;
+        if (info.Direction != Vector3.zero)
+        {
+            awayDir = new Vector3(info.Direction.x, 0f, info.Direction.z).normalized;
+        }
+        else if (info.Attacker != null)
+        {
+            Vector3 toVictim = transform.position - info.Attacker.transform.position;
+            toVictim.y = 0f;
+            if (toVictim.sqrMagnitude > 0.01f)
+                awayDir = toVictim.normalized;
+        }
+        RpcShowDamagePopup(actualDamage, transform.position + awayDir * 1f + Vector3.up * 1.5f);
 
         var attackerStats = info.Attacker?.GetComponent<PlayerStats>();
         if (attackerStats != null)

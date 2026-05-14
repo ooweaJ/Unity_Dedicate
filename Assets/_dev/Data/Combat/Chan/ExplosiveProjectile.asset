@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::ExplosiveProjectileDataSO
   projectileType: 1
   visualPrefab: {fileID: 3342188441488164344, guid: b66ab4b1254c1874a90bcf2f2d5d9987, type: 3}
-  speed: 5
+  speed: 6
   lifeTime: 3
   count: 1
   spreadAngle: 0
