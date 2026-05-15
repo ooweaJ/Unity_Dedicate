@@ -31,6 +31,9 @@ public class PlayerController : NetworkBehaviour
 
         if (_provider == null) return;
 
+        // PC 마우스는 월드스페이스 방향 → aimSign 불필요
+        _combat.SetInputMode(useMobile);
+
         _provider.OnMove          += _movement.HandleMove;
         _provider.OnJump          += _movement.HandleJump;
         _provider.OnSkillDown     += _combat.HandleSkillDown;

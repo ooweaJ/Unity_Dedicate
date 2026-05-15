@@ -7,7 +7,9 @@
       "Bash(cmd.exe *)",
       "PowerShell(< br> *)",
       "Bash(Get-ChildItem -Path \"C:\\\\jaewoo\\\\Unity\\\\Unity_Dedicate\" -Recurse -Filter \"CustomNetworkManager.cs\" -ErrorAction SilentlyContinue)",
-      "Bash(Select-Object -ExpandProperty FullName)"
+      "Bash(Select-Object -ExpandProperty FullName)",
+      "Bash(Get-ChildItem -Path \"C:\\\\jaewoo\\\\Unity\\\\Unity_Dedicate\\\\Assets\\\\_dev\\\\Script\" -Recurse -Filter \"*.cs\")",
+      "Bash(Sort-Object)"
     ]
   }
 }

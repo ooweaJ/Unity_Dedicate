@@ -69,12 +69,21 @@ public class LoadingSceneManager : MonoBehaviour
 
         startFill = 0.6f;
         timer = 0f;
-        while (!Mirror.NetworkClient.isConnected || timer < minDuration)
+        const float connectTimeout = 5f;
+        while (!Mirror.NetworkClient.isConnected && timer < connectTimeout)
         {
             yield return null;
             timer += Time.deltaTime;
-            loadingUI.ProgressBarFill.fillAmount = Mathf.Lerp(startFill, 0.9f, timer);
+            loadingUI.ProgressBarFill.fillAmount = Mathf.Lerp(startFill, 0.9f, timer / connectTimeout);
             loadingUI.PercentText.text = $"{(int)(loadingUI.ProgressBarFill.fillAmount * 100)}%";
+        }
+
+        if (!Mirror.NetworkClient.isConnected)
+        {
+            Debug.LogError($"[LOADING] 서버 연결 실패: {req.serverAddress}:{req.port}");
+            Mirror.NetworkClient.Disconnect();
+            SceneManager.LoadScene("LoginScene");
+            yield break;
         }
 
         timer = 0f;

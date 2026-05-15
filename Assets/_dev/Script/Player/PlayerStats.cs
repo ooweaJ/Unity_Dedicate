@@ -112,9 +112,10 @@ public class PlayerStats : NetworkBehaviour, IDamageable
             ?.GetCharacterData()?.deathEffect ?? EffectType.Death;
         EffectManager.Instance?.Play(data, transform.position);
 
-        // 외형 + HP바 숨김
+        // 외형 + HP바 + 팀 인디케이터 숨김
         GetComponent<CharacterSpawner>()?.HideVisual();
         GetComponent<PlayerHPBar>()?.Hide();
+        GetComponent<TeamIndicator>()?.Hide();
 
         // 클라이언트 콜라이더·물리 정지
         foreach (var col in GetComponentsInChildren<Collider>())

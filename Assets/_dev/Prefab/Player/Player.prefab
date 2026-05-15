@@ -58,6 +58,7 @@ GameObject:
   - component: {fileID: 2994282188269406790}
   - component: {fileID: -6183108332194895443}
   - component: {fileID: 8971029654022782803}
+  - component: {fileID: 5265845769163098400}
   m_Layer: 6
   m_Name: Player
   m_TagString: Player
@@ -450,6 +451,25 @@ MonoBehaviour:
   colorStun: {r: 1, g: 0.8, b: 0, a: 1}
   colorSlow: {r: 0.3, g: 0.7, b: 1, a: 1}
   colorDotDamage: {r: 0.8, g: 0.2, b: 1, a: 1}
+--- !u!114 &5265845769163098400
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6988632536861101562}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 84bacd2569665f94988ce71da1026d35, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::TeamIndicator
+  syncDirection: 0
+  syncMode: 0
+  syncInterval: 0
+  yOffset: 0.1
+  radius: 0.7
+  innerRatio: 0.45
+  segments: 48
 --- !u!1 &7770813932565565424
 GameObject:
   m_ObjectHideFlags: 0

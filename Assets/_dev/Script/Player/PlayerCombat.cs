@@ -14,8 +14,12 @@ public class PlayerCombat : NetworkBehaviour
     private SkillDirectionIndicator dirIndicator;
 
     // 팀 1(북쪽)은 조이스틱 X·Z 반전 — PlayerMovement와 동일 보정
+    // PC 마우스는 이미 월드스페이스 방향이므로 aimSign 불필요
     private float _aimSign            = 1f;
     private bool  _aimSignInitialized = false;
+    private bool  _useMobileAimSign   = true; // PlayerController가 주입
+
+    public void SetInputMode(bool isMobile) => _useMobileAimSign = isMobile;
 
     private float GetAimSign()
     {
@@ -141,7 +145,9 @@ public class PlayerCombat : NetworkBehaviour
 
     private Vector3 ToAimDir3D(Vector2 dir2D)
     {
-        float s = GetAimSign();
+        // PC 마우스: 이미 월드스페이스 → aimSign 적용 안 함
+        // 모바일 조이스틱: 스크린 상대방향 → 북쪽팀 반전 필요
+        float s = _useMobileAimSign ? GetAimSign() : 1f;
         return new Vector3(dir2D.x * s, 0f, dir2D.y * s).normalized;
     }
 

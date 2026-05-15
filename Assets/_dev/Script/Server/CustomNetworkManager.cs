@@ -140,7 +140,7 @@ public class CustomNetworkManager : NetworkManager
             int port = json["port"].ToObject<int>();
             Debug.Log($"[MATCH] 포트 확보: {port}");
             foreach (var p in matched)
-                p.TargetMoveToServer(p.connectionToClient, "127.0.0.1", (ushort)port);
+                p.TargetMoveToServer(p.connectionToClient, ServerConfig.GameServerIP, (ushort)port);
         }
         else
         {
@@ -166,8 +166,8 @@ public class CustomNetworkManager : NetworkManager
         SceneFlowManager.Instance.Load(new LoadRequest
         {
             sceneName     = "BattleScene",
-            serverAddress = "127.0.0.1",
-            port          = 7778
+            serverAddress = ip,
+            port          = port
         });
     }
 
@@ -190,8 +190,8 @@ public class CustomNetworkManager : NetworkManager
         SceneFlowManager.Instance.Load(new LoadRequest
         {
             sceneName     = "MainLobbyScene",
-            serverAddress = "127.0.0.1",
-            port          = 7777
+            serverAddress = ServerConfig.GameServerIP,
+            port          = ServerConfig.LobbyPort
         });
     }
 

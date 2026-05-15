@@ -45,8 +45,8 @@ public class LoginController : MonoBehaviour
         SceneFlowManager.Instance.Load(new LoadRequest
         {
             sceneName = "MainLobbyScene",
-            serverAddress = "127.0.0.1",
-            port = 7777
+            serverAddress = ServerConfig.GameServerIP,
+            port = ServerConfig.LobbyPort
         });
     }
 }
