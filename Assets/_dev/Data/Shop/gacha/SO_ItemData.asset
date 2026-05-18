@@ -34,3 +34,31 @@ MonoBehaviour:
     classIcon: {fileID: 0}
     cutsceneKey: 
     playcutscene: 0
+  - rewardId: 4
+    grade: 1
+    rewardName: "\uD14C\uC2A4\uD2B8 \uBB34\uAE30"
+    thumbnail: {fileID: 21300000, guid: 5fd50594014b70e48bd6993443d46b32, type: 3}
+    classIcon: {fileID: 0}
+    cutsceneKey: 
+    playcutscene: 0
+  - rewardId: 5
+    grade: 1
+    rewardName: "\uD14C\uC2A4\uD2B8 \uBC29\uC5B4\uAD6C"
+    thumbnail: {fileID: 21300000, guid: d659f7396cd57754eba78763cf986c51, type: 3}
+    classIcon: {fileID: 0}
+    cutsceneKey: 
+    playcutscene: 0
+  - rewardId: 6
+    grade: 1
+    rewardName: "\uD14C\uC2A4\uD2B8 \uC561\uC138\uC11C\uB9AC"
+    thumbnail: {fileID: 21300000, guid: 8e859c149e0cd814ea9acc8581953bd6, type: 3}
+    classIcon: {fileID: 0}
+    cutsceneKey: 
+    playcutscene: 0
+  - rewardId: 7
+    grade: 1
+    rewardName: "\uD14C\uC2A4\uD2B8 \uB9C1"
+    thumbnail: {fileID: 21300000, guid: a7fa02c269abaed47bd3a49986381846, type: 3}
+    classIcon: {fileID: 0}
+    cutsceneKey: 
+    playcutscene: 0
