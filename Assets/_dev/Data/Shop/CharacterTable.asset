@@ -15,7 +15,7 @@ MonoBehaviour:
   characters:
   - id: 1
     displayName: "\uC9F1"
-    grade: 1
+    grade: 4
     icon: {fileID: 21300000, guid: 172c1d40777297249bbbcade181a2252, type: 3}
     shardIcon: {fileID: 21300000, guid: 2492289769c4d7645afdf969ae087055, type: 3}
     description: 
@@ -30,7 +30,7 @@ MonoBehaviour:
     type: 0
   - id: 2
     displayName: "\uC18C\uD53C"
-    grade: 1
+    grade: 3
     icon: {fileID: 21300000, guid: eafa08dd1f7cbcc4d99449016f73f1ae, type: 3}
     shardIcon: {fileID: 21300000, guid: eafa08dd1f7cbcc4d99449016f73f1ae, type: 3}
     description: 
@@ -43,3 +43,18 @@ MonoBehaviour:
     hpUpgradeBonus: 0.1
     defUpgradeBonus: 0.05
     type: 1
+  - id: 3
+    displayName: "\uC544\uCC98"
+    grade: 1
+    icon: {fileID: 21300000, guid: af9d46c2d95072d47bd55dcad4ed9feb, type: 3}
+    shardIcon: {fileID: 21300000, guid: af9d46c2d95072d47bd55dcad4ed9feb, type: 3}
+    description: 
+    modelPrefab: {fileID: 1193200604094014, guid: f9bd5ff9c73325340a90b4331848e01c, type: 3}
+    battleData: {fileID: 11400000, guid: d1e3a1f78f606364daf41a4de6bf3aa9, type: 2}
+    baseHp: 80
+    baseAtk: 8
+    baseDef: 3
+    atkUpgradeBonus: 0.1
+    hpUpgradeBonus: 0.1
+    defUpgradeBonus: 0.05
+    type: 2
