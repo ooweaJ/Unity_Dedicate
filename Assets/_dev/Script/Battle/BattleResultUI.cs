@@ -12,10 +12,10 @@ using UnityEngine.UI;
 ///   resultPanel      — 루트 패널 오브젝트 (평소 비활성)
 ///   titleText        — "승리!" / "패배" / "무승부"
 ///   winnerText       — "○○ 승리"
-///   expValueText     — "+150 EXP"
+///   goldValueText    — "+200 G"
 ///   rankValueText    — "+20" / "-15"
 ///   scoreContainer   — ScoreRow들의 부모 (VerticalLayoutGroup)
-///   scoreRowPrefab   — TextMeshProUGUI 5개: [이름, 결과, 킬, 딜, 경험치]
+///   scoreRowPrefab   — TextMeshProUGUI 5개: [이름, 결과, 킬, 딜, 골드]
 ///   timerText        — "10초 후 자동 이동"
 ///   confirmButton    — "로비로" 버튼
 /// </summary>
@@ -30,8 +30,8 @@ public class BattleResultUI : MonoBehaviour
     [SerializeField] private TextMeshProUGUI titleText;
     [SerializeField] private TextMeshProUGUI winnerText;
 
-    [Header("내 경험치 / 랭크")]
-    [SerializeField] private TextMeshProUGUI expValueText;
+    [Header("내 골드 / 랭크")]
+    [SerializeField] private TextMeshProUGUI goldValueText;
     [SerializeField] private TextMeshProUGUI rankValueText;
 
     [Header("스코어보드")]
@@ -66,7 +66,7 @@ public class BattleResultUI : MonoBehaviour
         string winnerName, bool isDraw,
         uint[] netIds, string[] names,
         int[] kills, int[] deaths, float[] damages,
-        bool[] isWinner, int[] exps, int[] rankDeltas,
+        bool[] isWinner, int[] exps, int[] golds, int[] rankDeltas,
         float autoReturnTime, Action onConfirm)
     {
         if (resultPanel == null)
@@ -82,21 +82,19 @@ public class BattleResultUI : MonoBehaviour
         resultPanel.SetActive(true);
         Debug.Log("[RESULT UI] 결과창 표시");
 
-        // 로컬 플레이어를 netId로 찾기
         uint localNetId    = NetworkClient.localPlayer?.netId ?? 0;
         int  localIdx      = FindLocalIndex(netIds, localNetId);
         bool localIsWinner = localIdx >= 0 && isWinner[localIdx];
 
-        // 라이브 BattleNetworkPlayer에서 팀 ID 조회 (RPC 인자 변경 없이)
         int localTeamId = BattleNetworkPlayer.Local?.teamId ?? -1;
         int[] teamIds   = ResolveTeamIds(netIds);
 
         SetTitle(isDraw, localIsWinner);
-        SetLocalPlayerExp(localIdx, exps, rankDeltas);
-        BuildScoreRows(names, kills, damages, isWinner, exps, teamIds, localTeamId);
+        SetLocalPlayerGold(localIdx, golds, rankDeltas);
+        BuildScoreRows(names, kills, damages, isWinner, golds, teamIds, localTeamId);
 
         if (localIdx >= 0)
-            ReportExpToServer(exps[localIdx]);
+            ReportBattleToServer(exps[localIdx], golds[localIdx]);
     }
 
     private static int[] ResolveTeamIds(uint[] netIds)
@@ -110,12 +108,12 @@ public class BattleResultUI : MonoBehaviour
         return result;
     }
 
-    private async void ReportExpToServer(int gainedExp)
+    private async void ReportBattleToServer(int gainedExp, int gainedGold)
     {
         try
         {
             int    userId = PlayerDataManager.Instance.GetUserId();
-            string json   = await BackendManager.BattleResult(userId, gainedExp);
+            string json   = await BackendManager.BattleResult(userId, gainedExp, gainedGold);
 
             var response = JObject.Parse(json);
             if (response["success"] is JToken s && (bool)s)
@@ -157,13 +155,13 @@ public class BattleResultUI : MonoBehaviour
         if (winnerText != null) winnerText.gameObject.SetActive(false);
     }
 
-    // ─── 로컬 플레이어 EXP / 랭크 ─────────────────────────────────────
-    private void SetLocalPlayerExp(int localIdx, int[] exps, int[] rankDeltas)
+    // ─── 로컬 플레이어 골드 / 랭크 ────────────────────────────────────
+    private void SetLocalPlayerGold(int localIdx, int[] golds, int[] rankDeltas)
     {
         if (localIdx < 0) return;
 
-        if (expValueText != null)
-            expValueText.text = $"+{exps[localIdx]} EXP";
+        if (goldValueText != null)
+            goldValueText.text = $"+{golds[localIdx]} G";
 
         if (rankValueText != null)
         {
@@ -174,10 +172,10 @@ public class BattleResultUI : MonoBehaviour
     }
 
     // ─── 스코어보드 행 생성 ────────────────────────────────────────────
-    // ScoreRowPrefab 컬럼 순서: [이름] [결과] [킬] [딜] [경험치]
+    // ScoreRowPrefab 컬럼 순서: [이름] [결과] [킬] [딜] [골드]
     private void BuildScoreRows(
         string[] names, int[] kills, float[] damages,
-        bool[] isWinner, int[] exps, int[] teamIds, int localTeamId)
+        bool[] isWinner, int[] golds, int[] teamIds, int localTeamId)
     {
         foreach (Transform child in scoreContainer)
             Destroy(child.gameObject);
@@ -222,7 +220,7 @@ public class BattleResultUI : MonoBehaviour
             texts[1].text = isWinner[i] ? "승" : "패";
             texts[2].text = kills[i].ToString();
             texts[3].text = $"{damages[i]:F0}";
-            texts[4].text = $"+{exps[i]}";
+            texts[4].text = $"+{golds[i]}G";
 
             // 텍스트 전체 흰색
             foreach (var t in texts) t.color = Color.white;

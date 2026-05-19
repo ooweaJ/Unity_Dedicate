@@ -20,5 +20,6 @@ public class PlayerResultData
     public float  damageDealt;
     public bool   isWinner;
     public int    expGained;
+    public int    goldGained;
     public int    rankPointDelta;
 }

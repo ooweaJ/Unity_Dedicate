@@ -14,12 +14,24 @@ public static class ExpCalculator
     private const int LoseRank = -15;
     private const int DrawRank =   5;
 
+    private const int WinBaseGold   = 200;
+    private const int LoseBaseGold  = 80;
+    private const int DrawBaseGold  = 120;
+    private const int GoldPerKill   = 20;
+
     public static int Calculate(PlayerResultData data, bool isDraw)
     {
         int exp = isDraw ? DrawBaseExp : (data.isWinner ? WinBaseExp : LoseBaseExp);
         exp += data.kills * ExpPerKill;
         exp += (int)(data.damageDealt / ExpPerDamage);
         return exp;
+    }
+
+    public static int GoldCalculate(PlayerResultData data, bool isDraw)
+    {
+        int gold = isDraw ? DrawBaseGold : (data.isWinner ? WinBaseGold : LoseBaseGold);
+        gold += data.kills * GoldPerKill;
+        return gold;
     }
 
     public static int RankDelta(bool isWinner, bool isDraw)

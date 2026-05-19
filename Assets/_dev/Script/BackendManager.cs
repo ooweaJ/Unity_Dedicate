@@ -54,10 +54,10 @@ public static class BackendManager
     }
 
     // POST /users/:userId/battle-result
-    // 전투 종료 후 획득 경험치 보고
-    public static async Task<string> BattleResult(int userId, int gainedExp)
+    // 전투 종료 후 획득 경험치 + 골드 보고
+    public static async Task<string> BattleResult(int userId, int gainedExp, int gainedGold)
     {
-        var res = await client.PostAsync(baseUrl + $"/users/{userId}/battle-result", ToJson(new { gainedExp }));
+        var res = await client.PostAsync(baseUrl + $"/users/{userId}/battle-result", ToJson(new { gainedExp, gainedGold }));
         return await res.Content.ReadAsStringAsync();
     }
 

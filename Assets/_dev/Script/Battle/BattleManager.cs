@@ -152,6 +152,7 @@ public class BattleManager : NetworkBehaviour
         var damages    = result.playerResults.Select(p => p.damageDealt).ToArray();
         var isWinner   = result.playerResults.Select(p => p.isWinner).ToArray();
         var exps       = result.playerResults.Select(p => p.expGained).ToArray();
+        var golds      = result.playerResults.Select(p => p.goldGained).ToArray();
         var rankDeltas = result.playerResults.Select(p => p.rankPointDelta).ToArray();
 
         string winnerNickname = isDraw ? "" :
@@ -162,7 +163,7 @@ public class BattleManager : NetworkBehaviour
         RpcShowResultAndPreload(
             winnerNickname, isDraw,
             netIds, names, kills, deaths, damages, isWinner,
-            exps, rankDeltas, resultDisplayTime
+            exps, golds, rankDeltas, resultDisplayTime
         );
     }
 
@@ -178,6 +179,7 @@ public class BattleManager : NetworkBehaviour
         {
             kvp.Value.isWinner       = !isDraw && GetTeamId(kvp.Key) == winnerTeamId;
             kvp.Value.expGained      = ExpCalculator.Calculate(kvp.Value, isDraw);
+            kvp.Value.goldGained     = ExpCalculator.GoldCalculate(kvp.Value, isDraw);
             kvp.Value.rankPointDelta = ExpCalculator.RankDelta(kvp.Value.isWinner, isDraw);
             result.playerResults.Add(kvp.Value);
         }
@@ -193,7 +195,7 @@ public class BattleManager : NetworkBehaviour
         string winnerName, bool isDraw,
         uint[] netIds, string[] names, int[] kills, int[] deaths,
         float[] damages, bool[] isWinner,
-        int[] exps, int[] rankDeltas, float autoReturnTime)
+        int[] exps, int[] golds, int[] rankDeltas, float autoReturnTime)
     {
         if (BattleResultUI.Instance == null)
         {
@@ -204,10 +206,9 @@ public class BattleManager : NetworkBehaviour
         BattleResultUI.Instance.Show(
             winnerName, isDraw,
             netIds, names, kills, deaths, damages, isWinner,
-            exps, rankDeltas, autoReturnTime,
+            exps, golds, rankDeltas, autoReturnTime,
             onConfirm: () => ActivateLobby()
         );
-
     }
 
     // 버튼 누르거나 타이머 만료 시 호출
