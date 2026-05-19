@@ -68,14 +68,12 @@ public class ShopController : MonoBehaviour
         OnOffCamera(false);
         OnOffUI(false);
 
-        // 씬  활성화
         GachaSceneLoader.Activate();
 
         GachaContext.CurrentBannerId = _currentBannerId;
         GachaContext.PullAmount = amount;
         GachaContext.Clear();
 
-        // 서버 요청
         string json = await BackendManager.GachaDraw(
             userId: PlayerDataManager.Instance.GetUserId(),
             bannerId: _currentBannerId,
@@ -86,20 +84,15 @@ public class ShopController : MonoBehaviour
 
         if (response.success)
         {
-            PlayerDataManager.Instance.ConsumeGold(amount * 100);
-            foreach (var item in response.results)
-            {
-
-                Debug.Log($"grade: {item.grade}, typeId: {item.typeId}, rewardId: {item.rewardId}, IsLegendary: {item.IsLegendary}");
-            }
             GachaContext.PendingResults = response.results;
             GachaContext.IsResultReady = true;
             GachaContext.OnGachaResult?.Invoke();
         }
         else
         {
-            Debug.Log("골드가 부족합니다");
-            return;
+            MessagePanel.Show("골드가 부족합니다.", UIMessageType.Fail);
+            OnOffCamera(true);
+            OnOffUI(true);
         }
     }
     void BuildList()
@@ -146,7 +139,8 @@ public class ShopController : MonoBehaviour
         OnOffCamera(true);
         OnOffUI(true);
         RestoreBanner();
-        OnsuccessGacha.Invoke();
+        _ = PlayerDataManager.Instance.RefreshMyData(); // 로비 복귀 후 서버 데이터 동기화
+        OnsuccessGacha?.Invoke();
     }
     private void RestoreBanner()
     {

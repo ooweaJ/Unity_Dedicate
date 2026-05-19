@@ -1,0 +1,33 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ad1538c7ac57c744a8dd28a357725ee8, type: 3}
+  m_Name: DefaultProjectile_Archer
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectileDataSO
+  projectileType: 0
+  visualPrefab: {fileID: 1018086726812046, guid: 5930d994acd09e248ba5110f9ffb7a4d, type: 3}
+  speed: 10
+  lifeTime: 5
+  count: 1
+  spreadAngle: 0
+  hitLayers:
+    serializedVersion: 2
+    m_Bits: 64
+  wallLayer:
+    serializedVersion: 2
+    m_Bits: 256
+  onHitEffect:
+    type: 0
+    value: 0
+    duration: 0
+    interval: 0
+  hitEffectPrefab: {fileID: 7904898002847524615, guid: a2ccf81a1d5b163448ebdf66b5e746d6, type: 3}
+  wallHitEffectPrefab: {fileID: 7904898002847524615, guid: a2ccf81a1d5b163448ebdf66b5e746d6, type: 3}

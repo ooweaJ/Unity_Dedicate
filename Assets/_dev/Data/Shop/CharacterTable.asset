@@ -49,7 +49,7 @@ MonoBehaviour:
     icon: {fileID: 21300000, guid: af9d46c2d95072d47bd55dcad4ed9feb, type: 3}
     shardIcon: {fileID: 21300000, guid: af9d46c2d95072d47bd55dcad4ed9feb, type: 3}
     description: 
-    modelPrefab: {fileID: 1193200604094014, guid: f9bd5ff9c73325340a90b4331848e01c, type: 3}
+    modelPrefab: {fileID: 1193200604094014, guid: d323099249a9e8c42bfb742a26064a70, type: 3}
     battleData: {fileID: 11400000, guid: d1e3a1f78f606364daf41a4de6bf3aa9, type: 2}
     baseHp: 80
     baseAtk: 8

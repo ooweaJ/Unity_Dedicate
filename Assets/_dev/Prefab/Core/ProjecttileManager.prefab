@@ -1,0 +1,58 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &6050628128004873181
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4642959156587307055}
+  - component: {fileID: 8202070431034482445}
+  m_Layer: 0
+  m_Name: ProjecttileManager
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4642959156587307055
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6050628128004873181}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &8202070431034482445
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 6050628128004873181}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9ff85d81ff529254496a895167f004c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProjectileManager
+  basicPrefab: {fileID: 9169608896275652400, guid: 7b8110975929b4b4ca98319ad5b23bf7, type: 3}
+  explosivePrefab: {fileID: 9169608896275652400, guid: f3592b2730305aa4687c0dd10230d87b, type: 3}
+  bouncingPrefab: {fileID: 9169608896275652400, guid: 83d28f304d009d442b6188d7553b56a9, type: 3}
+  visuals:
+  - {fileID: 3342188441488164344, guid: b66ab4b1254c1874a90bcf2f2d5d9987, type: 3}
+  - {fileID: 5273840212609265238, guid: 74ef2b9b6fa1c7747891398e4ac5b2a4, type: 3}
+  - {fileID: 5273840212609265238, guid: e25709c53cd678b4a95e67ed43ac27de, type: 3}
+  - {fileID: 1018086726812046, guid: 5930d994acd09e248ba5110f9ffb7a4d, type: 3}
+  fxPrefabs:
+  - {fileID: 6361997728236094490, guid: fd25cbdb7c54fa4478d443fd2bea4ef1, type: 3}
+  - {fileID: 5631927496442371602, guid: 6c52ee79710704a4dab242c5ba8e0408, type: 3}
+  - {fileID: 7904898002847524615, guid: a2ccf81a1d5b163448ebdf66b5e746d6, type: 3}

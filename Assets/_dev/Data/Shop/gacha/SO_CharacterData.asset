@@ -20,3 +20,17 @@ MonoBehaviour:
     classIcon: {fileID: 0}
     cutsceneKey: chan
     playcutscene: 1
+  - rewardId: 2
+    grade: 4
+    rewardName: "\uC18C\uD53C"
+    thumbnail: {fileID: 21300000, guid: eafa08dd1f7cbcc4d99449016f73f1ae, type: 3}
+    classIcon: {fileID: 0}
+    cutsceneKey: 
+    playcutscene: 0
+  - rewardId: 3
+    grade: 2
+    rewardName: "\uC544\uCC98"
+    thumbnail: {fileID: 21300000, guid: af9d46c2d95072d47bd55dcad4ed9feb, type: 3}
+    classIcon: {fileID: 0}
+    cutsceneKey: 
+    playcutscene: 0

@@ -6,6 +6,10 @@ public class CharacterInfoPanel : MonoBehaviour
 {
     [SerializeField] private TextMeshProUGUI txtLv, txtHp, txtAtk, txtDef, txtTrans;
 
+    [Header("Grade Stars")]
+    [SerializeField] private Transform  gradePanel;
+    [SerializeField] private GameObject starPrefab;
+
     [Header("Exp Bar")]
     [SerializeField] private Material expBarMaterial;
     [SerializeField] private string   expProgressProperty = "_Progress";
@@ -28,12 +32,23 @@ public class CharacterInfoPanel : MonoBehaviour
         txtDef.text   = model.Def;
         txtTrans.text = model.TranscendText;
 
+        SetStars(model.StarRating);
+
         float target = model.ExpProgress;
         // exp가 오른 경우에만 보간, 레벨업이나 캐릭터 전환은 즉시 반영
         if (target > _currentProgress)
             AnimateExp(target);
         else
             SetExpImmediate(target);
+    }
+
+    private void SetStars(int grade)
+    {
+        foreach (Transform child in gradePanel)
+            Destroy(child.gameObject);
+
+        for (int i = 0; i < grade; i++)
+            Instantiate(starPrefab, gradePanel);
     }
 
     private void SetExpImmediate(float progress)

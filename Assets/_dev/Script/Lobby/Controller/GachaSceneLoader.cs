@@ -53,13 +53,16 @@ public class GachaSceneLoader : MonoBehaviour
 
     void Start()
     {
-        // 로비 진입하자마자 백그라운드에서 로드 시작
-        StartCoroutine(PreloadRoutine());
+        // OnAnySceneLoaded가 이미 시작했으면 중복 방지
+        if (_preloadOp == null && !_isPreloaded)
+            StartCoroutine(PreloadRoutine());
     }
 
     // ── 백그라운드 Preload (활성화 X) ─────────────────
     IEnumerator PreloadRoutine()
     {
+        if (_preloadOp != null || _isPreloaded) yield break; // 이미 로드 중이면 중단
+
         _preloadOp = SceneManager.LoadSceneAsync(GACHA_SCENE, LoadSceneMode.Additive);
 
         // 핵심: false 로 설정하면 로드는 하되 활성화 안 함

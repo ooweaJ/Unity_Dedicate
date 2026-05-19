@@ -1,6 +1,7 @@
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
+using Newtonsoft.Json;
 using UnityEngine;
 
 // =====================================================================
@@ -24,8 +25,7 @@ public static class BackendManager
     // POST /users/login
     public static async Task<string> Login(string username, string password)
     {
-        var json    = $"{{\"username\":\"{username}\",\"password\":\"{password}\"}}";
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var content = ToJson(new { username, password });
         var res     = await client.PostAsync(baseUrl + "/users/login", content);
         return await res.Content.ReadAsStringAsync();
     }
@@ -33,8 +33,7 @@ public static class BackendManager
     // POST /users/register
     public static async Task<string> Register(string username, string password)
     {
-        var json    = $"{{\"username\":\"{username}\",\"password\":\"{password}\"}}";
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var content = ToJson(new { username, password });
         var res     = await client.PostAsync(baseUrl + "/users/register", content);
         return await res.Content.ReadAsStringAsync();
     }
@@ -50,9 +49,7 @@ public static class BackendManager
     // 캐릭터 선택 시 서버에 저장 → 재접속 시 복원
     public static async Task<string> SelectCharacter(int userId, int characterId)
     {
-        var json    = $"{{\"characterId\":{characterId}}}";
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var res     = await client.PostAsync(baseUrl + $"/users/{userId}/select-character", content);
+        var res = await client.PostAsync(baseUrl + $"/users/{userId}/select-character", ToJson(new { characterId }));
         return await res.Content.ReadAsStringAsync();
     }
 
@@ -60,9 +57,7 @@ public static class BackendManager
     // 전투 종료 후 획득 경험치 보고
     public static async Task<string> BattleResult(int userId, int gainedExp)
     {
-        var json    = $"{{\"gainedExp\":{gainedExp}}}";
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var res     = await client.PostAsync(baseUrl + $"/users/{userId}/battle-result", content);
+        var res = await client.PostAsync(baseUrl + $"/users/{userId}/battle-result", ToJson(new { gainedExp }));
         return await res.Content.ReadAsStringAsync();
     }
 
@@ -71,9 +66,7 @@ public static class BackendManager
     // 응답: { success, transcendSuccess, transcendStage, newMaxLevel, shardsUsed, user }
     public static async Task<string> TranscendCharacter(int userId, int characterId, int shardsToUse)
     {
-        var json    = $"{{\"characterId\":{characterId},\"shardsToUse\":{shardsToUse}}}";
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var res     = await client.PostAsync(baseUrl + $"/users/{userId}/transcend", content);
+        var res = await client.PostAsync(baseUrl + $"/users/{userId}/transcend", ToJson(new { characterId, shardsToUse }));
         return await res.Content.ReadAsStringAsync();
     }
 
@@ -89,9 +82,7 @@ public static class BackendManager
     // POST /match/release
     public static async Task<string> ReleasePort(int port)
     {
-        var json    = $"{{\"port\":{port}}}";
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var res     = await client.PostAsync(baseUrl + "/match/release", content);
+        var res = await client.PostAsync(baseUrl + "/match/release", ToJson(new { port }));
         return await res.Content.ReadAsStringAsync();
     }
 
@@ -100,9 +91,7 @@ public static class BackendManager
     // POST /gacha/draw/:userId
     public static async Task<string> GachaDraw(int userId, int bannerId, int amount)
     {
-        var json    = $"{{\"bannerId\":{bannerId},\"amount\":{amount}}}";
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var res     = await client.PostAsync(baseUrl + $"/gacha/draw/{userId}", content);
+        var res = await client.PostAsync(baseUrl + $"/gacha/draw/{userId}", ToJson(new { bannerId, amount }));
         return await res.Content.ReadAsStringAsync();
     }
 
@@ -113,36 +102,28 @@ public static class BackendManager
     // slotType 값: "Weapon" | "Armor" | "Accessory" | "Ring"
     public static async Task<string> EquipItem(int userId, int characterId, int equipInstanceId, EquipmentSlotType slotType)
     {
-        var json    = $"{{\"userId\":{userId},\"characterId\":{characterId},\"equipInstanceId\":{equipInstanceId},\"slotType\":\"{slotType}\"}}";
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var res     = await client.PostAsync(baseUrl + "/inventory/equip", content);
+        var res = await client.PostAsync(baseUrl + "/inventory/equip", ToJson(new { userId, characterId, equipInstanceId, slotType = slotType.ToString() }));
         return await res.Content.ReadAsStringAsync();
     }
 
     // POST /inventory/unequip
     public static async Task<string> UnequipItem(int userId, int characterId, EquipmentSlotType slotType)
     {
-        var json    = $"{{\"userId\":{userId},\"characterId\":{characterId},\"slotType\":\"{slotType}\"}}";
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var res     = await client.PostAsync(baseUrl + "/inventory/unequip", content);
+        var res = await client.PostAsync(baseUrl + "/inventory/unequip", ToJson(new { userId, characterId, slotType = slotType.ToString() }));
         return await res.Content.ReadAsStringAsync();
     }
 
     // POST /inventory/use  (exp_potion 등 소모품)
     public static async Task<string> UseItem(int userId, int itemId, int characterId)
     {
-        var json    = $"{{\"userId\":{userId},\"itemId\":{itemId},\"characterId\":{characterId}}}";
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var res     = await client.PostAsync(baseUrl + "/inventory/use", content);
+        var res = await client.PostAsync(baseUrl + "/inventory/use", ToJson(new { userId, itemId, characterId }));
         return await res.Content.ReadAsStringAsync();
     }
 
     // POST /inventory/discard
     public static async Task<string> DiscardItem(int userId, int itemId, int amount = 1)
     {
-        var json    = $"{{\"userId\":{userId},\"itemId\":{itemId},\"amount\":{amount}}}";
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
-        var res     = await client.PostAsync(baseUrl + "/inventory/discard", content);
+        var res = await client.PostAsync(baseUrl + "/inventory/discard", ToJson(new { userId, itemId, amount }));
         return await res.Content.ReadAsStringAsync();
     }
 
@@ -166,5 +147,13 @@ public static class BackendManager
         var res = await client.PostAsync(
             baseUrl + $"/equipment/{userId}/enhance/{equipInstanceId}", null);
         return await res.Content.ReadAsStringAsync();
+    }
+
+    // ─── 공통 ──────────────────────────────────────────────────────────
+
+    private static StringContent ToJson(object payload)
+    {
+        var json = JsonConvert.SerializeObject(payload);
+        return new StringContent(json, Encoding.UTF8, "application/json");
     }
 }

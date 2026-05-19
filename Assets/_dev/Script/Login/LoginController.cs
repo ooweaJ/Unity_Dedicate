@@ -45,7 +45,11 @@ public class LoginController : MonoBehaviour
     private async void HandleLogin(string username, string password)
     {
         string res = await BackendManager.Login(username, password);
-        JObject json = JObject.Parse(res);
+        if (!TryParseJson(res, out JObject json))
+        {
+            MessagePanel.Show("서버 응답 오류", UIMessageType.Error);
+            return;
+        }
 
         if (json["message"]?.ToString() == "Login success")
         {
@@ -68,7 +72,11 @@ public class LoginController : MonoBehaviour
     private async void HandleRegister(string username, string password)
     {
         string res = await BackendManager.Register(username, password);
-        JObject json = JObject.Parse(res);
+        if (!TryParseJson(res, out JObject json))
+        {
+            MessagePanel.Show("서버 응답 오류", UIMessageType.Error);
+            return;
+        }
 
         if (json["success"]?.Value<bool>() == true)
         {
@@ -78,6 +86,21 @@ public class LoginController : MonoBehaviour
         else
         {
             MessagePanel.Show(json["message"]?.ToString() ?? "회원가입 실패", UIMessageType.Fail);
+        }
+    }
+
+    private bool TryParseJson(string raw, out JObject result)
+    {
+        try
+        {
+            result = JObject.Parse(raw);
+            return true;
+        }
+        catch
+        {
+            Debug.LogError($"[LoginController] JSON 파싱 실패. 응답: {raw}");
+            result = null;
+            return false;
         }
     }
 }
