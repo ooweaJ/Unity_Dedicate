@@ -74,7 +74,12 @@ public class InventoryUIManager : MonoBehaviour
             slot.OnItemClicked += HandleUnequip;
         }
 
-        if (enhancePanel   != null) enhancePanel.OnEnhanceRequested     += HandleEnhancePanelRequest;
+        if (enhancePanel   != null)
+        {
+            enhancePanel.OnEnhanceRequested   += HandleEnhancePanelRequest;
+            enhancePanel.OnResultReady        += HandleEnhanceResultReady;
+            enhancePanel.OnResultAnimComplete += HandleEnhancePreviewRequest;
+        }
         if (transcendPanel != null) transcendPanel.OnTranscendRequested  += HandleTranscendPanelRequest;
 
         sidebarManager.OnTabChanged += SwitchSubPanel;
@@ -98,13 +103,23 @@ public class InventoryUIManager : MonoBehaviour
             slot.OnItemClicked -= HandleUnequip;
         }
 
-        if (enhancePanel   != null) enhancePanel.OnEnhanceRequested    -= HandleEnhancePanelRequest;
+        if (enhancePanel   != null)
+        {
+            enhancePanel.OnEnhanceRequested   -= HandleEnhancePanelRequest;
+            enhancePanel.OnResultReady        -= HandleEnhanceResultReady;
+            enhancePanel.OnResultAnimComplete -= HandleEnhancePreviewRequest;
+        }
         if (transcendPanel != null) transcendPanel.OnTranscendRequested -= HandleTranscendPanelRequest;
 
         sidebarManager.OnTabChanged -= SwitchSubPanel;
     }
 
     private void HandleEnhancePanelRequest(int id)           => OnEnhanceEquipment?.Invoke(id);
+    private void HandleEnhancePreviewRequest(int id)         => OnEnhancePreviewRequested?.Invoke(id);
+    private void HandleEnhanceResultReady(bool success, int enhance)
+        => MessagePanel.Show(
+            success ? $"강화 성공!  (+{enhance})" : "강화 실패...",
+            success ? UIMessageType.Success : UIMessageType.Fail);
     private void HandleTranscendPanelRequest(int charId, int shardsToUse) => OnTranscendWithShards?.Invoke(charId, shardsToUse);
 
     // ── 열기 / 닫기 ───────────────────────────────────────────────────
@@ -292,9 +307,6 @@ public class InventoryUIManager : MonoBehaviour
     public void ShowEnhanceResult(bool success, int enhance)
     {
         enhancePanel?.ShowResult(success, enhance);
-        MessagePanel.Show(
-            success ? $"강화 성공!  (+{enhance})" : "강화 실패...",
-            success ? UIMessageType.Success : UIMessageType.Fail);
     }
 
     public void ShowEnhanceError(string message)

@@ -19,7 +19,9 @@ public class EnhancePanel : MonoBehaviour
     [SerializeField] private float minAnimDuration   = 2f;
     [SerializeField] private float rotateSpeed       = 360f;
 
-    public event Action<int> OnEnhanceRequested;
+    public event Action<int>        OnEnhanceRequested;
+    public event Action<bool, int>  OnResultReady;       // (success, enhance) — 색 고정 직후
+    public event Action<int>        OnResultAnimComplete; // 메세지 후 preview 재요청
 
     private int       _equipInstanceId;
     private Coroutine _animCoroutine;
@@ -129,7 +131,14 @@ public class EnhancePanel : MonoBehaviour
             enhanceAnimImage.color                   = success ? ResultSuccess : ResultFail;
             enhanceAnimImage.transform.localRotation = Quaternion.identity;
         }
-        if (enhanceButton != null) enhanceButton.interactable = false;
+
+        // 색 고정 직후 → 메세지 표시
+        OnResultReady?.Invoke(success, enhance);
+
+        // 메세지 읽을 시간 준 뒤 loading 상태로 → preview 재요청
+        yield return new WaitForSeconds(0.8f);
+        SetLoadingState();
+        OnResultAnimComplete?.Invoke(_equipInstanceId);
     }
 
     private void StopAnim()
