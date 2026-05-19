@@ -1,33 +1,47 @@
-using Newtonsoft.Json.Linq;
 using System;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 
 public class LoginUI : MonoBehaviour
 {
-    public event Action<string,string> OnLoginButtonClicked;
+    public event Action<string, string> OnLoginButtonClicked;
+    public event Action OnRegisterTabClicked;
 
     public TMP_InputField usernameField;
     public TMP_InputField passwordField;
-    public TextMeshProUGUI resultText;
+
+    private void Start()
+    {
+        usernameField.onSubmit.AddListener(_ => OnLoginButton());
+        passwordField.onSubmit.AddListener(_ => OnLoginButton());
+    }
+
+    private void Update()
+    {
+        if (Keyboard.current == null || !Keyboard.current.tabKey.wasPressedThisFrame) return;
+
+        var current = EventSystem.current.currentSelectedGameObject;
+        if (current == usernameField.gameObject)
+            FocusField(passwordField);
+        else if (current == passwordField.gameObject)
+            FocusField(usernameField);
+    }
+
+    private void FocusField(TMP_InputField field)
+    {
+        field.Select();
+        field.ActivateInputField();
+    }
 
     public void OnLoginButton()
     {
-        string username = usernameField.text;
-        string password = passwordField.text;
-
-        OnLoginButtonClicked.Invoke(username, password);
+        OnLoginButtonClicked?.Invoke(usernameField.text, passwordField.text);
     }
 
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    void Start()
+    public void OnRegisterTabButton()
     {
-        
-    }
-
-    // Update is called once per frame
-    void Update()
-    {
-        
+        OnRegisterTabClicked?.Invoke();
     }
 }

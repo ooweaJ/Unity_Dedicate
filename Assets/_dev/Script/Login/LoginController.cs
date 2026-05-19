@@ -1,52 +1,83 @@
 using Newtonsoft.Json.Linq;
-using System.Threading.Tasks;
-using TMPro;
 using UnityEngine;
-using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 public class LoginController : MonoBehaviour
 {
     [SerializeField] private LoginUI loginUI;
+    [SerializeField] private RegisterUI registerUI;
+    [SerializeField] private GameObject loginPanel;
+    [SerializeField] private GameObject registerPanel;
 
     private void Awake()
     {
         loginUI.OnLoginButtonClicked += HandleLogin;
+        loginUI.OnRegisterTabClicked += ShowRegisterPanel;
+
+        registerUI.OnRegisterButtonClicked += HandleRegister;
+        registerUI.OnBackToLoginClicked += ShowLoginPanel;
     }
 
     private void OnDestroy()
     {
         loginUI.OnLoginButtonClicked -= HandleLogin;
+        loginUI.OnRegisterTabClicked -= ShowRegisterPanel;
+
+        registerUI.OnRegisterButtonClicked -= HandleRegister;
+        registerUI.OnBackToLoginClicked -= ShowLoginPanel;
     }
-    public async void HandleLogin(string username, string password)
+
+    // ─── 패널 전환 ────────────────────────────────────────────────────────
+
+    private void ShowRegisterPanel()
+    {
+        loginPanel.SetActive(false);
+        registerPanel.SetActive(true);
+    }
+
+    private void ShowLoginPanel()
+    {
+        registerPanel.SetActive(false);
+        loginPanel.SetActive(true);
+    }
+
+    // ─── 로그인 ───────────────────────────────────────────────────────────
+
+    private async void HandleLogin(string username, string password)
     {
         string res = await BackendManager.Login(username, password);
-
         JObject json = JObject.Parse(res);
 
-        if (json["message"] != null && json["message"].ToString() == "Login success")
+        if (json["message"]?.ToString() == "Login success")
         {
-            // 1. 로그인 응답에 포함된 유저+캐릭터+아이템 정보를 통째로 데이터 매니저에 적용
-            // ApplyUserData 내부에서 캐릭터 리스트까지 한 번에 처리하도록 만들면 베스트!
             PlayerDataManager.Instance.ApplyUserData(json["userData"]);
-
-            // 2. 이제 추가 서버 통신 없이 바로 씬 전환으로 넘어갑니다.
-            InitAfterLogin();
+            SceneFlowManager.Instance.Load(new LoadRequest
+            {
+                sceneName = "MainLobbyScene",
+                serverAddress = ServerConfig.GameServerIP,
+                port = ServerConfig.LobbyPort
+            });
         }
         else
         {
-            Debug.Log($"로그인 실패: {json["message"]}");
+            MessagePanel.Show(json["message"]?.ToString() ?? "로그인 실패", UIMessageType.Fail);
         }
     }
 
-    // 플레이어 데이터를 넣은 후 로비로 이동
-    public void InitAfterLogin() 
+    // ─── 회원가입 ─────────────────────────────────────────────────────────
+
+    private async void HandleRegister(string username, string password)
     {
-        SceneFlowManager.Instance.Load(new LoadRequest
+        string res = await BackendManager.Register(username, password);
+        JObject json = JObject.Parse(res);
+
+        if (json["success"]?.Value<bool>() == true)
         {
-            sceneName = "MainLobbyScene",
-            serverAddress = ServerConfig.GameServerIP,
-            port = ServerConfig.LobbyPort
-        });
+            MessagePanel.Show("회원가입 성공!\n로그인해주세요.", UIMessageType.Success);
+            ShowLoginPanel();
+        }
+        else
+        {
+            MessagePanel.Show(json["message"]?.ToString() ?? "회원가입 실패", UIMessageType.Fail);
+        }
     }
 }

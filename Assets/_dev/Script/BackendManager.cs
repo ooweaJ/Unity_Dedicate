@@ -30,6 +30,15 @@ public static class BackendManager
         return await res.Content.ReadAsStringAsync();
     }
 
+    // POST /users/register
+    public static async Task<string> Register(string username, string password)
+    {
+        var json    = $"{{\"username\":\"{username}\",\"password\":\"{password}\"}}";
+        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        var res     = await client.PostAsync(baseUrl + "/users/register", content);
+        return await res.Content.ReadAsStringAsync();
+    }
+
     // GET /users/:userId
     public static async Task<string> GetUserInfo(int userId)
     {

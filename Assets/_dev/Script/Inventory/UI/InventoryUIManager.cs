@@ -27,7 +27,6 @@ public class InventoryUIManager : MonoBehaviour
     [SerializeField] private ItemActionPopup     actionPopup;
     [SerializeField] private EnhancePanel        enhancePanel;
     [SerializeField] private TranscendPanel      transcendPanel;
-    [SerializeField] private MessagePanel        messagePanel;
 
     [Header("Tab Panels")]
     [SerializeField] private List<TabPanelMapping> panelMappings;
@@ -287,13 +286,13 @@ public class InventoryUIManager : MonoBehaviour
     public void ShowEnhanceMaxEnhance()
     {
         enhancePanel?.SetMaxEnhance();
-        messagePanel?.Show("최대 강화 상태입니다.", UIMessageType.Info);
+        MessagePanel.Show("최대 강화 상태입니다.", UIMessageType.Info);
     }
 
     public void ShowEnhanceResult(bool success, int enhance)
     {
         enhancePanel?.ShowResult(success, enhance);
-        messagePanel?.Show(
+        MessagePanel.Show(
             success ? $"강화 성공!  (+{enhance})" : "강화 실패...",
             success ? UIMessageType.Success : UIMessageType.Fail);
     }
@@ -301,23 +300,23 @@ public class InventoryUIManager : MonoBehaviour
     public void ShowEnhanceError(string message)
     {
         enhancePanel?.ShowError(message);
-        messagePanel?.Show(message, UIMessageType.Error);
+        MessagePanel.Show(message, UIMessageType.Error);
     }
 
     // ── 아이템 사용 응답 ──────────────────────────────────────────────
 
     public void ShowItemUseResult(string message, bool leveledUp)
-        => messagePanel?.Show(message, leveledUp ? UIMessageType.Success : UIMessageType.Info);
+        => MessagePanel.Show(message, leveledUp ? UIMessageType.Success : UIMessageType.Info);
 
     public void ShowItemUseError(string message)
-        => messagePanel?.Show(message, UIMessageType.Error);
+        => MessagePanel.Show(message, UIMessageType.Error);
 
     // ── 초월 패널 응답 ────────────────────────────────────────────────
 
     public void ShowTranscendResult(bool transcendSuccess, int transcendStage)
     {
         transcendPanel?.ShowResult(transcendSuccess, transcendStage);
-        messagePanel?.Show(
+        MessagePanel.Show(
             transcendSuccess ? $"초월 성공! ({transcendStage}단계 달성)" : "초월 실패... 조각은 소모됩니다.",
             transcendSuccess ? UIMessageType.Success : UIMessageType.Fail);
     }
@@ -325,7 +324,7 @@ public class InventoryUIManager : MonoBehaviour
     public void ShowTranscendError(string message)
     {
         transcendPanel?.ShowError(message);
-        messagePanel?.Show(message, UIMessageType.Error);
+        MessagePanel.Show(message, UIMessageType.Error);
     }
 
     // ── 장착 슬롯 ─────────────────────────────────────────────────────

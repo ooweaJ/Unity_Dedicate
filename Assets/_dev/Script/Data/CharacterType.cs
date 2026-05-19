@@ -5,7 +5,7 @@
 /// </summary>
 public enum CharacterType
 {
-    chan = 0,
-    sapphi = 1,
-    // 추가 캐릭터는 여기에
+    chan    = 0,
+    sapphi  = 1,
+    starter = 2, // 기본 지급 캐릭터 — 실제 이름 확정 후 변경
 }
